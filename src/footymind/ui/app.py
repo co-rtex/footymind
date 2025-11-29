@@ -166,55 +166,12 @@ def predict_for_match(
     return result
 
 
-def main() -> None:
-    st.set_page_config(
-        page_title="FootyMind – Premier League Match Predictor",
-        layout="wide",
-    )
+def render_past_match_mode(matches_df: pd.DataFrame, artifact: Dict[str, Any]) -> None:
+    """
+    UI mode for exploring and predicting on past matches directly.
+    """
+    st.sidebar.header("Match selection (past data)")
 
-    st.title("⚽ FootyMind – Premier League Match Outcome Predictor")
-
-    st.markdown(
-        """
-Select a past match from the dropdown, and FootyMind will:
-
-- Predict the outcome (from the **home team's** perspective).
-- Show the predicted probability distribution (**Home Win / Draw / Away Win**).
-- Highlight which features (recent form, xG, shots, etc.) most influenced the prediction.
-"""
-    )
-
-    # Load data and model
-    try:
-        matches_df = load_matches_with_features()
-    except FileNotFoundError:
-        st.error(
-            "Could not find `data/processed/matches_with_features.csv`.\n\n"
-            "Run the ETL pipeline first:\n\n"
-            "```bash\n"
-            "cd src\n"
-            "python -m footymind.features.etl_pipeline\n"
-            "```"
-        )
-        return
-
-    try:
-        artifact = load_model_artifact()
-    except FileNotFoundError:
-        st.error(
-            "Could not find trained model artifact `models/footymind_model.joblib`.\n\n"
-            "Train the model first:\n\n"
-            "```bash\n"
-            "cd src\n"
-            "python -m footymind.models.train_model\n"
-            "```"
-        )
-        return
-
-    # Sidebar: filters & match selection
-    st.sidebar.header("Match selection")
-
-    # Unique seasons and teams for optional filtering
     seasons = sorted(matches_df["season"].dropna().unique().tolist())
     home_teams = sorted(matches_df["home_team"].dropna().unique().tolist())
     away_teams = sorted(matches_df["away_team"].dropna().unique().tolist())
@@ -277,7 +234,7 @@ Select a past match from the dropdown, and FootyMind will:
         st.write(f"Actual outcome: `{row['outcome']}`")
         st.caption(f"Match ID: {selected_match_id}")
 
-        if st.button("🔮 Predict outcome"):
+        if st.button("🔮 Predict outcome", key="predict_past"):
             try:
                 result = predict_for_match(
                     selected_match_id, matches_df, artifact
@@ -307,7 +264,6 @@ Select a past match from the dropdown, and FootyMind will:
                         )
                     else:
                         exp_df = pd.DataFrame(explanation)
-                        # Sort by absolute contribution descending
                         exp_df["abs_contribution"] = exp_df[
                             "contribution"
                         ].abs()
@@ -344,6 +300,163 @@ Select a past match from the dropdown, and FootyMind will:
             use_container_width=True,
             height=400,
         )
+
+
+def render_quick_team_mode(matches_df: pd.DataFrame, artifact: Dict[str, Any]) -> None:
+    """
+    UI mode for quickly predicting by teams.
+
+    Under the hood, this finds the most recent historical match between the
+    selected home and away team in the dataset, and runs the prediction on
+    that match's feature vector.
+    """
+    st.sidebar.header("Quick prediction by teams")
+
+    home_teams = sorted(matches_df["home_team"].dropna().unique().tolist())
+    away_teams = sorted(matches_df["away_team"].dropna().unique().tolist())
+
+    selected_home = st.sidebar.selectbox(
+        "Home team", options=home_teams, index=0)
+    selected_away = st.sidebar.selectbox(
+        "Away team", options=away_teams, index=0)
+
+    if selected_home == selected_away:
+        st.warning("Home and away team must be different.")
+        return
+
+    st.markdown("---")
+    st.subheader("Simulated fixture (based on latest historical matchup)")
+
+    # Find all historical matches between these teams (home/away in this order)
+    df_pair = matches_df[
+        (matches_df["home_team"] == selected_home)
+        & (matches_df["away_team"] == selected_away)
+    ].copy()
+
+    if df_pair.empty:
+        st.info(
+            "No historical matches found between these teams in this dataset "
+            "with this home/away configuration."
+        )
+        return
+
+    df_pair = df_pair.sort_values("date")
+    latest_row = df_pair.iloc[-1]
+    latest_match_id = int(latest_row["match_id"])
+
+    st.write(
+        f"Using latest recorded match between **{selected_home}** and "
+        f"**{selected_away}** in the dataset:"
+    )
+    st.write(
+        f"- Date: `{latest_row['date']}`  "
+        f"- Season: `{latest_row['season']}`  "
+        f"- Actual outcome: `{latest_row['outcome']}`  "
+        f"- Match ID: `{latest_match_id}`"
+    )
+
+    if st.button("🔮 Predict for this pairing", key="predict_quick"):
+        try:
+            result = predict_for_match(latest_match_id, matches_df, artifact)
+        except Exception as e:  # noqa: BLE001
+            st.error(f"Prediction failed: {e}")
+        else:
+            st.subheader("Model prediction")
+            st.write(
+                f"If these teams played under **similar conditions**, "
+                f"the model predicts: **{result['predicted_class']}**"
+            )
+
+            probs = result["class_probabilities"]
+            prob_df = pd.DataFrame(
+                {
+                    "Outcome": list(probs.keys()),
+                    "Probability": list(probs.values()),
+                }
+            ).set_index("Outcome")
+            st.bar_chart(prob_df)
+
+            explanation = result["explanation"]
+            st.subheader("Key contributing features")
+            if not explanation:
+                st.write(
+                    "No explanation available (feature importances not present)."
+                )
+            else:
+                exp_df = pd.DataFrame(explanation)
+                exp_df["abs_contribution"] = exp_df["contribution"].abs()
+                exp_df = exp_df.sort_values(
+                    "abs_contribution", ascending=False
+                )
+                st.dataframe(
+                    exp_df[
+                        [
+                            "feature_name",
+                            "value",
+                            "mean",
+                            "importance",
+                            "contribution",
+                            "direction",
+                        ]
+                    ],
+                    use_container_width=True,
+                )
+
+
+def main() -> None:
+    st.set_page_config(
+        page_title="FootyMind – Premier League Match Predictor",
+        layout="wide",
+    )
+
+    st.title("⚽ FootyMind – Premier League Match Outcome Predictor")
+
+    st.markdown(
+        """
+Use FootyMind in two ways:
+
+1. **Explore past matches** – pick a specific match from the dataset and see what the model predicts.
+2. **Quick prediction by teams** – select home & away teams and get a prediction based on their latest historical matchup in the data.
+"""
+    )
+
+    # Load data and model
+    try:
+        matches_df = load_matches_with_features()
+    except FileNotFoundError:
+        st.error(
+            "Could not find `data/processed/matches_with_features.csv`.\n\n"
+            "Run the ETL pipeline first:\n\n"
+            "```bash\n"
+            "cd src\n"
+            "python -m footymind.features.etl_pipeline\n"
+            "```"
+        )
+        return
+
+    try:
+        artifact = load_model_artifact()
+    except FileNotFoundError:
+        st.error(
+            "Could not find trained model artifact `models/footymind_model.joblib`.\n\n"
+            "Train the model first:\n\n"
+            "```bash\n"
+            "cd src\n"
+            "python -m footymind.models.train_model\n"
+            "```"
+        )
+        return
+
+    mode = st.radio(
+        "Mode",
+        options=["Explore past matches", "Quick prediction by teams"],
+        horizontal=True,
+    )
+
+    if mode == "Explore past matches":
+        render_past_match_mode(matches_df, artifact)
+    else:
+        render_quick_team_mode(matches_df, artifact)
 
 
 if __name__ == "__main__":
