@@ -1,3 +1,4 @@
+# path: docs/eda_walkthrough.md
 # FootyMind EDA & Demo Walkthrough
 
 This guide explains how to use the notebook-style script:
