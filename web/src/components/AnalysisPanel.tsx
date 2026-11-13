@@ -115,7 +115,12 @@ export function AnalysisPanel({ playing, status, analysis, error, onRetry, playe
       {pr ? (
         <p className="small muted pressure-line" data-testid="pressure">
           Pressure on the carrier: {playerLabel(pr.nearest_defender_id, players)} closest
-          {pr.closing_speed_mps !== null ? `, closing at ${pr.closing_speed_mps.toFixed(1)} m/s` : ""};{" "}
+          {pr.closing_speed_mps === null
+            ? ""
+            : pr.closing_speed_mps >= 0
+              ? `, closing at ${pr.closing_speed_mps.toFixed(1)} m/s`
+              : `, moving away at ${Math.abs(pr.closing_speed_mps).toFixed(1)} m/s`}
+          {"; "}
           {pr.defenders_within_5m} defender{pr.defenders_within_5m === 1 ? "" : "s"} within 5 m,{" "}
           {pr.defenders_within_10m} within 10 m.
         </p>

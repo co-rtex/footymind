@@ -6,6 +6,7 @@ interface Props {
   showHeat: boolean;
   scenarioLayer: boolean;
   view: ScenarioView;
+  showShadow?: boolean;
 }
 
 const Disc = ({ fill, stroke, dash, opacity = 1 }: { fill: string; stroke?: string; dash?: string; opacity?: number }) => (
@@ -14,7 +15,7 @@ const Disc = ({ fill, stroke, dash, opacity = 1 }: { fill: string; stroke?: stri
   </svg>
 );
 
-export function Legend({ attackingTeam, showHeat, scenarioLayer, view }: Props) {
+export function Legend({ attackingTeam, showHeat, scenarioLayer, view, showShadow = false }: Props) {
   const att = attackingTeam === "away" ? "var(--c-away)" : "var(--c-home)";
   const def = attackingTeam === "away" ? "var(--c-home)" : "var(--c-away)";
   return (
@@ -60,6 +61,22 @@ export function Legend({ attackingTeam, showHeat, scenarioLayer, view }: Props) 
           </svg>
           Pressure ring
         </li>
+        {showShadow ? (
+          <li>
+            <svg width="22" height="18" viewBox="0 0 22 18" aria-hidden="true">
+              <defs>
+                <radialGradient id="legend-shadow">
+                  <stop offset="0" stopColor="var(--c-shadow)" stopOpacity="0.5" />
+                  <stop offset="1" stopColor="var(--c-shadow)" stopOpacity="0" />
+                </radialGradient>
+              </defs>
+              <circle cx="9" cy="9" r="8" fill="url(#legend-shadow)" stroke="var(--c-shadow)" strokeWidth="1.2" />
+              <circle cx="9" cy="9" r="3.5" fill="var(--c-text-muted)" />
+            </svg>
+            Defensive shadow (experimental): halo size and opacity = estimated passing value removed; dashed line to the
+            most suppressed receiver
+          </li>
+        ) : null}
       </ul>
       {showHeat ? (
         view === "difference" ? (

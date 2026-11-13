@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api } from "../api/client";
+import { api, ApiError } from "../api/client";
 import type { ReplayData } from "../api/parse";
 import type {
+  DefensiveShadowOut,
   FrameAnalysisOut,
   InterventionIn,
   MatchSummary,
@@ -22,6 +23,7 @@ import { Legend } from "./Legend";
 import { PitchCanvas, type DragInit } from "./PitchCanvas";
 import { PlayerInspector, type InspectedPlayer } from "./PlayerInspector";
 import { ScenarioPanel } from "./ScenarioPanel";
+import { ShadowPanel } from "./ShadowPanel";
 import { Segmented } from "./Segmented";
 import { StatusBlock } from "./StatusBlock";
 import { Transport } from "./Transport";
@@ -77,6 +79,7 @@ type Mode = "analyse" | "edit";
 type Loadable<T> = { status: "idle" | "loading" | "success" | "error"; data: T | null; error: Error | null };
 const IDLE: Loadable<never> = { status: "idle", data: null, error: null };
 const ANALYSIS_DEBOUNCE_MS = 160;
+const SHADOW_DEBOUNCE_MS = 250;
 const HORIZON_S = 1.5;
 const ENSEMBLE = 24;
 const NO_PENDING: ReadonlyMap<string, { x: number; y: number }> = new Map();
@@ -121,7 +124,7 @@ function LabView({
   const [index, setIndex] = useState(startIdx);
   const [speed, setSpeed] = useState(1);
   const [mode, setMode] = useState<Mode>(linkedMoves.length ? "edit" : "analyse");
-  const [layers, setLayers] = useState<Layers>({ control: true, passes: true, pressure: true, trails: true });
+  const [layers, setLayers] = useState<Layers>({ control: true, passes: true, pressure: true, trails: true, shadow: false });
   const [view, setView] = useState<ScenarioView>(linkedMoves.length ? "difference" : "observed");
   const [selected, setSelected] = useState<string | null>(null);
   const [highlight, setHighlight] = useState<string | null>(null);
@@ -186,6 +189,51 @@ function LabView({
   }, [playing, frame, replay.matchId, anNonce]);
   const analysis = an.data && an.data.frame === frame ? an.data : null;
 
+  // ---- defensive shadow (experimental): lazy, paused + analyse mode only, debounced, cached ----
+  // Each frame costs about 0.4 s on the backend, so it is never fetched during playback.
+  const shadowAvailable = mode === "analyse" && !playing;
+  const shadowWanted = layers.shadow && shadowAvailable;
+  const shadowCache = useRef(new Map<number, { data: DefensiveShadowOut } | { unavailable: string }>());
+  const [sh, setSh] = useState<Loadable<DefensiveShadowOut> & { unavailable: string | null }>({ ...IDLE, unavailable: null });
+  const [shNonce, setShNonce] = useState(0);
+  useEffect(() => {
+    if (!shadowWanted) return;
+    const hit = shadowCache.current.get(frame);
+    if (hit) {
+      setSh(
+        "data" in hit
+          ? { status: "success", data: hit.data, error: null, unavailable: null }
+          : { status: "success", data: null, error: null, unavailable: hit.unavailable },
+      );
+      return;
+    }
+    setSh((s) => ({ status: "loading", data: s.data, error: null, unavailable: null }));
+    const ac = new AbortController();
+    const timer = setTimeout(() => {
+      api.defensiveShadow(replay.matchId, frame, { horizonS: 1.0, valueModel: "option_model" }, ac.signal).then(
+        (d) => {
+          shadowCache.current.set(frame, { data: d });
+          if (!ac.signal.aborted) setSh({ status: "success", data: d, error: null, unavailable: null });
+        },
+        (e: unknown) => {
+          if (ac.signal.aborted) return;
+          // 422 is deterministic (no ball / no possession): cache it as "unavailable", not as an error.
+          if (e instanceof ApiError && e.status === 422) {
+            shadowCache.current.set(frame, { unavailable: e.detail });
+            setSh({ status: "success", data: null, error: null, unavailable: e.detail });
+            return;
+          }
+          setSh((s) => ({ ...s, status: "error", error: e instanceof Error ? e : new Error(String(e)), unavailable: null }));
+        },
+      );
+    }, SHADOW_DEBOUNCE_MS);
+    return () => {
+      clearTimeout(timer);
+      ac.abort();
+    };
+  }, [shadowWanted, frame, replay.matchId, shNonce]);
+  const shadow = sh.data && sh.data.frame === frame ? sh.data : null;
+
   // ---- scenario ----
   const [sc, setSc] = useState<Loadable<ScenarioResponse>>(IDLE);
   const [scNonce, setScNonce] = useState(0);
@@ -239,8 +287,9 @@ function LabView({
       pending,
       selectedId: selected,
       highlightReceiver: highlight,
+      shadow,
     });
-  }, [rendererReady, replay, playing, analysis, scenario, view, layers, mode, pending, selected, highlight]);
+  }, [rendererReady, replay, playing, analysis, scenario, view, layers, mode, pending, selected, highlight, shadow]);
 
   const onReady = useCallback(
     (r: PitchRenderer | null) => {
@@ -512,6 +561,23 @@ function LabView({
                   <span>{label}</span>
                 </label>
               ))}
+              <label
+                className={`chip-toggle chip-toggle--experimental${shadowAvailable ? "" : " is-disabled"}`}
+                title={
+                  shadowAvailable
+                    ? "Experimental: estimated passing value each defender's position removes (about 0.4 s per frame)"
+                    : "Available when paused in Replay & analyse mode"
+                }
+              >
+                <input
+                  type="checkbox"
+                  checked={layers.shadow}
+                  disabled={!shadowAvailable}
+                  onChange={(e) => setLayers((l) => ({ ...l, shadow: e.target.checked }))}
+                  data-testid="layer-shadow"
+                />
+                <span>Defensive shadow (experimental)</span>
+              </label>
             </fieldset>
             {mode === "edit" ? (
               <Segmented<ScenarioView>
@@ -585,6 +651,7 @@ function LabView({
           <Legend
             attackingTeam={shownAnalysis?.attacking_team ?? poss?.team ?? null}
             showHeat={layers.control && !playing}
+            showShadow={layers.shadow && !!shadow && shadowAvailable}
             scenarioLayer={mode === "edit"}
             view={scenario ? view : "observed"}
           />
@@ -623,6 +690,17 @@ function LabView({
             />
           ) : (
             <>
+              {layers.shadow ? (
+                <ShadowPanel
+                  playing={playing}
+                  status={sh.status}
+                  shadow={shadow}
+                  unavailable={sh.unavailable}
+                  error={sh.error}
+                  onRetry={() => setShNonce((n) => n + 1)}
+                  players={players}
+                />
+              ) : null}
               <AnalysisPanel
                 playing={playing}
                 status={an.status}

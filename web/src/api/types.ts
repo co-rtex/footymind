@@ -287,6 +287,42 @@ export interface ScenarioResponse {
   value_model: ValueModel;
 }
 
+/** One defender's experimental "defensive shadow" (mirrors DefenderShadowOut). */
+export interface DefenderShadowOut {
+  player_id: string;
+  x: number;
+  y: number;
+  /** mean alt V_best - observed V_best (+ = suppressive) */
+  shadow_best: number;
+  /** mean alt V_sum - observed V_sum (+ = suppressive) */
+  shadow_sum: number;
+  alt_radius_m: number;
+  /** nearby reachable positions the defender is compared against */
+  alternatives: [number, number][];
+  most_suppressed_receiver: string | null;
+  most_suppressed_delta: number;
+  /** |shadow_sum| above the tracking-noise floor */
+  distinguishable_from_noise: boolean;
+  provenance: ProvenanceLabel;
+}
+
+/**
+ * GET /api/matches/{mid}/frames/{frame}/defensive-shadow (mirrors DefensiveShadowOut).
+ * Responds 422 when there is no ball or no possession at the frame.
+ */
+export interface DefensiveShadowOut {
+  match_id: string;
+  frame: number;
+  attacking_team: Team;
+  carrier_id: string | null;
+  value_model: ValueModel;
+  v_best_observed: number;
+  v_sum_observed: number;
+  defenders: DefenderShadowOut[];
+  assumptions: string[];
+  status: string;
+}
+
 /** Schema bounds for interventions, mirrored from InterventionIn. */
 export const INTERVENTION_BOUNDS = { x: 60, y: 40 } as const;
 export const MAX_INTERVENTIONS = 4;

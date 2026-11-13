@@ -4,6 +4,7 @@
  */
 import {
   parseAnalysis,
+  parseDefensiveShadow,
   parseMatches,
   parsePossessions,
   parseReplay,
@@ -11,11 +12,13 @@ import {
   type ReplayData,
 } from "./parse";
 import type {
+  DefensiveShadowOut,
   FrameAnalysisOut,
   MatchSummary,
   PossessionSummary,
   ScenarioRequest,
   ScenarioResponse,
+  ValueModel,
 } from "./types";
 
 export const API_BASE = "/api";
@@ -101,6 +104,22 @@ export function createApi(fetchImpl: Fetch = (...a) => fetch(...a)) {
 
     frameAnalysis: (matchId: string, frame: number, signal?: AbortSignal): Promise<FrameAnalysisOut> =>
       requestJson(`/matches/${enc(matchId)}/frames/${frame}/analysis`, parseAnalysis, { signal }, fetchImpl),
+
+    /** Experimental and slow (about 0.4 s per frame). Rejects with ApiError 422 when there is no ball or no possession. */
+    defensiveShadow: (
+      matchId: string,
+      frame: number,
+      opts: { horizonS?: number; valueModel?: ValueModel } = {},
+      signal?: AbortSignal,
+    ): Promise<DefensiveShadowOut> =>
+      requestJson(
+        `/matches/${enc(matchId)}/frames/${frame}/defensive-shadow?horizon_s=${opts.horizonS ?? 1.0}&value_model=${
+          opts.valueModel ?? "option_model"
+        }`,
+        parseDefensiveShadow,
+        { signal },
+        fetchImpl,
+      ),
 
     scenario: (req: ScenarioRequest, signal?: AbortSignal): Promise<ScenarioResponse> =>
       requestJson(

@@ -1526,6 +1526,79 @@ kbd {
   border: 1px solid var(--c-border);
 }
 
+/* ---------- defensive shadow (experimental) ---------- */
+.chip-toggle--experimental:has(input:checked) {
+  border-color: rgba(184, 227, 90, 0.55);
+  color: var(--c-shadow);
+}
+.chip-toggle.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.card--shadow {
+  border-color: rgba(184, 227, 90, 0.3);
+}
+.shadow-caveat {
+  color: var(--c-text-muted);
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 2px solid var(--c-shadow);
+  background: rgba(184, 227, 90, 0.05);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.shadow-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  counter-reset: shadow;
+}
+.shadow-row {
+  display: grid;
+  grid-template-columns: 12px minmax(64px, auto) 48px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 5px 0;
+  border-bottom: 1px solid var(--c-border);
+  font-size: var(--fs-sm);
+}
+.shadow-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--c-border-strong);
+}
+.shadow-row--suppressive .shadow-swatch {
+  background: rgba(184, 227, 90, 0.45);
+  border-color: var(--c-shadow);
+}
+.shadow-row--suppressive .shadow-val {
+  color: var(--c-shadow);
+  font-weight: 650;
+}
+.shadow-who {
+  font-weight: 550;
+  white-space: nowrap;
+}
+.shadow-val {
+  text-align: right;
+}
+.shadow-detail {
+  color: var(--c-text-muted);
+  min-width: 0;
+}
+.shadow-row--within-noise .shadow-who,
+.shadow-row--within-noise .shadow-val {
+  color: var(--c-text-subtle);
+  font-weight: 450;
+}
+.pill--noise {
+  margin-left: 0;
+  color: var(--c-text-subtle);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+}
+
 /* ---------- responsive ---------- */
 @media (max-width: 1180px) {
   .lab-grid {

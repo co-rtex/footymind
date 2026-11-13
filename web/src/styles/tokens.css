@@ -32,6 +32,8 @@
   --c-positive: #5ad19d;
   --c-negative: #f2787a;
   --c-warning: #e9c46a;
+  /* experimental defensive shadow: lime, distinct from both teams, the accent and the control palettes */
+  --c-shadow: #b8e35a;
 
   /* pitch */
   --c-pitch: #17241f;

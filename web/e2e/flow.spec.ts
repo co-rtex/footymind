@@ -115,3 +115,34 @@ test("featured deep link opens a paused, physically supported scenario", async (
   await expect(deltas.locator("tbody tr").first()).toContainText("robust");
   await expect(page.getByText("Physically plausible edit")).toBeVisible();
 });
+
+test("defensive shadow layer ranks the suppressive defender at the featured frame", async ({ page }) => {
+  await page.goto("/#/lab/metrica-sample-1%3Ap0163?f=53708");
+  await expect(page.getByTestId("pitch-canvas")).toBeVisible();
+  const replayAnalyse = page.getByRole("radio", { name: "Replay & analyse" });
+  if ((await replayAnalyse.getAttribute("aria-checked")) !== "true") await replayAnalyse.click();
+  await expect(page.getByTestId("analysis-panel")).toHaveAttribute("data-frame", "53708");
+
+  // Off by default, and keyboard-operable.
+  const toggle = page.getByRole("checkbox", { name: "Defensive shadow (experimental)" });
+  await expect(toggle).not.toBeChecked();
+  await toggle.focus();
+  await page.keyboard.press("Space");
+  await expect(toggle).toBeChecked();
+
+  const panel = page.getByTestId("shadow-panel");
+  await expect(panel).toHaveAttribute("data-frame", "53708", { timeout: 30_000 });
+  await expect(page.getByTestId("shadow-caveat")).toContainText("Not a defender rating.");
+  const rows = page.getByTestId("shadow-row");
+  const first = rows.first();
+  await expect(first).toContainText("#9 Home");
+  await expect(first).not.toContainText("within noise");
+  await expect(first).toContainText(/\+0\.2\d/);
+  expect(await rows.count()).toBeGreaterThan(1);
+  await expect(panel.getByText("within noise").first()).toBeVisible();
+  await expect(panel.getByText(/Assumptions \(\d+\)/)).toBeVisible();
+
+  // Edit mode disables the layer, so it is never fetched there.
+  await page.getByRole("radio", { name: "Edit scenario" }).click();
+  await expect(toggle).toBeDisabled();
+});
