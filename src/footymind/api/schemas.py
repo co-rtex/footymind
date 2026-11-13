@@ -283,3 +283,29 @@ class ScenarioResponse(BaseModel):
     value_model: Literal["option_model", "physics"] = Field(
         description="which per-option probability the deltas use"
     )
+
+
+class DefenderShadowOut(BaseModel):
+    player_id: str
+    x: float
+    y: float
+    shadow_best: float = Field(description="mean alt V_best - observed V_best (+ = suppressive)")
+    shadow_sum: float = Field(description="mean alt V_sum - observed V_sum (+ = suppressive)")
+    alt_radius_m: float
+    alternatives: list[tuple[float, float]]
+    most_suppressed_receiver: str | None
+    most_suppressed_delta: float
+    provenance: ProvenanceLabel = "estimated"
+
+
+class DefensiveShadowOut(BaseModel):
+    match_id: str
+    frame: int
+    attacking_team: Team
+    carrier_id: str | None
+    value_model: Literal["option_model", "physics"]
+    v_best_observed: float
+    v_sum_observed: float
+    defenders: list[DefenderShadowOut]
+    assumptions: list[str]
+    status: str = "experimental: model-based, not validated against outcomes"

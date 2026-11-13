@@ -6,7 +6,7 @@ import math
 import os
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import polars as pl
@@ -19,6 +19,7 @@ from footymind import __version__
 from footymind.api import schemas as S
 from footymind.counterfactual.scenario import REACH_SPEED_MPS, Intervention, run_scenario
 from footymind.data.store import MatchBundle, StaleBundleError, available_matches, load_match
+from footymind.ghost.defensive_shadow import defensive_shadow
 from footymind.paths import REPO_ROOT
 from footymind.spatial.analysis import FrameAnalysis, analyze
 from footymind.spatial.option_model import load_default
@@ -388,6 +389,46 @@ def _summary(d: dict[str, object]) -> dict[str, float | int | str | None]:
         else:
             out[k] = str(v)
     return out
+
+
+@app.get(
+    "/api/matches/{match_id}/frames/{frame}/defensive-shadow", response_model=S.DefensiveShadowOut
+)
+def frame_defensive_shadow(
+    match_id: str,
+    frame: int,
+    horizon_s: float = Query(1.0, gt=0, le=3),
+    value_model: Literal["option_model", "physics"] = "option_model",
+) -> S.DefensiveShadowOut:
+    _frame_or_404(match_id, frame)
+    try:
+        r = defensive_shadow(match_id, frame, horizon_s=horizon_s, value_model=value_model)
+    except ValueError as e:
+        raise HTTPException(422, str(e)) from e
+    return S.DefensiveShadowOut(
+        match_id=r.match_id,
+        frame=r.frame,
+        attacking_team=r.attacking_team,  # type: ignore[arg-type]
+        carrier_id=r.carrier_id,
+        value_model=r.value_model,
+        v_best_observed=round(r.v_best_observed, 4),
+        v_sum_observed=round(r.v_sum_observed, 4),
+        defenders=[
+            S.DefenderShadowOut(
+                player_id=d.player_id,
+                x=round(d.x, 2),
+                y=round(d.y, 2),
+                shadow_best=round(d.shadow_best, 4) + 0.0,
+                shadow_sum=round(d.shadow_sum, 4) + 0.0,
+                alt_radius_m=d.alt_radius_m,
+                alternatives=d.alternatives,
+                most_suppressed_receiver=d.most_suppressed_receiver,
+                most_suppressed_delta=round(d.most_suppressed_delta, 4) + 0.0,
+            )
+            for d in r.defenders
+        ],
+        assumptions=r.assumptions,
+    )
 
 
 DISCLAIMER = (
