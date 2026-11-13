@@ -13,7 +13,7 @@ import type {
 } from "../api/types";
 import { MAX_INTERVENTIONS } from "../api/types";
 import { playerLabel, speedOf, teamLabel, titleCase } from "../lib/format";
-import { useAsync } from "../lib/hooks";
+import { matchOfPossession, useAsync } from "../lib/hooks";
 import { finiteDiffSpeed, valueAt } from "../lib/interp";
 import { Playback } from "../lib/playback";
 import { clockAt, eventLabel, indexOfFrame, periodAt } from "../lib/replayIndex";
@@ -40,6 +40,11 @@ interface Props {
 
 export function Lab({ possessionId, match, onBack, initialFrame, initialMoves }: Props) {
   const replay = useAsync<ReplayData>(`replay:${possessionId}`, (signal) => api.possessionReplay(possessionId, signal));
+  // The match clock needs period start frames. Fetch this match's summary directly (milliseconds)
+  // rather than waiting for the full match list, and never show a provider-time clock in its place.
+  const matchId = matchOfPossession(possessionId);
+  const own = useAsync<MatchSummary>(match ? null : `match:${matchId}`, (signal) => api.match(matchId, signal));
+  const summary = match ?? own.data;
   if (replay.status === "error") {
     return (
       <div className="lab lab--status">
@@ -48,7 +53,7 @@ export function Lab({ possessionId, match, onBack, initialFrame, initialMoves }:
       </div>
     );
   }
-  if (!replay.data) {
+  if (!replay.data || (!summary && own.status !== "error")) {
     return (
       <div className="lab lab--status">
         <BackButton onBack={onBack} />
@@ -59,7 +64,7 @@ export function Lab({ possessionId, match, onBack, initialFrame, initialMoves }:
   return (
     <LabView
       replay={replay.data}
-      match={match}
+      match={summary}
       onBack={onBack}
       initialFrame={initialFrame}
       initialMoves={initialMoves}
@@ -457,7 +462,8 @@ function LabView({
       y: v?.y ?? null,
       speed: k >= 0 ? finiteDiffSpeed(replay.xy, replay.nPlayers, replay.nFrames, index, k, replay.step / replay.fps) : null,
       speedSource: "(finite difference of tracking)",
-      positionProv: "observed",
+      // broadcast tracking: off-camera positions are provider extrapolations
+      positionProv: k >= 0 && replay.detected && replay.detected[index * replay.nPlayers + k] === 0 ? "estimated" : "observed",
       velocityProv: "derived",
       isGk: null,
     };
@@ -476,9 +482,19 @@ function LabView({
       );
       parts.push(`${shownAnalysis.pass_options.length} pass options, listed in the pass options table.`);
     }
+    if (replay.detected) {
+      let shown = 0;
+      let est = 0;
+      for (let k = 0; k < replay.nPlayers; k++) {
+        if (!Number.isFinite(replay.xy[(index * replay.nPlayers + k) * 2] as number)) continue;
+        shown++;
+        if (replay.detected[index * replay.nPlayers + k] === 0) est++;
+      }
+      parts.push(`${est} of ${shown} player positions are provider estimates for players outside the broadcast camera view.`);
+    }
     if (scenario) parts.push(`Showing the ${view} view of an edited scenario.`);
     return parts.join(" ");
-  }, [period, clock, playing, shownAnalysis, players, scenario, view]);
+  }, [period, clock, playing, shownAnalysis, players, scenario, view, replay, index]);
 
   const pitchStatus =
     mode === "edit"
@@ -651,6 +667,7 @@ function LabView({
           <Legend
             attackingTeam={shownAnalysis?.attacking_team ?? poss?.team ?? null}
             showHeat={layers.control && !playing}
+            showEstimated={replay.nEstimated > 0}
             showShadow={layers.shadow && !!shadow && shadowAvailable}
             scenarioLayer={mode === "edit"}
             view={scenario ? view : "observed"}

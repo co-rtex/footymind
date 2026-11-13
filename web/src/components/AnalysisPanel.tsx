@@ -146,7 +146,17 @@ export function AnalysisPanel({ playing, status, analysis, error, onRetry, playe
         highlight={highlight}
         onHighlight={onHighlight}
         modelLabel={optionModelLabel(a.option_model)}
+        estimatedIds={new Set(a.players.filter((q) => q.position_provenance === "estimated").map((q) => q.player_id))}
       />
+
+      {a.players.some((q) => q.position_provenance === "estimated" && q.x !== null) ? (
+        <p className="small muted" data-testid="estimated-note">
+          <ProvBadge prov="estimated">est. pos</ProvBadge>{" "}
+          {a.players.filter((q) => q.position_provenance === "estimated" && q.x !== null).length} players are off camera at
+          this frame; their positions are provider extrapolations, so model outputs that use them inherit that
+          uncertainty.
+        </p>
+      ) : null}
 
       <Notices warnings={a.warnings} />
 

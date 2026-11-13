@@ -15,10 +15,11 @@ import type {
 } from "../api/types";
 import type { ReplayData } from "../api/parse";
 import { fitPitch, metresToPx, toCanvasX, toCanvasY, toPitch, type PitchTransform } from "../lib/coords";
-import { sampleXY, type Vec2 } from "../lib/interp";
+import { ESTIMATED, NOT_DRAWN, sampleTrack, sampleXY, segmentEstimated, type Vec2 } from "../lib/interp";
 import { primaryP } from "../lib/models";
 import { shadowHalo, suppressedReceiver } from "../lib/shadow";
 import { drawPitch } from "./pitch";
+import { discStyle, ESTIMATED_TRAIL, styleKindFor } from "./styles";
 import { controlDelta, controlRaster, deltaRaster } from "./heatmap";
 import { DEFAULT_THEME, rgba, type CanvasTheme } from "./theme";
 
@@ -268,10 +269,18 @@ export class PitchRenderer {
     } else {
       const v = this.tmp;
       for (let k = 0; k < r.nPlayers; k++) {
-        if (!sampleXY(r.xy, r.nPlayers, r.nFrames, s.t, k, v, r.period)) continue;
+        const kind = sampleTrack(r.xy, r.nPlayers, r.nFrames, s.t, k, v, r.period, r.detected);
+        if (kind === NOT_DRAWN) continue;
         const pl = r.players[k];
         if (!pl) continue;
-        this.drawn.push({ id: pl.player_id, team: pl.team, jersey: pl.jersey, x: v.x, y: v.y, prov: "observed" });
+        this.drawn.push({
+          id: pl.player_id,
+          team: pl.team,
+          jersey: pl.jersey,
+          x: v.x,
+          y: v.y,
+          prov: kind === ESTIMATED ? "estimated" : "observed",
+        });
       }
       if (sampleXY(r.ball, 1, r.nFrames, s.t, 0, v, r.period)) this.ball = { x: v.x, y: v.y };
     }
@@ -433,28 +442,44 @@ export class PitchRenderer {
       for (let b = 0; b < buckets; b++) {
         const i0 = start + Math.floor(((end - start) * b) / buckets);
         const i1 = start + Math.floor(((end - start) * (b + 1)) / buckets);
-        ctx.beginPath();
+        const obs = new Path2D();
+        const est = new Path2D();
+        let anyEst = false;
         for (let k = 0; k < r.nPlayers; k++) {
           if (r.players[k]?.team !== team) continue;
-          let pen = false;
+          let prevX = NaN;
+          let prevY = NaN;
           for (let i = i0; i <= i1; i++) {
             const o = (i * r.nPlayers + k) * 2;
             const x = r.xy[o] as number;
             const y = r.xy[o + 1] as number;
             const brk = i > 0 && r.period[i] !== r.period[i - 1];
             if (!Number.isFinite(x) || !Number.isFinite(y) || brk) {
-              pen = false;
+              prevX = NaN;
               continue;
             }
             const px = toCanvasX(tf, x);
             const py = toCanvasY(tf, y);
-            if (pen) ctx.lineTo(px, py);
-            else ctx.moveTo(px, py);
-            pen = true;
+            if (Number.isFinite(prevX)) {
+              const path = segmentEstimated(r.detected, r.nPlayers, i, k) ? est : obs;
+              if (path === est) anyEst = true;
+              path.moveTo(prevX, prevY);
+              path.lineTo(px, py);
+            }
+            prevX = px;
+            prevY = py;
           }
         }
-        ctx.strokeStyle = rgba(colour, 0.08 + 0.13 * b);
-        ctx.stroke();
+        const alpha = 0.08 + 0.13 * b;
+        ctx.setLineDash([]);
+        ctx.strokeStyle = rgba(colour, alpha);
+        ctx.stroke(obs);
+        if (anyEst) {
+          ctx.setLineDash(ESTIMATED_TRAIL.dash);
+          ctx.strokeStyle = rgba(colour, alpha * ESTIMATED_TRAIL.alphaScale);
+          ctx.stroke(est);
+          ctx.setLineDash([]);
+        }
       }
     }
     // ball trail
@@ -717,32 +742,42 @@ export class PitchRenderer {
       const x = toCanvasX(tf, p.x);
       const y = toCanvasY(tf, p.y);
       const colour = this.teamColour(p.team);
-      const moved = p.prov === "hypothetical" || p.prov === "simulated";
-      // drop shadow
-      ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+      const st = discStyle(styleKindFor(p.prov));
+      // drop shadow (lighter under hollow estimated discs so they stay hollow)
+      ctx.fillStyle = st.fillAlpha < 0.2 ? "rgba(0, 0, 0, 0.18)" : "rgba(0, 0, 0, 0.35)";
       ctx.beginPath();
       ctx.arc(x + 1, y + 1.5, R, 0, Math.PI * 2);
       ctx.fill();
       ctx.beginPath();
       ctx.arc(x, y, R, 0, Math.PI * 2);
-      if (moved) {
-        ctx.fillStyle = rgba(colour, 0.3);
+      if (st.backingAlpha > 0) {
+        ctx.fillStyle = rgba(this.theme.surround, st.backingAlpha);
         ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = p.prov === "hypothetical" ? this.theme.accent : this.theme.text;
-        ctx.setLineDash(p.prov === "hypothetical" ? [4, 2.5] : [1.2, 2.4]);
-        ctx.lineCap = "round";
-        ctx.stroke();
-        ctx.setLineDash([]);
-      } else {
-        ctx.fillStyle = colour;
-        ctx.fill();
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
-        ctx.stroke();
       }
+      ctx.fillStyle = st.fillAlpha >= 1 ? colour : rgba(colour, st.fillAlpha);
+      ctx.fill();
+      const ringBase =
+        st.ringColour === "team"
+          ? colour
+          : st.ringColour === "accent"
+            ? this.theme.accent
+            : st.ringColour === "text"
+              ? this.theme.text
+              : "#000000";
+      ctx.lineWidth = st.ringWidth;
+      ctx.strokeStyle = rgba(ringBase, st.ringAlpha);
+      ctx.setLineDash(st.dash);
+      ctx.lineCap = st.ring === "dotted" ? "round" : "butt";
+      if (st.ring !== "outline") {
+        // inset the dashed ring so the hollow disc keeps the same footprint
+        ctx.beginPath();
+        ctx.arc(x, y, R - st.ringWidth / 2 + 0.5, 0, Math.PI * 2);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
       if (showNumbers) {
-        ctx.fillStyle = moved ? this.theme.text : this.theme.onTeam;
+        const nc = st.numberColour === "onTeam" ? this.theme.onTeam : st.numberColour === "team" ? colour : this.theme.text;
+        ctx.fillStyle = rgba(nc, st.numberAlpha);
         ctx.fillText(String(p.jersey), x, y + 0.5);
       }
       if (carrierId === p.id) {
