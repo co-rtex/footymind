@@ -164,7 +164,10 @@ def load_default(match_id: str | None = None) -> OptionModel | None:
     Returns None if that provider's model has not been trained yet. Callers then fall back
     to the physics heuristic and say so.
     """
-    resource = resource_for(provider_of(match_id) if match_id else "metrica")
+    provider = provider_of(match_id) if match_id else "metrica"
+    if provider not in PROVIDER_RESOURCES:
+        return None  # no model for this provider: callers fall back to the physics heuristic
+    resource = PROVIDER_RESOURCES[provider]
     if resource not in _CACHE:
         try:
             text = resources.files("footymind.spatial").joinpath(resource).read_text()

@@ -33,6 +33,8 @@ cd web && npm ci && npm run dev           # frontend on :5173 (proxies /api to t
 - Work on feature branches. Never push to `main`. Commits are authored as the repository
   owner (Christian Cortez). Commit messages describe the engineering change only, with no
   AI/assistant attribution or co-author trailers.
+- Run `scripts/check.sh` before committing and gate on its **exit code** (never pipe it through
+  `grep`/`tail` in an `&&` chain: that masks failures; it happened once on 2026-11-13).
 - Run lint, types and tests before committing. Re-run experiments from a clean revision
   before committing their results (the runner records `code_revision`).
 
