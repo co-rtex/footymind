@@ -78,6 +78,9 @@ ASSUMPTIONS = [
     "All other players stay at their observed positions; no response is simulated.",
     "Option values come from the selected value model and extrapolate to unchosen options.",
     "This is a model-based estimate, not a validated defensive rating or a causal effect.",
+    "Goalkeepers are excluded (they handle the ball, so ring displacement is not meaningful).",
+    "A negative shadow means the observed position suppresses less passing value than the "
+    "nearby alternatives on average.",
 ]
 
 
@@ -160,6 +163,8 @@ def shadow_for_state(
                 gains.setdefault(rid, []).append(v - base.get(rid, v))
         mean_gain = {rid: float(np.mean(g)) for rid, g in gains.items()}
         top = max(mean_gain, key=lambda r: mean_gain[r]) if mean_gain else None
+        if top is not None and mean_gain[top] < 5e-4:
+            top = None  # no meaningful gain when the defender moves away: nothing suppressed
         out.append(
             DefenderShadow(
                 player_id=st.player_ids[d],
@@ -170,7 +175,7 @@ def shadow_for_state(
                 alternatives=alts,
                 alt_radius_m=radius,
                 most_suppressed_receiver=top,
-                most_suppressed_delta=mean_gain[top] if top else 0.0,
+                most_suppressed_delta=mean_gain[top] if top is not None else 0.0,
             )
         )
     out.sort(key=lambda s: -s.shadow_sum)

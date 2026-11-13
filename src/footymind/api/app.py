@@ -437,6 +437,9 @@ def frame_defensive_shadow(
             for d in r.defenders
         ],
         assumptions=r.assumptions,
+        noise_floor=SHADOW_NOISE_FLOOR,
+        horizon_s=horizon_s,
+        alt_radius_m=r.defenders[0].alt_radius_m if r.defenders else 0.0,
     )
 
 

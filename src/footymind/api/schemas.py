@@ -312,4 +312,10 @@ class DefensiveShadowOut(BaseModel):
     v_sum_observed: float
     defenders: list[DefenderShadowOut]
     assumptions: list[str]
-    status: str = "experimental: model-based, not validated against outcomes"
+    noise_floor: float = Field(description="|shadow_sum| below this is within tracking noise")
+    horizon_s: float
+    alt_radius_m: float
+    status: str = (
+        "experimental: partly validated (2x chance at ranking the eventual interceptor, but not "
+        "better than nearest-defender; docs/RESEARCH.md). Not a defender rating."
+    )

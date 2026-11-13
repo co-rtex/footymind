@@ -99,5 +99,9 @@ def test_shadow_endpoint() -> None:
     j = r.json()
     assert j["defenders"] and all(d["provenance"] == "estimated" for d in j["defenders"])
     assert len(j["defenders"][0]["alternatives"]) == 8
-    assert "experimental" in j["status"]
+    assert "experimental" in j["status"] and "not better than nearest-defender" in j["status"]
+    assert j["noise_floor"] == 0.025 and j["horizon_s"] == 1.0 and j["alt_radius_m"] == 3.5
+    for d in j["defenders"]:
+        if d["most_suppressed_receiver"] is not None:
+            assert d["most_suppressed_delta"] > 0
     assert all(isinstance(d["distinguishable_from_noise"], bool) for d in j["defenders"])
