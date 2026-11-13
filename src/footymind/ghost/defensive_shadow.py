@@ -9,10 +9,12 @@ value under a value model (by default the calibrated option model):
 * ``V_sum(s)``: the sum of success probabilities over options (the "expected number of
   completable options").
 
-For defender ``d``, sample alternative positions ``a_k`` that are physically plausible:
-points on a ring around the defender's observed position, at a fraction of the radius
-they could have covered in ``horizon_s`` (from where they were ``horizon_s`` earlier),
-clipped to the pitch. The defensive shadow is
+For defender ``d``, sample alternative positions ``a_k``: ``n_directions`` points on a ring
+centred on the defender's *current* observed position, with radius
+``ring_fraction * 7 m/s * horizon_s`` (3.5 m by default), clipped to the pitch. The radius
+is a plausible-displacement scale. Unlike the scenario engine, the alternatives are **not**
+checked against where the defender actually was ``horizon_s`` earlier. The defensive
+shadow is
 
     shadow_best(d) = mean_k V_best(s with d at a_k) - V_best(s observed)
 

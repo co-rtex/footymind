@@ -241,6 +241,7 @@ class FeasibilityOut(BaseModel):
     min_separation_m: float
     supported: bool
     notes: list[str]
+    kind: Literal["user", "simulated"] = "user"
 
 
 class MovementOut(BaseModel):

@@ -180,3 +180,37 @@ def test_ensemble_samples_option_model_uncertainty(pass_frame: tuple[int, str, s
     rid = next(iter(point))
     vals = [m[rid] for m in members]
     assert max(vals) - min(vals) > 1e-4  # same physics params, different coefficients
+
+
+def test_two_players_moved_onto_same_spot_is_unsupported(pass_frame: tuple[int, str, str]) -> None:
+    """Review finding #6: separation is checked on the final hypothetical state."""
+    f, _, _ = pass_frame
+    s = frame_state(MID, f)
+    defs = [i for i, t in enumerate(s.teams) if t != s.attacking_team and not np.isnan(s.xy[i, 0])]
+    a, b = defs[1], defs[2]
+    mid = (s.xy[a] + s.xy[b]) / 2
+    r = run_scenario(
+        MID,
+        f,
+        [Intervention(s.player_ids[a], *mid), Intervention(s.player_ids[b], *mid)],
+        ensemble=0,
+    )
+    assert all(fz.min_separation_m < 0.5 for fz in r.feasibility)
+    assert not r.supported
+
+
+def test_simulated_moves_are_feasibility_checked(pass_frame: tuple[int, str, str]) -> None:
+    f, _, receiver = pass_frame
+    s = frame_state(MID, f)
+    i = s.index(receiver)
+    r = run_scenario(
+        MID,
+        f,
+        [Intervention(receiver, s.xy[i, 0] + 3.0, s.xy[i, 1])],
+        policy="marker_follows",
+        ensemble=0,
+    )
+    sim_moves = [m for m in r.movements if m.provenance.value == "simulated"]
+    sim_feas = [fz for fz in r.feasibility if fz.kind == "simulated"]
+    assert len(sim_feas) == len(sim_moves)
+    assert {fz.player_id for fz in sim_feas} == {m.player_id for m in sim_moves}

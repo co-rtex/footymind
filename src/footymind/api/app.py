@@ -484,6 +484,7 @@ def scenario(req: S.ScenarioRequest) -> S.ScenarioResponse:
                 inside_pitch=f.inside_pitch,
                 min_separation_m=round(f.min_separation_m, 2),
                 supported=f.supported,
+                kind=f.kind,  # type: ignore[arg-type]
                 notes=f.notes,
             )
             for f in r.feasibility
