@@ -26,7 +26,7 @@ serve. There is no database server, cache, queue or microservice. ADR-0001 expla
 | `data.sources` | Registry of remote files with pinned SHA-256; verified downloader | done (Metrica 1–3 registered) |
 | `tracking.model` | `TrackingData`, `PlayerInfo`, `PitchSpec`, `Provenance` | done |
 | `tracking.coords` | Provider ↔ canonical transforms; attacking-frame rotation | done |
-| `tracking.metrica` | Metrica CSV adapter (games 1–2) | done; EPTS game 3 not yet |
+| `tracking.metrica`, `tracking.metrica_epts` | Metrica CSV (games 1–2) and EPTS/JSON (game 3) adapters | done |
 | `tracking.kinematics` | causal / centred velocity; implausible-motion flags | done |
 | `tracking.possessions` | event-based possession segmentation | done (v1 rules) |
 | `data.quality` | quality report and ingestion gates (sync, ids, frames) | done |
@@ -34,7 +34,8 @@ serve. There is no database server, cache, queue or microservice. ADR-0001 expla
 | `spatial.state` | `FrameState` at a frame: velocities, GK, possession team, carrier | done |
 | `spatial.pitch_control` | PPCF time-to-intercept model (Spearman 2018) | done, uncalibrated |
 | `spatial.lanes` | lane geometry + heuristic interception | done, uncalibrated |
-| `spatial.analysis` | frame analysis: control grid, pass options, pressure | done |
+| `spatial.option_features`, `spatial.option_model` | shared per-option features; JSON-serialised calibrated option model | done (v1) |
+| `spatial.analysis` | frame analysis: control grid, pass options (physics + option model), pressure | done |
 | `counterfactual.scenario` | constrained interventions, response rule, parameter ensemble | done (v1) |
 | `research.*` | pass-outcome dataset, model families, LOMO evaluation, runner | done (v1) |
 | `api.app`, `api.schemas` | HTTP contract | done |

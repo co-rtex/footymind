@@ -142,6 +142,30 @@ leakage-audited replication on public data. Its additional contributions are the
 decomposition into teammate geometry vs. defender-only signal and the calibration audit of
 a literature physics model.
 
+## Option model (serving model for pass options)
+
+**Purpose.** The scenario engine needs a success probability for *any* receiver, including
+options that were never chosen and hypothetical states. Model B cannot provide one, because
+its strongest feature (the release direction's alignment with a teammate) is undefined for
+unchosen options. The option model is a logistic regression on per-option features computable
+for any target: ball and target location, distance, forward progress, PPCF at the target, lane
+clearance, margin and perpendicular distance, defenders near the lane, pressure on the passer,
+the target's nearest-defender distance, pass forwardness and receiver movement along the pass.
+Training uses the inferred candidate receiver. The features come from the same function used in
+serving (`spatial/option_features.py`), and a test asserts equality on real frames.
+
+**Iteration log (honest).** v0 had 15 features: LOMO log loss 0.428, AUC 0.780, ECE 0.019.
+After that evaluation, 3 domain-motivated features were added once (marking distance at the
+target, forwardness, receiver movement along the pass). v1: **LOMO log loss 0.422, AUC 0.789,
+ECE 0.017** (3 matches, 3,633 passes). No further iterations were made.
+
+**Interpretation.** The option model is well calibrated, and it is better than the physics
+estimate, raw (0.772) or recalibrated (0.456). Its discrimination is similar to the
+event-only baseline and below Model B (0.358). This is expected, because B exploits
+the executed release direction. It is the best *option-agnostic* estimate currently available,
+and the API reports it next to the physics heuristic with its held-out metrics and the
+selection-bias caveat.
+
 ## Prior art and references
 * Spearman, W., Basye, A., Dick, G., Hotovy, R., Pop, P. (2017). *Physics-Based Modeling of Pass Probabilities in Soccer.* MIT Sloan Sports Analytics Conference.
 * Spearman, W. (2018). *Beyond Expected Goals.* MIT Sloan SAC. (Pitch control; off-ball scoring opportunity.)
@@ -164,6 +188,7 @@ a literature physics model.
   (displacement sensitivity of option value per defender); off-ball valuation (Ghost Value).
 
 ## Log
+* **2026-11-13**: Option model v1 trained (LOMO log loss 0.422, AUC 0.789, ECE 0.017). It is now the default value model in scenarios.
 * **2026-11-13**: Added the Metrica Game 3 EPTS adapter (direction cross-checked against the
   provider metadata). RQ1 v2 with 3 folds confirms v1 in every fold.
 * **2026-11-13**: Legacy audit (v1 predictor had no generalization evidence). Metrica

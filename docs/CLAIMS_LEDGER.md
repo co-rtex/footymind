@@ -22,6 +22,7 @@ Data: Metrica Sports sample data, Games 1–2, with files pinned by SHA-256 in
 | C11 | With three matches (3,633 passes), spatial features reduce held-out log loss from 0.429 to 0.358 (LR; Δ −0.071 [−0.085, −0.057]); the improvement holds in each of the 3 test folds, including the Game 3 transfer fold (0.422 → 0.364) | `experiments/results/pass_outcome_v2_3match/results.json` | LOMO (3 folds), same protocol | Game 3 uses a different annotation scheme (CARRY events); one provider | confirmed |
 | C12 | Defender-only information: Δ log loss −0.014 [−0.021, −0.008] (3 matches); C vs B GBM −0.002 [−0.006, +0.003] (no gain) | same | same | same | confirmed |
 | C13 | Game 3 EPTS ingestion: the inferred attacking direction matches the provider-declared direction, and the passer–ball sync median is 0.065 m | ingestion manifest; `metrica_epts.load_tracking` raises on contradiction | — | — | confirmed |
+| C14 | Option model v1 (serving): held-out (LOMO, 3 matches) log loss 0.422, AUC 0.789, ECE 0.017; v0 (15 features) was 0.428 / 0.780 / 0.019 | `src/footymind/spatial/option_model_v1.json` (meta.lomo_pooled, code_revision 0d32b0a) | `footymind train-option-model` | Trained on inferred receivers; extrapolates to unchosen options (selection bias) | confirmed |
 | C10 | Frame analysis latency is about 70 ms warm; a scenario with a 24-member ensemble takes about 0.3 s; possession replay takes 29 ms | manual timing on the development container (4 vCPU) | single measurements | Not a benchmark suite; hardware-dependent | indicative only |
 
 ## Not claimed
