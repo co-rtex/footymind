@@ -85,6 +85,8 @@ pooled. The receiver inference reaches 72.4% top-1.
    evidence for a graph model.
 5. The literature physics estimate is again badly calibrated.
 
+![Cross-provider replication](figures/replication_v1.png)
+
 Caveats: one season of one league. Provider annotations differ (SkillCorner pass outcomes vs
 Metrica event types). Many SkillCorner player positions are extrapolations; the passer is
 detected at about 95% of releases, but other players often are not.

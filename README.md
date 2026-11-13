@@ -50,7 +50,7 @@ Metrica (3 matches, optical, 25 Hz) and SkillCorner (20 A-League matches, broadc
   misspecified. The experimental *Defensive Shadow* metric is robust to tracking noise and
   finds interceptors at 2× chance, but it is **not** better than "nearest defender".
 
-![Which information improves pass-outcome prediction](docs/figures/ablation_v3.png)
+![Cross-provider replication of the main effects](docs/figures/replication_v1.png)
 
 These results are consistent with established findings (Power et al. 2017; Anzer & Bauer 2022)
 on open data, with an explicit leakage audit and a cross-provider replication. They are not a
