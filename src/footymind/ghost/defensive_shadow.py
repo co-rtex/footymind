@@ -9,10 +9,12 @@ value under a value model (by default the calibrated option model):
 * ``V_sum(s)``: the sum of success probabilities over options (the "expected number of
   completable options").
 
-For defender ``d``, sample alternative positions ``a_k`` that are physically plausible:
-points on a ring around the defender's observed position, at a fraction of the radius
-they could have covered in ``horizon_s`` (from where they were ``horizon_s`` earlier),
-clipped to the pitch. The defensive shadow is
+For defender ``d``, sample alternative positions ``a_k``: ``n_directions`` points on a ring
+centred on the defender's *current* observed position, with radius
+``ring_fraction * 7 m/s * horizon_s`` (3.5 m by default), clipped to the pitch. The radius
+is a plausible-displacement scale. Unlike the scenario engine, the alternatives are **not**
+checked against where the defender actually was ``horizon_s`` earlier. The defensive
+shadow is
 
     shadow_best(d) = mean_k V_best(s with d at a_k) - V_best(s observed)
 
@@ -76,6 +78,9 @@ ASSUMPTIONS = [
     "All other players stay at their observed positions; no response is simulated.",
     "Option values come from the selected value model and extrapolate to unchosen options.",
     "This is a model-based estimate, not a validated defensive rating or a causal effect.",
+    "Goalkeepers are excluded (they handle the ball, so ring displacement is not meaningful).",
+    "A negative shadow means the observed position suppresses less passing value than the "
+    "nearby alternatives on average.",
 ]
 
 
@@ -158,6 +163,8 @@ def shadow_for_state(
                 gains.setdefault(rid, []).append(v - base.get(rid, v))
         mean_gain = {rid: float(np.mean(g)) for rid, g in gains.items()}
         top = max(mean_gain, key=lambda r: mean_gain[r]) if mean_gain else None
+        if top is not None and mean_gain[top] < 5e-4:
+            top = None  # no meaningful gain when the defender moves away: nothing suppressed
         out.append(
             DefenderShadow(
                 player_id=st.player_ids[d],
@@ -168,7 +175,7 @@ def shadow_for_state(
                 alternatives=alts,
                 alt_radius_m=radius,
                 most_suppressed_receiver=top,
-                most_suppressed_delta=mean_gain[top] if top else 0.0,
+                most_suppressed_delta=mean_gain[top] if top is not None else 0.0,
             )
         )
     out.sort(key=lambda s: -s.shadow_sum)

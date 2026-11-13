@@ -68,6 +68,7 @@ class Feasibility:
     inside_pitch: bool
     min_separation_m: float
     notes: list[str] = field(default_factory=list)
+    kind: str = "user"  # "user" (hypothetical) or "simulated" (response-policy move)
 
     @property
     def supported(self) -> bool:
@@ -118,7 +119,12 @@ ASSUMPTIONS = [
     "current position (no lead passes, no ball height).",
     "Reachability uses a straight-line run at <= 7 m/s from the player's observed "
     "position horizon_s earlier and ignores acceleration limits and fatigue.",
-    "Opponent response policies are simple rules, not learned behaviour models.",
+    "Opponent response policies are simple rules, not learned behaviour models; moves made by "
+    "a policy are checked for reachability, pitch bounds and separation like user moves.",
+    "Uncertainty ranges: with the option model they reflect its estimation uncertainty "
+    "(possession-clustered coefficient bootstrap) at default physics inputs; with the physics "
+    "heuristic they reflect a plausible range of its parameters. Neither covers behavioural "
+    "responses that were not simulated.",
     "Comparisons are model-based counterfactuals. They do not identify causal effects of "
     "the intervention on the real match.",
 ]
@@ -132,8 +138,18 @@ OPTION_MODEL_ASSUMPTION = (
 
 
 def check_feasibility(
-    match_id: str, state: FrameState, iv: Intervention, horizon_s: float
+    match_id: str,
+    state: FrameState,
+    iv: Intervention,
+    horizon_s: float,
+    final_state: FrameState | None = None,
+    kind: str = "user",
 ) -> Feasibility:
+    """Reachability, pitch bounds and separation for one relocated player.
+
+    Separation is measured against ``final_state`` (all user and simulated moves applied)
+    when given, so two players moved onto the same spot are detected.
+    """
     td = load_match(match_id).tracking
     i = state.index(iv.player_id)
     cur = state.xy[i]
@@ -158,10 +174,11 @@ def check_feasibility(
         abs(iv.x) <= td.pitch.half_length + PITCH_MARGIN_M
         and abs(iv.y) <= td.pitch.half_width + PITCH_MARGIN_M
     )
-    others = np.delete(state.xy, i, axis=0)
+    ref = final_state if final_state is not None else state
+    others = np.delete(ref.xy, i, axis=0)
     d_others = np.linalg.norm(others - new[None, :], axis=1)
     sep = float(np.nanmin(d_others)) if np.isfinite(d_others).any() else float("inf")
-    return Feasibility(iv.player_id, disp, radius, reachable, origin, inside, sep, notes)
+    return Feasibility(iv.player_id, disp, radius, reachable, origin, inside, sep, notes, kind)
 
 
 def _apply(
@@ -174,6 +191,7 @@ def _apply(
     hyp = state.copy()
     moves: list[Movement] = []
     moved_ids = {iv.player_id for iv in interventions}
+    shifted: set[str] = set()
     for iv in interventions:
         i = hyp.index(iv.player_id)
         frm = (float(hyp.xy[i, 0]), float(hyp.xy[i, 1]))
@@ -195,8 +213,8 @@ def _apply(
             if state.teams[i] != state.attacking_team:
                 continue
             opp = ~state.team_mask(state.teams[i]) & state.on_pitch()
-            for mid in moved_ids:
-                opp[state.index(mid)] = False
+            for mid in moved_ids | shifted:
+                opp[state.index(mid)] = False  # never shift a player twice
             if not opp.any() or np.isnan(state.xy[i]).any():
                 continue
             d = np.linalg.norm(state.xy - state.xy[i][None, :], axis=1)
@@ -208,6 +226,7 @@ def _apply(
             frm = (float(hyp.xy[j, 0]), float(hyp.xy[j, 1]))
             hyp.xy[j] = hyp.xy[j] + shift
             hyp.position_provenance[j] = Provenance.SIMULATED
+            shifted.add(state.player_ids[j])
             moves.append(
                 Movement(
                     state.player_ids[j],
@@ -252,8 +271,24 @@ def run_scenario(
             raise KeyError(iv.player_id)
         if np.isnan(observed_state.xy[observed_state.index(iv.player_id)]).any():
             raise ValueError(f"{iv.player_id} is not on the pitch at frame {frame}")
-    feas = [check_feasibility(match_id, observed_state, iv, horizon_s) for iv in interventions]
     hyp_state, moves = _apply(observed_state, interventions, policy, follow_fraction, velocity_mode)
+    feas = [
+        check_feasibility(match_id, observed_state, iv, horizon_s, final_state=hyp_state)
+        for iv in interventions
+    ]
+    # Moves made by the response policy must be physically plausible too.
+    feas += [
+        check_feasibility(
+            match_id,
+            observed_state,
+            Intervention(m.player_id, m.to_xy[0], m.to_xy[1]),
+            horizon_s,
+            final_state=hyp_state,
+            kind="simulated",
+        )
+        for m in moves
+        if m.provenance == Provenance.SIMULATED
+    ]
 
     obs_a = analyze(observed_state, DEFAULT_PARAMS, DEFAULT_GRID)
     hyp_a = analyze(hyp_state, DEFAULT_PARAMS, DEFAULT_GRID)
@@ -269,7 +304,13 @@ def run_scenario(
     hyp_ens: dict[str, list[float]] = {}
     # Each ensemble member pairs one pitch-control parameter draw with one option-model
     # bootstrap member, so both model-parameter and estimation uncertainty are sampled.
+    # Option model: sample its estimation uncertainty (coefficient bootstrap) with the physics
+    # inputs at the parameters it was trained with. Perturbing the physics parameters would feed
+    # it out-of-distribution features (independent review). Physics value model: sample the
+    # physics-parameter ensemble.
     for member, p in enumerate(params_list):
+        if value_model == "option_model":
+            p = DEFAULT_PARAMS
         for o in analyze(observed_state, p, grid=None, model_member=member).pass_options:
             obs_ens.setdefault(o.receiver_id, []).append(val(o))
         for o in analyze(hyp_state, p, grid=None, model_member=member).pass_options:
@@ -315,18 +356,17 @@ def run_scenario(
 
     warnings = list(dict.fromkeys(obs_a.warnings + hyp_a.warnings))
     for f in feas:
+        who = f"{f.player_id} (simulated response)" if f.kind == "simulated" else f.player_id
         if not f.reachable:
             warnings.append(
-                f"{f.player_id}: target is outside the region reachable in {horizon_s:.1f}s "
+                f"{who}: target is outside the region reachable in {horizon_s:.1f}s "
                 f"at {REACH_SPEED_MPS:.0f} m/s; scenario is physically unsupported"
             )
         if not f.inside_pitch:
-            warnings.append(f"{f.player_id}: target is outside the pitch")
+            warnings.append(f"{who}: target is outside the pitch")
         if f.min_separation_m < MIN_SEPARATION_M:
-            warnings.append(
-                f"{f.player_id}: target overlaps another player ({f.min_separation_m:.2f} m)"
-            )
-        warnings.extend(f"{f.player_id}: {n}" for n in f.notes)
+            warnings.append(f"{who}: target overlaps another player ({f.min_separation_m:.2f} m)")
+        warnings.extend(f"{who}: {n}" for n in f.notes)
     unstable = [
         d.receiver_id
         for d in deltas
