@@ -111,6 +111,14 @@ class Replay(BaseModel):
     time_s: list[float]
     period: list[int]
     players_xy: list[float | None]
+    players_detected: list[bool] | None = Field(
+        None,
+        description=(
+            "length n_frames * n_players, row-major [frame][player]; false where the provider "
+            "extrapolated a position outside the camera view (provenance 'estimated'); null "
+            "when every non-null position is observed (optical tracking)"
+        ),
+    )
     ball_xy: list[float | None]
     events: list[EventOut]
     possession: PossessionSummary | None
