@@ -225,3 +225,15 @@ def test_match_list_is_fast_and_does_not_load_tracking(client: TestClient) -> No
     r = client.get("/api/matches")
     assert r.status_code == 200 and len(r.json()) >= 1
     assert time.perf_counter() - t0 < 0.5
+
+
+def test_period_time_starts_at_zero_each_period(client: TestClient) -> None:
+    td = load_match(MID).tracking
+    p2_first = int(td.frame[np.argmax(td.period == 2)])
+    r = client.get(
+        f"/api/matches/{MID}/replay", params={"start_frame": p2_first, "end_frame": p2_first + 50}
+    ).json()
+    assert r["period_time_s"][0] == pytest.approx(0.0)
+    assert r["period_time_s"][-1] == pytest.approx(2.0, abs=0.05)
+    a = client.get(f"/api/matches/{MID}/frames/{p2_first + 25}/analysis").json()
+    assert a["period_time_s"] == pytest.approx(1.0, abs=0.05)
