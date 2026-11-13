@@ -41,7 +41,7 @@ def run_from_config(path: str | Path) -> dict[str, Any]:
     df = build(cfg["matches"], ds_cfg)
     for flt in cfg.get("filters", []):
         if flt == "exclude_truncated_release":
-            df = df.filter(pl.col("release_window_frames") == 3)
+            df = df.filter(pl.col("release_truncated") == 0)
         elif flt == "exclude_after_own_carry":
             df = df.filter(pl.col("after_own_carry") == 0)
         else:
@@ -72,7 +72,7 @@ def run_from_config(path: str | Path) -> dict[str, Any]:
             for m in cfg["matches"]
         },
         "by_label_source": dict(df.group_by("label_source").len().sort("label_source").iter_rows()),
-        "n_truncated_release": int((df["release_window_frames"] < 3).sum()),
+        "n_truncated_release": int(df["release_truncated"].sum()),
         "receiver_inference": inferred_receiver_accuracy(df),
     }
     result = {

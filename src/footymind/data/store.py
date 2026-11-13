@@ -29,7 +29,7 @@ import polars as pl
 from footymind.data import sources
 from footymind.data.quality import validate
 from footymind.paths import PROCESSED_DIR, RAW_DIR, REPO_ROOT
-from footymind.tracking import metrica, metrica_epts
+from footymind.tracking import metrica, metrica_epts, skillcorner
 from footymind.tracking.model import DatasetProvenance, PitchSpec, PlayerInfo, TrackingData
 from footymind.tracking.possessions import assign_possessions
 
@@ -58,14 +58,32 @@ def ingest(match_id: str, raw_root: Path = RAW_DIR, out_root: Path = PROCESSED_D
     hashes = sources.verify(src, raw_root)
     d = src.local_dir(raw_root)
     game = match_id.rsplit("-", 1)[-1]
-    prov = DatasetProvenance(
-        provider="metrica",
-        source_name=f"Metrica Sports Sample Game {game}",
-        source_url="https://github.com/metrica-sports/sample-data",
-        license_note=sources.METRICA_LICENSE_NOTE,
-        files=hashes,
-    )
-    if src.fmt == "metrica_csv":
+    sync_gate = 1.5
+    if src.provider == "skillcorner":
+        prov = DatasetProvenance(
+            provider="skillcorner",
+            source_name=f"SkillCorner open data, A-League 2024/25 match {game}",
+            source_url="https://github.com/SkillCorner/opendata",
+            license_note=sources.SKILLCORNER_LICENSE_NOTE,
+            files=hashes,
+        )
+    else:
+        prov = DatasetProvenance(
+            provider="metrica",
+            source_name=f"Metrica Sports Sample Game {game}",
+            source_url="https://github.com/metrica-sports/sample-data",
+            license_note=sources.METRICA_LICENSE_NOTE,
+            files=hashes,
+        )
+    if src.fmt == "skillcorner":
+        td, sc_meta = skillcorner.load_tracking(
+            match_id, d / f"{game}_tracking_extrapolated.jsonl", d / f"{game}_match.json", prov
+        )
+        events = skillcorner.load_events(d / f"{game}_dynamic_events.csv", sc_meta, td)
+        # Broadcast tracking at 10 fps: the release frame catches a ball already leaving
+        # the foot, so the sync gate is wider than for 25 Hz optical tracking.
+        sync_gate = 2.5
+    elif src.fmt == "metrica_csv":
         td = metrica.load_tracking(
             match_id,
             d / f"Sample_Game_{game}_RawTrackingData_Home_Team.csv",
@@ -83,19 +101,21 @@ def ingest(match_id: str, raw_root: Path = RAW_DIR, out_root: Path = PROCESSED_D
         events = metrica_epts.load_events(d / f"Sample_Game_{game}_events.json", meta)
     else:
         raise NotImplementedError(f"format {src.fmt}")
-    report = validate(td, events)
+    report = validate(td, events, sync_gate)
     events, possessions = assign_possessions(events, match_id)
 
     out = out_root / match_id
     out.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(
-        out / "tracking.npz",
-        frame=td.frame,
-        period=td.period,
-        time_s=td.time_s,
-        xy=td.xy,
-        ball_xy=td.ball_xy,
-    )
+    arrays: dict[str, np.ndarray] = {
+        "frame": td.frame,
+        "period": td.period,
+        "time_s": td.time_s,
+        "xy": td.xy,
+        "ball_xy": td.ball_xy,
+    }
+    if td.detected is not None:
+        arrays["detected"] = td.detected
+    np.savez_compressed(out / "tracking.npz", **arrays)  # type: ignore[arg-type]
     pl.DataFrame([asdict(p) for p in td.players]).write_parquet(out / "players.parquet")
     events.write_parquet(out / "events.parquet")
     possessions.write_parquet(out / "possessions.parquet")
@@ -146,6 +166,7 @@ def load_match(match_id: str, root: Path = PROCESSED_DIR) -> MatchBundle:
         ball_xy=z["ball_xy"],
         home_attacks_positive_x={int(k): v for k, v in manifest["home_attacks_positive_x"].items()},
         provenance=prov,
+        detected=z["detected"] if "detected" in z.files else None,
     )
     return MatchBundle(
         tracking=td,

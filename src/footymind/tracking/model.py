@@ -102,6 +102,10 @@ class TrackingData:
     ball_xy: FloatArray  # (T, 2) metres, NaN when not observed
     home_attacks_positive_x: dict[int, bool]
     provenance: DatasetProvenance | None = None
+    # (T, P) True where the provider *detected* the player. Broadcast tracking (SkillCorner)
+    # also reports extrapolated positions for players outside the camera view; those are
+    # estimates, not observations. None means all non-NaN positions are observed (Metrica).
+    detected: npt.NDArray[np.bool_] | None = None
     _frame_index: dict[int, int] = field(default_factory=dict, repr=False)
 
     def __post_init__(self) -> None:

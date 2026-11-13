@@ -106,14 +106,18 @@ def event_sync_quality(td: TrackingData, events: pl.DataFrame) -> dict[str, Any]
     }
 
 
-def validate(td: TrackingData, events: pl.DataFrame) -> dict[str, Any]:
+def validate(
+    td: TrackingData,
+    events: pl.DataFrame,
+    max_median_passer_ball_m: float = MAX_MEDIAN_PASSER_BALL_DIST_M,
+) -> dict[str, Any]:
     tq = tracking_quality(td)
     sq = event_sync_quality(td, events)
     med = sq["passer_to_ball_at_start_m"]["median"]
-    if med is None or med > MAX_MEDIAN_PASSER_BALL_DIST_M:
+    if med is None or med > max_median_passer_ball_m:
         raise DataQualityError(
             f"{td.match_id}: median passer-ball distance {med} m exceeds "
-            f"{MAX_MEDIAN_PASSER_BALL_DIST_M} m; event/tracking sync is broken"
+            f"{max_median_passer_ball_m} m; event/tracking sync is broken"
         )
     unknown = set(events["from_player_id"].drop_nulls().to_list()) - {
         p.player_id for p in td.players
@@ -124,6 +128,10 @@ def validate(td: TrackingData, events: pl.DataFrame) -> dict[str, Any]:
     missing = [f for f in events["start_frame"].to_list() if f not in frames]
     if missing:
         raise DataQualityError(f"{td.match_id}: {len(missing)} events reference missing frames")
+    if td.detected is not None:
+        tq["detected_fraction_of_present"] = _r(
+            float(td.detected.sum()) / max(1, int((~np.isnan(td.xy[..., 0])).sum()))
+        )
     return {
         "tracking": tq,
         "event_sync": sq,

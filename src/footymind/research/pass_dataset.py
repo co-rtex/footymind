@@ -20,7 +20,7 @@ Features use only:
 * tracking at the event ``start_frame`` (positions) and causal velocities
   (backward 0.2 s window), and
 * the *action* itself: the ball's release direction and speed, estimated
-  over at most ``RELEASE_WINDOW_FRAMES`` frames after the start frame and
+  over at most ``RELEASE_WINDOW_S`` seconds after the start frame and
   truncated so the window never reaches the outcome frame (``end_frame``),
 * event history strictly before the pass.
 
@@ -51,7 +51,7 @@ from footymind.spatial.pitch_control import DEFAULT_PARAMS, pitch_control
 from footymind.spatial.state import frame_state
 from footymind.tracking.model import TrackingData
 
-RELEASE_WINDOW_FRAMES = 3  # 0.12 s at 25 Hz
+RELEASE_WINDOW_S = 0.12  # 3 frames at 25 Hz (Metrica), 1 frame at 10 Hz (SkillCorner)
 
 # Label rules are token-based: a subtype such as "CROSS-INTERCEPTION" (CSV) or
 # ["CROSS", "INTERCEPTION"] (JSON) qualifies if all of its tokens are allowed. A
@@ -296,7 +296,8 @@ def _features_for(
 ) -> dict[str, object] | None:
     f0 = int(r["start_frame"])
     i0 = td.index_of_frame(f0)
-    k = RELEASE_WINDOW_FRAMES
+    k_full = max(1, round(RELEASE_WINDOW_S * td.fps))
+    k = k_full
     if cfg.rules == "v2" and r["end_frame"] is not None and int(r["end_frame"]) - f0 < 2:
         return None  # resolved before a pre-outcome release window exists
     if r["end_frame"] is not None:
@@ -321,12 +322,13 @@ def _features_for(
     # attacking frame (team attacks +x)
     bx, by = ball * sign
     d_dir = rel * sign  # release direction in attacking frame
-    goal = np.array([52.5, 0.0])
+    gx = td.pitch.half_length
+    goal = np.array([gx, 0.0])
     to_goal = goal - np.array([bx, by])
     dist_goal = float(np.linalg.norm(to_goal))
     # opening angle of the goal mouth (7.32 m) from the ball
-    a1 = np.arctan2(3.66 - by, 52.5 - bx)
-    a2 = np.arctan2(-3.66 - by, 52.5 - bx)
+    a1 = np.arctan2(3.66 - by, gx - bx)
+    a2 = np.arctan2(-3.66 - by, gx - bx)
     st = (r["subtype"] or "").upper()
     restart_v2 = False
     if cfg.rules == "v2":
@@ -355,6 +357,7 @@ def _features_for(
         "success": int(r["success"]),
         "label_source": r["label_source"],
         "release_window_frames": k,
+        "release_truncated": int(k < k_full),
         "after_own_carry": int(r["prev_raw_type"] == "CARRY" and bool(r["prev_raw_same_player"])),
         "ball_x_att": float(bx),
         "ball_y_abs": float(abs(by)),

@@ -164,6 +164,10 @@ def frame_state(match_id: str, frame: int) -> FrameState:
         possession_id=pid,
         carrier=carrier,
         attack_sign=td.attack_sign(team, period) if team else 1,
-        position_provenance=[Provenance.OBSERVED] * len(td.players),
+        position_provenance=(
+            [Provenance.OBSERVED] * len(td.players)
+            if td.detected is None
+            else [Provenance.OBSERVED if bool(d) else Provenance.ESTIMATED for d in td.detected[i]]
+        ),
         velocity_provenance=vprov,
     )
