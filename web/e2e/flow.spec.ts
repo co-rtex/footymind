@@ -146,3 +146,45 @@ test("defensive shadow layer ranks the suppressive defender at the featured fram
   await page.getByRole("radio", { name: "Edit scenario" }).click();
   await expect(toggle).toBeDisabled();
 });
+
+test("broadcast tracking: extrapolated SkillCorner positions are marked as estimates", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("console", (m) => {
+    if (m.type() === "error") errors.push(m.text());
+  });
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  // The landing groups providers and explains broadcast extrapolation, crediting SkillCorner.
+  await page.goto("/");
+  await expect(page.getByTestId("provider-note-skillcorner")).toContainText("extrapolated");
+  await expect(page.getByTestId("provider-note-skillcorner").getByRole("link")).toHaveAttribute(
+    "href",
+    /github\.com\/SkillCorner\/opendata/,
+  );
+
+  const poss = (await (await page.request.get("/api/matches/skillcorner-2017461/possessions?min_passes=3")).json()) as {
+    possession_id: string;
+  }[];
+  const pid = poss[0]?.possession_id;
+  expect(pid).toBeTruthy();
+  const replay = (await (await page.request.get(`/api/possessions/${encodeURIComponent(pid!)}/replay`)).json()) as {
+    players_detected: boolean[] | null;
+  };
+  expect(replay.players_detected?.some((v) => v === false)).toBe(true);
+
+  await page.goto(`/#/lab/${encodeURIComponent(pid!)}`);
+  await expect(page.getByTestId("legend-estimated")).toContainText("Estimated (provider extrapolation, off camera)");
+  await expect(page.getByTestId("pitch-canvas")).toHaveAttribute("aria-label", /provider estimates/);
+  await expect(page.getByTestId("source-attribution")).toContainText("SkillCorner");
+
+  // Replay renders and plays without errors, then analysis flags estimated positions.
+  const canvas = page.getByTestId("pitch-canvas");
+  const before = await canvas.screenshot();
+  await page.getByTestId("play-toggle").click();
+  await page.waitForTimeout(1200);
+  await page.getByTestId("play-toggle").click();
+  expect(Buffer.compare(before, await canvas.screenshot())).not.toBe(0);
+  await waitForAnalysis(page);
+  await expect(page.getByTestId("estimated-note")).toContainText("provider extrapolations");
+  expect(errors).toEqual([]);
+});
