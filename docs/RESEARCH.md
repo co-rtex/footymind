@@ -358,6 +358,42 @@ not checked for reachability. The shadow must not be presented as identifying th
 who stops passes. It remains an *explanatory sensitivity* quantity under the model. Its
 parameters are deliberately left unchanged so they are not tuned on this evaluation.
 
+## Ghost Value for attackers: run value (`ghost/run_value.py`, experimental)
+
+**Definition (pre-specified).** For each non-carrier attacker, the change in their
+option-model pass probability between the observed state and a counterfactual in which
+*only they* are placed at their observed position and velocity 1 s earlier. Defenders keep
+their observed positions, which already contain any response to the run. This is a
+model-based sensitivity, not a causal effect. It does not value space created by dragging
+defenders, because no defender response is simulated. Property tests on constructed
+geometry pass: a run out of a defender's cover into space is positive, a run into a marker
+is negative, and standing still gives zero.
+
+**Outcome validation (`experiments/results/run_value_validation_v1`, code c03ebc0;
+pre-specified).** 449 completed passes, 150 sampled per match. At the pass start frame each
+candidate receiver is ranked, and the outcome is the actual receiver.
+
+| ranking | top-1 [95% CI] | top-3 |
+|---|---|---|
+| chance | 0.100 | 0.300 |
+| run value | 0.134 [0.102, 0.165] | 0.347 |
+| current availability (option model p) | 0.249 [0.209, 0.292] | 0.579 |
+| current speed | 0.216 [0.180, 0.254] | 0.548 |
+| availability + run value (equal-weight z-sum) | 0.171 [0.138, 0.207] | 0.535 |
+
+The chosen receiver's run value exceeds the mean of the other candidates by **+0.012
+[+0.005, +0.019]**.
+
+**Conclusion (mostly negative).** Receivers had, on average, made themselves slightly more
+available in the second before the pass, so there is a small, statistically detectable
+association. As a predictor of who receives the ball, run value is barely above chance
+and below both current availability and plain speed. The pre-specified equal-weight
+combination with availability *reduces* top-1 accuracy by −0.078 [−0.127, −0.029]. Run value
+is kept as an experimental, explanatory quantity. It is not exposed as a player metric and
+is not tuned on this data. A meaningful off-ball valuation probably needs simulated
+defender responses (for example learned ghosting, Le et al. 2017) and a possession-value
+target rather than next-receiver identity.
+
 ## Featured Possession Multiverse example (verified 2026-11-13)
 
 Selection procedure (`scratchpad` search, reproducible via the API): 140 randomly sampled
@@ -402,6 +438,7 @@ it is not evidence of what would have happened.
   (displacement sensitivity of option value per defender); off-ball valuation (Ghost Value).
 
 ## Log
+* **2026-11-13**: Run value (off-ball Ghost Value v1): small positive association with being chosen (+0.012 [+0.005, +0.019]) but weak as a ranking (top-1 0.134 vs availability 0.249). Mostly negative result, recorded without tuning.
 * **2026-11-13**: Independent review (no hard leakage; headline reframed into decision-time vs action-conditioned; rules v2; scenario feasibility and ensemble fixes). RQ1 v3: decision-time Δ −0.026 [−0.034, −0.018], action-conditioned Δ −0.071. Option model v2 adopted.
 * **2026-11-13**: Defensive Shadow outcome validation: 2× chance at identifying interceptors, but not better than the nearest-defender baseline (top-3 0.38 vs 0.50). Added failure-mode analysis and figures.
 * **2026-11-13**: Physics calibration: fitted parameters improve log loss (0.772 → 0.487) but cut AUC (0.751 → 0.725) and converge to implausible bounds, so the model is structurally misspecified. Literature parameters kept for geometry, and the option model is used for probabilities.
