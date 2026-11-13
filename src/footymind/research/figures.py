@@ -169,11 +169,62 @@ def folds(path: Path) -> None:
     plt.close(fig)
 
 
+def replication(path: Path) -> None:
+    """Same comparisons on two providers, side by side (never pooled)."""
+    runs = [
+        (EXPERIMENT, "Metrica (3 matches)"),
+        ("pass_outcome_skillcorner_v1", "SkillCorner (20 matches)"),
+    ]
+    comps = [
+        (("Adt_logreg", "Bdt_logreg"), "Decision-time: + spatial"),
+        (("A_logreg", "B_logreg"), "Action-conditioned: + spatial"),
+        (("A_logreg", "abl_A+defender_only_logreg"), "Action-cond.: + defender-only"),
+        (("B_gbm", "C_gbm"), "Spatial → + interaction (GBM)"),
+    ]
+    fig, ax = plt.subplots(figsize=(7.2, 3.8), dpi=200, facecolor=SURFACE)
+    _style(ax)
+    ax.grid(True, axis="x", color=GRID)
+    ax.grid(False, axis="y")
+    ax.axvline(0, color=INK_2, linewidth=1)
+    for k, ((name, label), color) in enumerate(zip(runs, SERIES, strict=False)):
+        r = _load(name)
+        by = {(c["a"], c["b"]): c["log_loss"] for c in r["comparisons"]}
+        for i, (pair, _) in enumerate(comps):
+            ll = by[pair]
+            y = len(comps) - 1 - i + (0.18 if k == 0 else -0.18)
+            lo, hi = ll["ci95"]
+            ax.plot([lo, hi], [y, y], color=color, linewidth=2, solid_capstyle="round")
+            ax.plot(
+                [ll["delta"]],
+                [y],
+                "o",
+                color=color,
+                markersize=5.5,
+                markeredgecolor=SURFACE,
+                markeredgewidth=1.5,
+                label=label if i == 0 else None,
+            )
+    ax.set_yticks(range(len(comps)))
+    ax.set_yticklabels([c[1] for c in comps][::-1], fontsize=8, color=INK)
+    ax.set_xlabel("Δ held-out log loss (95% CI; left of 0 = better)", color=INK, fontsize=9)
+    ax.set_title(
+        "Cross-provider replication (separate LOMO evaluations, never pooled)",
+        color=INK,
+        fontsize=10,
+        loc="left",
+    )
+    ax.legend(frameon=False, fontsize=8, loc="lower left", labelcolor=INK)
+    fig.tight_layout()
+    fig.savefig(path, facecolor=SURFACE)
+    plt.close(fig)
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     reliability(OUT / "calibration_v3.png")
     ablation(OUT / "ablation_v3.png")
     folds(OUT / "folds_v3.png")
+    replication(OUT / "replication_v1.png")
     print(sorted(p.name for p in OUT.glob("*.png")))
 
 
