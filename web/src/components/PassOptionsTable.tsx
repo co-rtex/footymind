@@ -1,6 +1,7 @@
 import type { PassOptionOut, PlayerOut } from "../api/types";
 import { fmtMetres, fmtProb, playerLabel } from "../lib/format";
 import { hasOptionModel, primaryP } from "../lib/models";
+import { ProvBadge } from "./ProvBadge";
 
 interface Props {
   id?: string;
@@ -10,6 +11,8 @@ interface Props {
   onHighlight: (id: string | null) => void;
   /** label for the primary (calibrated) probability column */
   modelLabel: string;
+  /** players whose position at this frame is a provider extrapolation (broadcast tracking) */
+  estimatedIds?: ReadonlySet<string>;
 }
 
 /**
@@ -17,7 +20,7 @@ interface Props {
  * the canvas. The calibrated option model is the primary probability, the
  * physics heuristic is secondary.
  */
-export function PassOptionsTable({ id, options, players, highlight, onHighlight, modelLabel }: Props) {
+export function PassOptionsTable({ id, options, players, highlight, onHighlight, modelLabel, estimatedIds }: Props) {
   const ranked = [...options].sort((a, b) => primaryP(b) - primaryP(a));
   const withModel = hasOptionModel(options);
   if (ranked.length === 0) {
@@ -79,7 +82,13 @@ export function PassOptionsTable({ id, options, players, highlight, onHighlight,
                 >
                   {playerLabel(o.receiver_id, players)}
                 </button>
+
                 <span className="cell-sub">
+                  {estimatedIds?.has(o.receiver_id) ? (
+                    <>
+                      <ProvBadge prov="estimated">est. pos</ProvBadge>{" "}
+                    </>
+                  ) : null}
                   {o.lane_closest_defender_id ? (
                     <>
                       <span className="sr-only">closest lane defender </span>

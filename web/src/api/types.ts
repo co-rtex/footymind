@@ -104,6 +104,12 @@ export interface Replay {
   period: number[];
   /** length n_frames * n_players * 2, row-major [frame][player][x|y], null = not observed */
   players_xy: (number | null)[];
+  /**
+   * length n_frames * n_players, row-major [frame][player]; false where the provider
+   * extrapolated a position outside the camera view (provenance "estimated");
+   * null when every non-null position is observed (optical tracking)
+   */
+  players_detected?: boolean[] | null;
   /** length n_frames * 2 */
   ball_xy: (number | null)[];
   events: EventOut[];
@@ -243,6 +249,7 @@ export interface FeasibilityOut {
   min_separation_m: number;
   supported: boolean;
   notes: string[];
+  kind: "user" | "simulated";
 }
 
 export interface MovementOut {
@@ -320,6 +327,10 @@ export interface DefensiveShadowOut {
   v_sum_observed: number;
   defenders: DefenderShadowOut[];
   assumptions: string[];
+  /** |shadow_sum| below this is within tracking noise */
+  noise_floor: number;
+  horizon_s: number;
+  alt_radius_m: number;
   status: string;
 }
 

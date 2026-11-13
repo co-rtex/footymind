@@ -5,6 +5,7 @@
 import {
   parseAnalysis,
   parseDefensiveShadow,
+  parseMatch,
   parseMatches,
   parsePossessions,
   parseReplay,
@@ -95,6 +96,10 @@ export function createApi(fetchImpl: Fetch = (...a) => fetch(...a)) {
   return {
     matches: (signal?: AbortSignal): Promise<MatchSummary[]> =>
       requestJson("/matches", parseMatches, { signal }, fetchImpl),
+
+    /** One match summary (fast); the lab uses it so it never waits for the full match list. */
+    match: (matchId: string, signal?: AbortSignal): Promise<MatchSummary> =>
+      requestJson(`/matches/${enc(matchId)}`, parseMatch, { signal }, fetchImpl),
 
     possessions: (matchId: string, minPasses = 3, signal?: AbortSignal): Promise<PossessionSummary[]> =>
       requestJson(`/matches/${enc(matchId)}/possessions?min_passes=${minPasses}`, parsePossessions, { signal }, fetchImpl),

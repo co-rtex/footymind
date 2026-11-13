@@ -7,6 +7,8 @@ interface Props {
   scenarioLayer: boolean;
   view: ScenarioView;
   showShadow?: boolean;
+  /** the replay contains provider-extrapolated (off-camera) positions */
+  showEstimated?: boolean;
 }
 
 const Disc = ({ fill, stroke, dash, opacity = 1 }: { fill: string; stroke?: string; dash?: string; opacity?: number }) => (
@@ -15,7 +17,7 @@ const Disc = ({ fill, stroke, dash, opacity = 1 }: { fill: string; stroke?: stri
   </svg>
 );
 
-export function Legend({ attackingTeam, showHeat, scenarioLayer, view, showShadow = false }: Props) {
+export function Legend({ attackingTeam, showHeat, scenarioLayer, view, showShadow = false, showEstimated = false }: Props) {
   const att = attackingTeam === "away" ? "var(--c-away)" : "var(--c-home)";
   const def = attackingTeam === "away" ? "var(--c-home)" : "var(--c-away)";
   return (
@@ -33,11 +35,24 @@ export function Legend({ attackingTeam, showHeat, scenarioLayer, view, showShado
           </svg>
           Ball
         </li>
-        {scenarioLayer ? (
+        {showEstimated ? (
           <>
             <li>
               <Disc fill="var(--c-home)" /> Observed (solid)
             </li>
+            <li data-testid="legend-estimated">
+              <Disc fill="var(--c-home)" opacity={0.1} stroke="var(--c-home)" dash="2.6 2" /> Estimated (provider
+              extrapolation, off camera)
+            </li>
+          </>
+        ) : null}
+        {scenarioLayer ? (
+          <>
+            {showEstimated ? null : (
+              <li>
+                <Disc fill="var(--c-home)" /> Observed (solid)
+              </li>
+            )}
             <li>
               <Disc fill="var(--c-home)" opacity={0.3} stroke="var(--c-accent)" dash="3.5 2.2" /> Hypothetical (you moved)
             </li>

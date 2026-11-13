@@ -83,6 +83,21 @@ test.describe("desktop, experimental layer", () => {
   });
 });
 
+test.describe("desktop, broadcast tracking", () => {
+  test.use({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: DPR });
+
+  test("SkillCorner possession with observed and extrapolated players", async ({ page }) => {
+    const poss = (await (await page.request.get("/api/matches/skillcorner-2017461/possessions?min_passes=3")).json()) as {
+      possession_id: string;
+    }[];
+    await page.goto(`/#/lab/${encodeURIComponent(poss[0]!.possession_id)}`);
+    await waitForAnalysis(page);
+    await expect(page.getByTestId("legend-estimated")).toBeVisible();
+    await page.mouse.move(0, 0);
+    await page.screenshot({ path: `${DIR}/broadcast-estimated-desktop.png` });
+  });
+});
+
 test.describe("narrow", () => {
   test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: DPR, isMobile: false, hasTouch: false });
 

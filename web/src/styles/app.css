@@ -549,6 +549,50 @@ kbd {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: var(--sp-3);
 }
+.match-groups {
+  display: grid;
+  gap: var(--sp-5);
+}
+.match-group {
+  display: grid;
+  gap: var(--sp-3);
+}
+.match-group-head {
+  display: grid;
+  gap: 2px;
+}
+.match-group-series {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-text);
+}
+.match-group-head p {
+  max-width: 90ch;
+}
+.match-group-count {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--c-surface-3);
+  color: var(--c-text-muted);
+  font-size: 10.5px;
+  letter-spacing: 0;
+}
+.match-cards--compact {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: var(--sp-2);
+}
+.match-cards--compact .match-card {
+  padding: var(--sp-2) var(--sp-3);
+}
+.match-cards--compact .match-card-name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.match-cards--compact .match-card-meta {
+  font-size: var(--fs-xs);
+}
 .match-card {
   text-align: left;
   font: inherit;
@@ -604,8 +648,12 @@ kbd {
 
 /* ---------- tables ---------- */
 .table-wrap {
+  position: relative; /* contain absolutely positioned sr-only text inside the scroller */
   width: 100%;
   overflow-x: auto;
+}
+.only-narrow {
+  display: none;
 }
 .table {
   width: 100%;
@@ -1204,6 +1252,14 @@ kbd {
   font-size: var(--fs-xs);
   font-weight: 400;
   color: var(--c-text-subtle);
+  white-space: normal;
+  line-height: 1.5;
+}
+.options-table th.cell-player {
+  white-space: normal;
+  min-width: 96px;
+}
+.options-table .cell-player .linkish {
   white-space: nowrap;
 }
 .pbar {
@@ -1671,8 +1727,17 @@ kbd {
   .transport-note--keys {
     display: none;
   }
-  .col-seq {
+  .col-seq,
+  .col-period {
     display: none;
+  }
+  .only-narrow {
+    display: inline;
+    color: var(--c-text-muted);
+  }
+  .possession-table th,
+  .possession-table td {
+    padding: 8px 5px;
   }
   .stat dd {
     font-size: var(--fs-md);

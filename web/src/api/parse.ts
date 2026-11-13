@@ -40,9 +40,15 @@ function needKeys(v: unknown, keys: string[], what: string): asserts v is Record
   for (const k of keys) need(k in v, `${what} is missing "${k}"`);
 }
 
+export function parseMatch(raw: unknown): MatchSummary {
+  needKeys(raw, ["match_id", "source", "fps", "periods", "pitch"], "match");
+  need(Array.isArray(raw.periods), "match.periods is not an array");
+  return raw as unknown as MatchSummary;
+}
+
 export function parseMatches(raw: unknown): MatchSummary[] {
   need(Array.isArray(raw), "matches is not an array");
-  for (const m of raw) needKeys(m, ["match_id", "source", "fps", "periods", "pitch"], "match");
+  for (const m of raw) parseMatch(m);
   return raw as MatchSummary[];
 }
 
@@ -128,6 +134,13 @@ export interface ReplayData {
   xy: Float32Array;
   /** [frame][x|y], NaN when not observed */
   ball: Float32Array;
+  /**
+   * [frame][player]: 1 = detected (observed), 0 = provider extrapolation
+   * (estimated). null when the provider observes every drawn position.
+   */
+  detected: Uint8Array | null;
+  /** number of non-null positions that are extrapolations (0 for optical tracking) */
+  nEstimated: number;
   events: EventOut[];
   possession: PossessionSummary | null;
   /** period -> team -> +1 | -1 */
@@ -148,7 +161,21 @@ function toF32(src: (number | null)[]): Float32Array {
 export function parseReplay(raw: unknown): ReplayData {
   needKeys(
     raw,
-    ["match_id", "fps", "step", "pitch", "players", "frame", "time_s", "period", "players_xy", "ball_xy", "events", "attack_sign", "source"],
+    [
+      "match_id",
+      "fps",
+      "step",
+      "pitch",
+      "players",
+      "frame",
+      "time_s",
+      "period",
+      "players_xy",
+      "ball_xy",
+      "events",
+      "attack_sign",
+      "source",
+    ],
     "replay",
   );
   const r = raw as unknown as Replay;
@@ -164,6 +191,23 @@ export function parseReplay(raw: unknown): ReplayData {
   need(r.ball_xy.length === nFrames * 2, `replay.ball_xy has ${r.ball_xy.length} values, expected ${nFrames * 2}`);
   for (let i = 1; i < nFrames; i++) {
     need((r.frame[i] as number) > (r.frame[i - 1] as number), "replay.frame is not strictly increasing");
+  }
+  let detected: Uint8Array | null = null;
+  let nEstimated = 0;
+  const det = r.players_detected;
+  if (det !== null && det !== undefined) {
+    need(Array.isArray(det), "replay.players_detected is not an array");
+    need(
+      det.length === nFrames * nPlayers,
+      `replay.players_detected has ${det.length} values, expected ${nFrames * nPlayers}`,
+    );
+    detected = new Uint8Array(det.length);
+    for (let i = 0; i < det.length; i++) {
+      const v = det[i];
+      need(typeof v === "boolean", "replay.players_detected contains a non-boolean");
+      detected[i] = v ? 1 : 0;
+      if (!v && r.players_xy[2 * i] !== null && r.players_xy[2 * i] !== undefined) nEstimated++;
+    }
   }
   const attackSign = new Map<number, Record<Team, number>>();
   for (const [p, signs] of Object.entries(r.attack_sign)) {
@@ -182,6 +226,8 @@ export function parseReplay(raw: unknown): ReplayData {
     period: Int16Array.from(r.period),
     xy: toF32(r.players_xy),
     ball: toF32(r.ball_xy),
+    detected,
+    nEstimated,
     events: r.events,
     possession: r.possession,
     attackSign,

@@ -3,6 +3,7 @@ import { api } from "../api/client";
 import type { MatchSummary, PossessionSummary, Team } from "../api/types";
 import { fmtClock, matchClockSeconds, teamLabel, titleCase } from "../lib/format";
 import { routeHash, useAsync } from "../lib/hooks";
+import { groupByProvider, splitCommonName } from "../lib/providers";
 import { Segmented } from "./Segmented";
 import { StatusBlock } from "./StatusBlock";
 
@@ -79,23 +80,48 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
             Match
           </h2>
         </div>
-        <div className="match-cards" role="radiogroup" aria-label="Match">
-          {matches.map((m) => {
-            const selected = m.match_id === match?.match_id;
+        <div className="match-groups" role="radiogroup" aria-label="Match" data-testid="match-groups">
+          {groupByProvider(matches).map((g) => {
+            const compact = g.matches.length > 4;
+            const split = compact ? splitCommonName(g.matches.map((m) => m.source.name)) : null;
             return (
-              <button
-                key={m.match_id}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                className={`match-card${selected ? " is-selected" : ""}`}
-                onClick={() => onSelectMatch(m.match_id)}
-              >
-                <span className="match-card-name">{m.source.name}</span>
-                <span className="match-card-meta">
-                  {m.fps} Hz tracking · {m.periods.length} periods · {m.n_possessions} possessions · {m.n_events} events
-                </span>
-              </button>
+            <div key={g.info.id} className="match-group" role="group" aria-labelledby={`grp-${g.info.id}`}>
+              <div className="match-group-head">
+                <h3 id={`grp-${g.info.id}`} className="h-sub">
+                  {g.info.label} <span className="match-group-count">{g.matches.length}</span>
+                </h3>
+                {split ? <p className="match-group-series">{split.prefix}</p> : null}
+                <p className="small muted" data-testid={`provider-note-${g.info.id}`}>
+                  {g.info.kind} Source:{" "}
+                  <a href={g.url} target="_blank" rel="noreferrer">
+                    {g.url.replace(/^https?:\/\//, "")}
+                  </a>
+                  .
+                </p>
+              </div>
+              <div className={`match-cards${compact ? " match-cards--compact" : ""}`}>
+                {g.matches.map((m, i) => {
+                  const selected = m.match_id === match?.match_id;
+                  return (
+                    <button
+                      key={m.match_id}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      className={`match-card${selected ? " is-selected" : ""}`}
+                      onClick={() => onSelectMatch(m.match_id)}
+                      title={m.source.name}
+                      aria-label={`${m.source.name}, ${m.fps} Hz, ${m.n_possessions} possessions`}
+                    >
+                      <span className="match-card-name">{split?.labels[i] ?? m.source.name}</span>
+                      <span className="match-card-meta">
+                        {m.fps} Hz · {m.n_possessions} possessions · {m.n_events} events
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             );
           })}
         </div>
@@ -166,7 +192,9 @@ function PossessionList({ match, onOpen }: { match: MatchSummary; onOpen: (pid: 
             <thead>
               <tr>
                 <th scope="col">Team</th>
-                <th scope="col">Period</th>
+                <th scope="col" className="col-period">
+                  Period
+                </th>
                 <th scope="col" className="num">
                   Clock
                 </th>
@@ -213,8 +241,11 @@ function PossessionRow({ p, match, onOpen }: { p: PossessionSummary; match: Matc
           <span className={`team-chip team-chip--${p.team}`}>{teamLabel(p.team)}</span>
         </a>
       </td>
-      <td>P{p.period}</td>
-      <td className="num">{clock}</td>
+      <td className="col-period">P{p.period}</td>
+      <td className="num">
+        <span className="only-narrow">P{p.period} </span>
+        {clock}
+      </td>
       <td className="num">{p.duration_s.toFixed(1)} s</td>
       <td className="num">{p.n_passes}</td>
       <td className="col-seq">
