@@ -18,6 +18,8 @@ observed state, and reported with its sensitivity to the model's assumptions.
 
 ![Possession Multiverse: a moved player (hypothetical), the marker's rule-based response (simulated), and the pitch-control difference](web/screenshots/scenario-difference-desktop.png)
 
+![Broadcast tracking (SkillCorner): off-camera players are provider extrapolations, drawn hollow and labelled as estimates](web/screenshots/broadcast-estimated-desktop.png)
+
 ## What is in here
 
 | Capability | What it does | Status |
