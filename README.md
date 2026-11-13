@@ -79,6 +79,13 @@ cd web && npm ci && npm run dev    # http://localhost:5173 (proxies /api to :800
 Or build it once (`cd web && npm run build`) and `footymind serve` will serve it at `/`.
 Backend and frontend checks are listed in [`CLAUDE.md`](CLAUDE.md) and [`web/README.md`](web/README.md).
 
+Or run everything in one container (the first start downloads and ingests the data):
+
+```bash
+docker build -t footymind .
+docker run --rm -p 8000:8000 -v footymind-data:/data footymind   # http://localhost:8000
+```
+
 Reproduce the research results:
 
 ```bash
