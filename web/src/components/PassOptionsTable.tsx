@@ -46,10 +46,10 @@ export function PassOptionsTable({ id, options, players, highlight, onHighlight,
             <th scope="col" className="num" title="Physics heuristic (uncalibrated) = lane clear x control at target">
               Phys.
             </th>
-            <th scope="col" className="num" title="Physics: estimated probability that no defender intercepts in the lane">
+            <th scope="col" className="num col-detail" title="Physics: estimated probability that no defender intercepts in the lane">
               Lane
             </th>
-            <th scope="col" className="num" title="Physics: estimated attacking pitch control at the target">
+            <th scope="col" className="num col-detail" title="Physics: estimated attacking pitch control at the target">
               Ctrl
             </th>
             <th scope="col" className="num" title="Pass distance in metres">
@@ -103,8 +103,8 @@ export function PassOptionsTable({ id, options, players, highlight, onHighlight,
                 )}
               </td>
               <td className="num muted">{fmtProb(o.p_success)}</td>
-              <td className="num muted">{fmtProb(o.p_lane_clear)}</td>
-              <td className="num muted">{fmtProb(o.p_control_at_target)}</td>
+              <td className="num muted col-detail">{fmtProb(o.p_lane_clear)}</td>
+              <td className="num muted col-detail">{fmtProb(o.p_control_at_target)}</td>
               <td className="num">{o.distance_m.toFixed(0)}</td>
               <td className={`num ${o.forward_progress_m >= 0.5 ? "pos" : o.forward_progress_m <= -0.5 ? "neg" : ""}`}>
                 {o.forward_progress_m >= 0.5 ? "+" : o.forward_progress_m <= -0.5 ? "−" : ""}

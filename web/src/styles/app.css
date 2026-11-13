@@ -1501,6 +1501,11 @@ kbd {
   .main {
     padding: var(--sp-4);
   }
+  /* Phone width: hide the two physics components (lane, control). Their product is
+     still shown as "Phys.", and the wrapper scrolls horizontally as a fallback. */
+  .options-table .col-detail {
+    display: none;
+  }
   .topbar {
     padding: 0 var(--sp-4);
   }
