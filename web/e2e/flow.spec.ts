@@ -188,3 +188,14 @@ test("broadcast tracking: extrapolated SkillCorner positions are marked as estim
   await expect(page.getByTestId("estimated-note")).toContainText("provider extrapolations");
   expect(errors).toEqual([]);
 });
+
+test("featured broadcast scenario opens with detected key players and a robust change", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("featured-broadcast-link").click();
+  await expect(page).toHaveURL(/skillcorner-1899585%3Ap0152\?f=39177&move=home_25,22.46,-5.77/);
+  const deltas = page.getByTestId("option-deltas");
+  await expect(deltas).toBeVisible({ timeout: 30_000 });
+  await expect(deltas.locator("tbody tr").first()).toContainText("#14");
+  await expect(deltas.locator("tbody tr").first()).toContainText("robust");
+  await expect(page.getByText("Physically plausible edit")).toBeVisible();
+});

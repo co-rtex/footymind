@@ -471,6 +471,17 @@ sign were kept. The example below has the largest delta *on the pass that was ac
 This is a model-based what-if. It is consistent with the press making that pass risky, but
 it is not evidence of what would have happened.
 
+**Broadcast example (SkillCorner, verified 2026-11-13).** The search covered 96 sampled
+passes in 8 SkillCorner matches, kept only frames where the passer, receiver and moved
+defender are *detected* and at least 70% of players within 25 m of the ball are detected, and
+then required a supported, sign-robust scenario. Selected: `skillcorner-1899585`, P2, frame
+39177 (possession p0152). away_27 → away_14 is completed. home_25 has shadow 0.20. Moving him
+to (22.46, −5.77), which is reachable and supported, takes the SkillCorner option model's
+estimate for the pass from 0.60 [0.55–0.62] to 0.80 [0.78–0.82], with 24/24 members agreeing.
+The API warns that 9 of 22 positions (away from the ball) are extrapolations. Deep link:
+`#/lab/skillcorner-1899585%3Ap0152?f=39177&move=home_25,22.46,-5.77`. Selection effects apply
+as for the Metrica example.
+
 ## Prior art and references
 * Spearman, W., Basye, A., Dick, G., Hotovy, R., Pop, P. (2017). *Physics-Based Modeling of Pass Probabilities in Soccer.* MIT Sloan Sports Analytics Conference.
 * Spearman, W. (2018). *Beyond Expected Goals.* MIT Sloan SAC. (Pitch control; off-ball scoring opportunity.)

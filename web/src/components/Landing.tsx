@@ -17,8 +17,9 @@ interface Props {
 type TeamFilter = "all" | Team;
 
 /**
- * A curated, verified example (docs/RESEARCH.md, "Featured scenario"). Numbers quoted in the
- * card are from option model v1 and are recomputed live when the link is opened.
+ * Curated, verified examples (docs/RESEARCH.md, "Featured Possession Multiverse example").
+ * Numbers quoted in the cards are from the provider's option model v2 and are recomputed live
+ * when a link is opened.
  */
 const FEATURED = {
   matchId: "metrica-sample-1",
@@ -27,6 +28,15 @@ const FEATURED = {
     possessionId: "metrica-sample-1:p0163",
     frame: 53708,
     moves: [{ player_id: "home_9", x: 50.7, y: -8.75 }],
+  }),
+};
+
+const FEATURED_BROADCAST = {
+  href: routeHash({
+    name: "lab",
+    possessionId: "skillcorner-1899585:p0152",
+    frame: 39177,
+    moves: [{ player_id: "home_25", x: 22.46, y: -5.77 }],
   }),
 };
 
@@ -70,6 +80,28 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
           </p>
         </div>
         <a className="btn btn--primary featured-cta" href={FEATURED.href} data-testid="featured-link">
+          Open this scenario
+        </a>
+      </section>
+
+      <section className="panel featured" aria-labelledby="featured-broadcast-title">
+        <div className="featured-body">
+          <p className="eyebrow">Featured scenario · SkillCorner broadcast tracking · A-League 2024/25 · P2</p>
+          <h2 id="featured-broadcast-title" className="h-section">
+            The same question on broadcast data
+          </h2>
+          <p className="muted">
+            Away #27 passes to #14 (completed). Home #25&apos;s position is the most suppressive here (Defensive Shadow
+            0.20). Moved within his reachable region, the option model&apos;s estimate for that pass rises from about 0.60
+            to 0.80, with every ensemble member agreeing. Passer, receiver and #25 are all camera-detected; 9 of 22
+            positions, away from the ball, are provider extrapolations and are drawn as estimates.
+          </p>
+          <p className="small muted">
+            Broadcast tracking has its own option model (trained only on SkillCorner matches). Model-based what-if, not a
+            claim about the match.
+          </p>
+        </div>
+        <a className="btn btn--primary featured-cta" href={FEATURED_BROADCAST.href} data-testid="featured-broadcast-link">
           Open this scenario
         </a>
       </section>
