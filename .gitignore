@@ -38,3 +38,6 @@ web/playwright-report/
 web/.vite/
 *.tsbuildinfo
 experiments/results/*/oof_predictions.parquet
+
+# Agent worktrees
+.claude/worktrees/

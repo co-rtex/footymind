@@ -1,0 +1,586 @@
+{
+  "name": "pass_outcome_v1_ablation",
+  "config": {
+    "name": "pass_outcome_v1_ablation",
+    "description": "Which spatial feature groups carry the gain? Logistic-regression ablations (leave-one-match-out). Defender-only groups use no teammate positions.",
+    "matches": [
+      "metrica-sample-1",
+      "metrica-sample-2"
+    ],
+    "seed": 0,
+    "dataset": {
+      "include_ball_out": true
+    },
+    "n_boot": 2000,
+    "models": [
+      "A_logreg",
+      "B_logreg",
+      "abl_A+pressure_logreg",
+      "abl_A+ray_defense_logreg",
+      "abl_A+defender_only_logreg",
+      "abl_A+target_geometry_logreg",
+      "abl_A+target_geometry+target_defense_logreg",
+      "abl_B_minus_target_geometry_logreg"
+    ],
+    "comparisons": [
+      [
+        "A_logreg",
+        "abl_A+pressure_logreg"
+      ],
+      [
+        "A_logreg",
+        "abl_A+ray_defense_logreg"
+      ],
+      [
+        "A_logreg",
+        "abl_A+defender_only_logreg"
+      ],
+      [
+        "A_logreg",
+        "abl_A+target_geometry_logreg"
+      ],
+      [
+        "abl_A+target_geometry_logreg",
+        "abl_A+target_geometry+target_defense_logreg"
+      ],
+      [
+        "abl_A+target_geometry_logreg",
+        "B_logreg"
+      ],
+      [
+        "A_logreg",
+        "abl_B_minus_target_geometry_logreg"
+      ]
+    ]
+  },
+  "code_revision": "a9f8c81b81cfe573f50a27de5361060d92956b33",
+  "data_files_sha256": {
+    "metrica-sample-1": {
+      "Sample_Game_1_RawEventsData.csv": "097dda6345e17390dca095331458fd00e47960c480c76f4356fd4edf2575ef05",
+      "Sample_Game_1_RawTrackingData_Away_Team.csv": "0a3df68a92af0290ede472e62de3b6489ddee29223da09bdf0cf76c8e0ab0618",
+      "Sample_Game_1_RawTrackingData_Home_Team.csv": "0a3d0eff7785950379c587d3597b86a2d91c2492281b4652e1abb97c99b6b364"
+    },
+    "metrica-sample-2": {
+      "Sample_Game_2_RawEventsData.csv": "edf31a18599265b77a8baf150f2ce6d89456fb0324b62ea7a391229657a619ba",
+      "Sample_Game_2_RawTrackingData_Away_Team.csv": "aa639f40762eade46c389020fe4458266b5ba14027b1e96e22e75db62803718b",
+      "Sample_Game_2_RawTrackingData_Home_Team.csv": "3f9990ac204b07133e4202441d6fcbb386897c7c7f81e1bc3ce4d35bc8644694"
+    }
+  },
+  "runtime_s": 82.0,
+  "dataset": {
+    "n": 2236,
+    "success_rate": 0.7884615384615384,
+    "by_match": {
+      "metrica-sample-1": {
+        "n": 1056,
+        "success_rate": 0.7566287878787878
+      },
+      "metrica-sample-2": {
+        "n": 1180,
+        "success_rate": 0.8169491525423729
+      }
+    },
+    "by_label_source": {
+      "BALL LOST": 387,
+      "BALL OUT": 86,
+      "PASS": 1763
+    },
+    "n_truncated_release": 22,
+    "receiver_inference": {
+      "n_completed": 1763,
+      "accuracy": 0.7855927396483268
+    }
+  },
+  "models": {
+    "A_logreg": {
+      "family": "A",
+      "description": "event features, logistic regression",
+      "n_features": 18
+    },
+    "B_logreg": {
+      "family": "B",
+      "description": "event + spatial, logistic regression",
+      "n_features": 34
+    },
+    "abl_A+pressure_logreg": {
+      "family": "ablation",
+      "description": "A+pressure",
+      "n_features": 23
+    },
+    "abl_A+ray_defense_logreg": {
+      "family": "ablation",
+      "description": "A+ray_defense",
+      "n_features": 20
+    },
+    "abl_A+defender_only_logreg": {
+      "family": "ablation",
+      "description": "A+defender_only",
+      "n_features": 25
+    },
+    "abl_A+target_geometry_logreg": {
+      "family": "ablation",
+      "description": "A+target_geometry",
+      "n_features": 21
+    },
+    "abl_A+target_geometry+target_defense_logreg": {
+      "family": "ablation",
+      "description": "A+target_geometry+target_defense",
+      "n_features": 27
+    },
+    "abl_B_minus_target_geometry_logreg": {
+      "family": "ablation",
+      "description": "B_minus_target_geometry",
+      "n_features": 31
+    }
+  },
+  "pooled_oof_metrics": {
+    "A_logreg": {
+      "n": 2236,
+      "log_loss": 0.4376742118772953,
+      "brier": 0.1419714938808276,
+      "auc": 0.7774838439667153,
+      "ece": 0.03608496734612977,
+      "mean_pred": 0.788007456236167,
+      "base_rate": 0.7884615384615384
+    },
+    "B_logreg": {
+      "n": 2236,
+      "log_loss": 0.3690537236324741,
+      "brier": 0.11650431576187104,
+      "auc": 0.8627471672228891,
+      "ece": 0.029225884582294387,
+      "mean_pred": 0.7946413586301259,
+      "base_rate": 0.7884615384615384
+    },
+    "abl_A+pressure_logreg": {
+      "n": 2236,
+      "log_loss": 0.4311416740830272,
+      "brier": 0.13975435076581894,
+      "auc": 0.785897332890434,
+      "ece": 0.039524175146446114,
+      "mean_pred": 0.7886938199248251,
+      "base_rate": 0.7884615384615384
+    },
+    "abl_A+ray_defense_logreg": {
+      "n": 2236,
+      "log_loss": 0.4296285384495804,
+      "brier": 0.1402453251115139,
+      "auc": 0.7999206138872932,
+      "ece": 0.0428794463745485,
+      "mean_pred": 0.7896577728449006,
+      "base_rate": 0.7884615384615384
+    },
+    "abl_A+defender_only_logreg": {
+      "n": 2236,
+      "log_loss": 0.42271332803308387,
+      "brier": 0.1379857595289019,
+      "auc": 0.8054212800351122,
+      "ece": 0.045387673533500254,
+      "mean_pred": 0.790646073893105,
+      "base_rate": 0.7884615384615384
+    },
+    "abl_A+target_geometry_logreg": {
+      "n": 2236,
+      "log_loss": 0.37925776853765525,
+      "brier": 0.11773937421915749,
+      "auc": 0.8397635684897093,
+      "ece": 0.01574627701311512,
+      "mean_pred": 0.7891376822406266,
+      "base_rate": 0.7884615384615384
+    },
+    "abl_A+target_geometry+target_defense_logreg": {
+      "n": 2236,
+      "log_loss": 0.37158999222055716,
+      "brier": 0.11768607403863929,
+      "auc": 0.8544044302727308,
+      "ece": 0.032373597400231574,
+      "mean_pred": 0.7925679070373628,
+      "base_rate": 0.7884615384615384
+    },
+    "abl_B_minus_target_geometry_logreg": {
+      "n": 2236,
+      "log_loss": 0.42136634696748815,
+      "brier": 0.13740356692634198,
+      "auc": 0.809915829135183,
+      "ece": 0.03726702814787594,
+      "mean_pred": 0.7953133499257194,
+      "base_rate": 0.7884615384615384
+    }
+  },
+  "fold_metrics": {
+    "A_logreg": {
+      "metrica-sample-1": {
+        "n": 1056,
+        "log_loss": 0.4680827232053497,
+        "brier": 0.1539156229732165,
+        "auc": 0.7839322499427787,
+        "ece": 0.05418966663802799,
+        "mean_pred": 0.7973002546918904,
+        "base_rate": 0.7566287878787878
+      },
+      "metrica-sample-2": {
+        "n": 1180,
+        "log_loss": 0.41046117123117204,
+        "brier": 0.13128251055746937,
+        "auc": 0.7811251344705701,
+        "ece": 0.05633113774662024,
+        "mean_pred": 0.7796911891435875,
+        "base_rate": 0.8169491525423729
+      }
+    },
+    "B_logreg": {
+      "metrica-sample-1": {
+        "n": 1056,
+        "log_loss": 0.4114741042857611,
+        "brier": 0.1310856664769575,
+        "auc": 0.8533039840656852,
+        "ece": 0.05577890473725844,
+        "mean_pred": 0.7911438951844822,
+        "base_rate": 0.7566287878787878
+      },
+      "metrica-sample-2": {
+        "n": 1180,
+        "log_loss": 0.33109107789529507,
+        "brier": 0.10345524257955636,
+        "auc": 0.8766952896880283,
+        "ece": 0.028683547024826655,
+        "mean_pred": 0.7977712920187697,
+        "base_rate": 0.8169491525423729
+      }
+    },
+    "abl_A+pressure_logreg": {
+      "metrica-sample-1": {
+        "n": 1056,
+        "log_loss": 0.46338485679340974,
+        "brier": 0.15185953441429498,
+        "auc": 0.7865230370648135,
+        "ece": 0.04779890095955743,
+        "mean_pred": 0.7995190851252385,
+        "base_rate": 0.7566287878787878
+      },
+      "metrica-sample-2": {
+        "n": 1180,
+        "log_loss": 0.40228675803034597,
+        "brier": 0.12892123726345397,
+        "auc": 0.7965844475180575,
+        "ece": 0.047306732464485635,
+        "mean_pred": 0.7790061249658111,
+        "base_rate": 0.8169491525423729
+      }
+    },
+    "abl_A+ray_defense_logreg": {
+      "metrica-sample-1": {
+        "n": 1056,
+        "log_loss": 0.4647208662428244,
+        "brier": 0.15518647526808424,
+        "auc": 0.807054538016879,
+        "ece": 0.07471298433445764,
+        "mean_pred": 0.8001255771039514,
+        "base_rate": 0.7566287878787878
+      },
+      "metrica-sample-2": {
+        "n": 1180,
+        "log_loss": 0.3982238790007111,
+        "brier": 0.12687426192054932,
+        "auc": 0.8042204548947287,
+        "ece": 0.044711923459200636,
+        "mean_pred": 0.780289975135106,
+        "base_rate": 0.8169491525423729
+      }
+    },
+    "abl_A+defender_only_logreg": {
+      "metrica-sample-1": {
+        "n": 1056,
+        "log_loss": 0.4598062339007379,
+        "brier": 0.15332137029894222,
+        "auc": 0.806431190739397,
+        "ece": 0.0718666482259963,
+        "mean_pred": 0.802089921926688,
+        "base_rate": 0.7566287878787878
+      },
+      "metrica-sample-2": {
+        "n": 1180,
+        "log_loss": 0.3895183207481324,
+        "brier": 0.12426168751774722,
+        "auc": 0.8164140540955893,
+        "ece": 0.041543905007417704,
+        "mean_pred": 0.7804047997206781,
+        "base_rate": 0.8169491525423729
+      }
+    },
+    "abl_A+target_geometry_logreg": {
+      "metrica-sample-1": {
+        "n": 1056,
+        "log_loss": 0.40908994893110706,
+        "brier": 0.12936457510501786,
+        "auc": 0.8394198974398933,
+        "ece": 0.03336800687663694,
+        "mean_pred": 0.7825819036653121,
+        "base_rate": 0.7566287878787878
+      },
+      "metrica-sample-2": {
+        "n": 1180,
+        "log_loss": 0.35256049523639665,
+        "brier": 0.10733580461282823,
+        "auc": 0.8411086138005226,
+        "ece": 0.026405330799352696,
+        "mean_pred": 0.7950045484910775,
+        "base_rate": 0.8169491525423729
+      }
+    },
+    "abl_A+target_geometry+target_defense_logreg": {
+      "metrica-sample-1": {
+        "n": 1056,
+        "log_loss": 0.40525754977425255,
+        "brier": 0.13048690412444866,
+        "auc": 0.8497343469219792,
+        "ece": 0.0491921810559076,
+        "mean_pred": 0.7881333295565436,
+        "base_rate": 0.7566287878787878
+      },
+      "metrica-sample-2": {
+        "n": 1180,
+        "log_loss": 0.34146038139284346,
+        "brier": 0.10623041592794885,
+        "auc": 0.8624510142923006,
+        "ece": 0.034692964390120554,
+        "mean_pred": 0.7965364780710446,
+        "base_rate": 0.8169491525423729
+      }
+    },
+    "abl_B_minus_target_geometry_logreg": {
+      "metrica-sample-1": {
+        "n": 1056,
+        "log_loss": 0.4531202444421024,
+        "brier": 0.14860170217031768,
+        "auc": 0.8097914221570738,
+        "ece": 0.05550799998371765,
+        "mean_pred": 0.797306635318011,
+        "base_rate": 0.7566287878787878
+      },
+      "metrica-sample-2": {
+        "n": 1180,
+        "log_loss": 0.392949299735969,
+        "brier": 0.12738218487749597,
+        "auc": 0.8141520670047642,
+        "ece": 0.039128717818400084,
+        "mean_pred": 0.7935295284221093,
+        "base_rate": 0.8169491525423729
+      }
+    }
+  },
+  "comparisons": [
+    {
+      "a": "A_logreg",
+      "b": "abl_A+pressure_logreg",
+      "n_boot": 2000,
+      "n_groups": 633,
+      "log_loss": {
+        "delta": -0.006532537794268101,
+        "ci95": [
+          -0.012473326887802273,
+          -0.0008436192533535664
+        ],
+        "share_improved": 0.989
+      },
+      "brier": {
+        "delta": -0.002217143115008674,
+        "ci95": [
+          -0.004424074741260891,
+          -0.00012586261067221386
+        ],
+        "share_improved": 0.978
+      },
+      "auc": {
+        "delta": 0.008413488923718626,
+        "ci95": [
+          0.0005364837613662105,
+          0.01665331321633668
+        ],
+        "share_improved": 0.982
+      }
+    },
+    {
+      "a": "A_logreg",
+      "b": "abl_A+ray_defense_logreg",
+      "n_boot": 2000,
+      "n_groups": 633,
+      "log_loss": {
+        "delta": -0.00804567342771495,
+        "ci95": [
+          -0.016580678291517225,
+          0.0003314713885972751
+        ],
+        "share_improved": 0.9685
+      },
+      "brier": {
+        "delta": -0.0017261687693136962,
+        "ci95": [
+          -0.0050142751330549155,
+          0.001413597835755254
+        ],
+        "share_improved": 0.863
+      },
+      "auc": {
+        "delta": 0.02243676992057786,
+        "ci95": [
+          0.011791766173883328,
+          0.03254591705276954
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "A_logreg",
+      "b": "abl_A+defender_only_logreg",
+      "n_boot": 2000,
+      "n_groups": 633,
+      "log_loss": {
+        "delta": -0.014960883844211459,
+        "ci95": [
+          -0.024957685475159218,
+          -0.004734409140060774
+        ],
+        "share_improved": 0.9975
+      },
+      "brier": {
+        "delta": -0.003985734351925702,
+        "ci95": [
+          -0.007898472446946504,
+          -0.00021541308924864452
+        ],
+        "share_improved": 0.981
+      },
+      "auc": {
+        "delta": 0.027937436068396826,
+        "ci95": [
+          0.014217696817350103,
+          0.04185008975471296
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "A_logreg",
+      "b": "abl_A+target_geometry_logreg",
+      "n_boot": 2000,
+      "n_groups": 633,
+      "log_loss": {
+        "delta": -0.05841644333964008,
+        "ci95": [
+          -0.0739249137512256,
+          -0.04351622766468401
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.024232119661670118,
+        "ci95": [
+          -0.029943956857757012,
+          -0.018647818370468076
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.06227972452299402,
+        "ci95": [
+          0.0466449327976034,
+          0.078443998937854
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "abl_A+target_geometry_logreg",
+      "b": "abl_A+target_geometry+target_defense_logreg",
+      "n_boot": 2000,
+      "n_groups": 633,
+      "log_loss": {
+        "delta": -0.007667776317098085,
+        "ci95": [
+          -0.019039381595887212,
+          0.0035951282281523954
+        ],
+        "share_improved": 0.908
+      },
+      "brier": {
+        "delta": -5.330018051820373e-05,
+        "ci95": [
+          -0.0038824006232123544,
+          0.003904795847075303
+        ],
+        "share_improved": 0.525
+      },
+      "auc": {
+        "delta": 0.014640861783021486,
+        "ci95": [
+          0.003153548205112428,
+          0.025492582202031242
+        ],
+        "share_improved": 0.9945
+      }
+    },
+    {
+      "a": "abl_A+target_geometry_logreg",
+      "b": "B_logreg",
+      "n_boot": 2000,
+      "n_groups": 633,
+      "log_loss": {
+        "delta": -0.010204044905181175,
+        "ci95": [
+          -0.024433136139031492,
+          0.0032307776847091962
+        ],
+        "share_improved": 0.934
+      },
+      "brier": {
+        "delta": -0.001235058457286456,
+        "ci95": [
+          -0.00596916164304633,
+          0.0032772707088389048
+        ],
+        "share_improved": 0.714
+      },
+      "auc": {
+        "delta": 0.02298359873317979,
+        "ci95": [
+          0.010440008477585166,
+          0.036117007323292837
+        ],
+        "share_improved": 0.9995
+      }
+    },
+    {
+      "a": "A_logreg",
+      "b": "abl_B_minus_target_geometry_logreg",
+      "n_boot": 2000,
+      "n_groups": 633,
+      "log_loss": {
+        "delta": -0.01630786490980718,
+        "ci95": [
+          -0.029719682744751383,
+          -0.002569387280125288
+        ],
+        "share_improved": 0.99
+      },
+      "brier": {
+        "delta": -0.004567926954485629,
+        "ci95": [
+          -0.009636626979836466,
+          0.0005807206774932352
+        ],
+        "share_improved": 0.9615
+      },
+      "auc": {
+        "delta": 0.03243198516846768,
+        "ci95": [
+          0.017323775906176727,
+          0.048301656585982455
+        ],
+        "share_improved": 0.9995
+      }
+    }
+  ],
+  "calibration": {},
+  "permutation_importance": {}
+}
