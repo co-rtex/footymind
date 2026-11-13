@@ -18,7 +18,7 @@ observed state, and reported with its sensitivity to the model's assumptions.
 
 | Capability | What it does | Status |
 |---|---|---|
-| Real tracking ingestion | Metrica Sports sample games: 25 Hz positions for 22 players + ball, synchronised events. Checksum-pinned downloads, data-quality gates, versioned bundles | ✅ |
+| Real tracking ingestion | Metrica Sports sample games 1–3 (CSV and EPTS formats): 25 Hz positions for 22 players + ball, synchronised events. Checksum-pinned downloads, data-quality gates, versioned bundles | ✅ |
 | Spatial analytics | Pitch control (Spearman 2018 time-to-intercept model), passing-lane geometry and interception heuristic, pressure on the ball carrier | ✅ (uncalibrated estimates, labelled as such) |
 | Possession Multiverse | Relocate players at a real frame → reachability check → recompute options → compare with observed → parameter-sensitivity ensemble → explicit assumptions | ✅ API · 🚧 UI |
 | Research: does spatial context matter? | Leakage-audited attempted-pass outcome study with event-only, spatial and interaction model families, ablations and sensitivity analyses | ✅ v1 |
@@ -26,18 +26,19 @@ observed state, and reported with its sensitivity to the model's assumptions.
 
 ## Key research finding (v1)
 
-On held-out matches (leave-one-match-out, 2,236 attempted passes, Metrica Games 1–2):
+On held-out matches (leave-one-match-out, 3,633 attempted passes, Metrica Games 1–3):
 
 * Adding tracking-derived spatial context to event-level information reduced log loss from
-  **0.438 to 0.369** (Δ −0.069, 95% CI [−0.089, −0.050]) and raised AUC from **0.78 to 0.86**.
+  **0.429 to 0.358** (Δ −0.071, 95% CI [−0.085, −0.057]) and raised AUC from **0.78 to 0.87**.
+  The gain holds in every held-out match, including one with a different annotation scheme.
 * Most of that gain comes from **teammate geometry relative to the pass direction**.
-  **Defender-only** information adds a smaller but detectable improvement (Δ −0.015 [−0.025, −0.005]).
+  **Defender-only** information adds a smaller but consistent improvement (Δ −0.014 [−0.021, −0.008]).
 * **Negative results:** richer interaction features did not help beyond the spatial model.
   The literature-parameter physics estimate is **poorly calibrated** on observed passes
   (ECE 0.18). This is why every model estimate in the product is labelled "uncalibrated".
 
 These results replicate established findings (Power et al. 2017; Anzer & Bauer 2022) on
-open data, with an explicit leakage audit. They are not a new discovery. Two matches from
+open data, with an explicit leakage audit. They are not a new discovery. Three matches from
 one provider cannot support generalisation claims. See [`docs/RESEARCH.md`](docs/RESEARCH.md)
 and the [claims ledger](docs/CLAIMS_LEDGER.md).
 

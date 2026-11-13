@@ -72,6 +72,39 @@ Sensitivity analyses reproduced the direction and approximate size of every effe
 The receiver inferred from the release direction matched the true receiver on 78.6% of
 completed passes (n = 1,763).
 
+### RQ1 v2: three matches (`pass_outcome_v2_3match`, revision dffc3e8)
+
+Metrica Game 3 was added through the EPTS adapter. Its JSON annotation adds `CARRY`
+events, which are excluded from history features. That makes its fold a **transfer test
+to a different annotation scheme**. There are 3,633 attempted passes (79.2% completed).
+The receiver inference is 76.1% top-1.
+
+| model | pooled log loss | AUC | ECE | G1 fold | G2 fold | G3 fold (transfer) |
+|---|---|---|---|---|---|---|
+| A logistic | 0.429 | 0.784 | 0.030 | 0.469 | 0.402 | 0.422 |
+| A GBM | 0.400 | 0.817 | 0.016 | 0.438 | 0.371 | 0.397 |
+| B logistic | 0.358 | 0.866 | 0.026 | 0.393 | 0.320 | 0.364 |
+| B GBM | 0.350 | 0.868 | 0.019 | 0.377 | 0.322 | 0.354 |
+| C GBM | 0.349 | 0.869 | 0.017 | 0.376 | 0.317 | 0.355 |
+| physics (raw) | 0.772 | 0.751 | 0.174 | 0.823 | 0.749 | 0.752 |
+
+| comparison | Δ log loss [95% CI] | Δ AUC [95% CI] |
+|---|---|---|
+| A LR → B LR | −0.071 [−0.085, −0.057] | +0.082 [+0.068, +0.096] |
+| A GBM → B GBM | −0.050 [−0.062, −0.037] | +0.051 [+0.038, +0.064] |
+| B GBM → C GBM | −0.002 [−0.006, +0.003] | +0.001 [−0.003, +0.005] |
+| A LR → A + defender-only | −0.014 [−0.021, −0.008] | +0.022 [+0.013, +0.030] |
+| A LR → A + teammate geometry | −0.047 [−0.059, −0.035] | +0.054 [+0.041, +0.066] |
+| A LR → physics (Platt) | +0.027 [+0.013, +0.041] (worse) | −0.036 [−0.058, −0.014] |
+
+Annotation sensitivity (`pass_outcome_v2_sens_no_after_carry`) drops all attempts
+immediately preceded by the same player's CARRY, in both classes (n = 2,876). It gives
+A→B −0.072 [−0.088, −0.056] and defender-only −0.011 [−0.019, −0.004].
+
+The v2 conclusions match v1. The spatial gain holds in every fold, including the transfer
+fold. Defender-only information gives a small, consistently positive gain. Interaction
+features add nothing measurable, and the raw physics estimate stays miscalibrated.
+
 ### Interpretation
 1. **Spatial context helps, robustly, on held-out matches.** It reduces log loss by about
    16% relative to the event baseline (0.438 → 0.369) and improves discrimination
@@ -131,6 +164,8 @@ a literature physics model.
   (displacement sensitivity of option value per defender); off-ball valuation (Ghost Value).
 
 ## Log
+* **2026-11-13**: Added the Metrica Game 3 EPTS adapter (direction cross-checked against the
+  provider metadata). RQ1 v2 with 3 folds confirms v1 in every fold.
 * **2026-11-13**: Legacy audit (v1 predictor had no generalization evidence). Metrica
   ingestion validated (sync 0.08 m). RQ1 v1 run, plus ablation and two sensitivity analyses.
   Found and documented two leakage traps: failed-pass end location = loss location, and
