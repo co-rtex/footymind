@@ -1,6 +1,6 @@
 # Current state and session handoff
 
-_Last updated: 2026-11-13 23:20 UTC, end of session 2 (21:34–23:2x UTC). Keep this file
+_Last updated: 2026-11-13 23:39 UTC, end of session 2 (21:34–23:39 UTC). Keep this file
 factual and update it at every checkpoint._
 
 ## Branch and repository
@@ -28,10 +28,10 @@ uv run footymind download metrica-sample-1 metrica-sample-2 metrica-sample-3   #
 ## Verification (last run in this session)
 | Gate | Result |
 |---|---|
-| `scripts/check.sh` (exit code 0) | Python: ruff, format, mypy, **77 pytest**; web: typecheck, lint, **74 vitest**, build |
+| `scripts/check.sh` (exit code 0) | Python: ruff, format, mypy, **78 pytest**; web: typecheck, lint, **74 vitest**, build |
 | `cd web && npx playwright test e2e/flow.spec.ts` | **6/6** against the real API (Metrica + SkillCorner, featured scenarios, shadow layer, broadcast provenance) |
 | Docker | image built locally, e2e passed against the container; CI `docker` job green |
-| GitHub CI | green through 028c258 (run 23). Runs 22 and 24 were cancelled by newer pushes (concurrency), not failed; check the latest run on resume |
+| GitHub CI | green through 52f9ed2 (run 25). Runs 22 and 24 were cancelled by newer pushes (concurrency), not failed. Runs for 97f6ef0 and later were in progress at handoff |
 
 ## Research status (numbers live in CLAIMS_LEDGER.md)
 * **Main, replicated result:** decision-time spatial context improves held-out pass-outcome
@@ -44,15 +44,17 @@ uv run footymind download metrica-sample-1 metrica-sample-2 metrica-sample-3   #
   so the model is structurally misspecified (C7, C15). Per-provider option models serve
   probabilities (C21, C24).
 * Defensive Shadow: robust to noise, 2× chance at the interceptor, but **not better than
-  nearest-defender** (C16, C17). On SkillCorner the outcome test is uninformative
-  (shadow and nearest-defender both at chance; label cause undiagnosed, C29). Run value: tiny association and at-chance ranking on both
+  nearest-defender** (C16, C17). On SkillCorner the shadow is at chance and worse than
+  nearest-defender (C29): the outcome signal does not replicate. Run value: tiny association and at-chance ranking on both
   providers (C22, C25). Both are experimental.
 * Two independent reviews were done this session. Their findings are fixed: rules v2,
   decision-time framing, scenario feasibility and ensemble semantics, Shadow framing, and
   the SkillCorner adapter v2.
 
 ## Next executable actions
-1. Confirm that CI is green for the adapter-v2 commits (`mcp__github__actions_list`).
+1. Confirm that CI is green for the last commits (97f6ef0 onwards) with `mcp__github__actions_list`.
+   Optionally run shadow validation on all 20 SkillCorner matches
+   (`python -m footymind.research.shadow_validation skillcorner`, about 18 min).
 2. Research: simulated defender responses (learned ghosting) before any off-ball valuation
    claim. Add time-on-ball / one-touch context to both providers' baselines and re-run C20/C28
    (the second review estimated −0.018 for SkillCorner with it).
