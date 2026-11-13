@@ -97,13 +97,36 @@ def defensive_shadow(
     value_model: ValueModel = "option_model",
     params: PitchControlParams = DEFAULT_PARAMS,
 ) -> ShadowResult:
+    """Defensive shadow at an observed frame (see module docstring)."""
     st = frame_state(match_id, frame)
+    pitch = load_match(match_id).tracking.pitch
+    return shadow_for_state(
+        st,
+        pitch.half_length,
+        pitch.half_width,
+        horizon_s,
+        ring_fraction,
+        n_directions,
+        value_model,
+        params,
+    )
+
+
+def shadow_for_state(
+    st: FrameState,
+    half_length: float = 52.5,
+    half_width: float = 34.0,
+    horizon_s: float = 1.0,
+    ring_fraction: float = 0.5,
+    n_directions: int = 8,
+    value_model: ValueModel = "option_model",
+    params: PitchControlParams = DEFAULT_PARAMS,
+) -> ShadowResult:
+    """Pure computation on a ``FrameState``, so constructed states can be property-tested."""
     if st.attacking_team is None:
         raise ValueError("no possession at this frame")
     if np.isnan(st.ball).any():
         raise ValueError("ball not observed at this frame")
-    td = load_match(match_id).tracking
-    half_l, half_w = td.pitch.half_length, td.pitch.half_width
     base = _values(st, value_model, params)
     if not base:
         raise ValueError("no pass options at this frame")
@@ -120,8 +143,8 @@ def defensive_shadow(
         vb, vs = [], []
         gains: dict[str, list[float]] = {}
         for a in angles:
-            ax = float(np.clip(x0 + radius * np.cos(a), -half_l, half_l))
-            ay = float(np.clip(y0 + radius * np.sin(a), -half_w, half_w))
+            ax = float(np.clip(x0 + radius * np.cos(a), -half_length, half_length))
+            ay = float(np.clip(y0 + radius * np.sin(a), -half_width, half_width))
             alt = st.copy()
             alt.xy[d] = [ax, ay]
             vals = _values(alt, value_model, params)
@@ -147,8 +170,8 @@ def defensive_shadow(
         )
     out.sort(key=lambda s: -s.shadow_sum)
     return ShadowResult(
-        match_id=match_id,
-        frame=frame,
+        match_id=st.match_id,
+        frame=st.frame,
         attacking_team=st.attacking_team,
         carrier_id=st.player_ids[st.carrier] if st.carrier is not None else None,
         value_model=value_model,
