@@ -9,6 +9,7 @@ import type { FrameAnalysisOut, PassOptionOut, ProvenanceLabel, ScenarioResponse
 import type { ReplayData } from "../api/parse";
 import { fitPitch, metresToPx, toCanvasX, toCanvasY, toPitch, type PitchTransform } from "../lib/coords";
 import { sampleXY, type Vec2 } from "../lib/interp";
+import { primaryP } from "../lib/models";
 import { drawPitch } from "./pitch";
 import { controlDelta, controlRaster, deltaRaster } from "./heatmap";
 import { DEFAULT_THEME, rgba, type CanvasTheme } from "./theme";
@@ -424,14 +425,14 @@ export class PitchRenderer {
     if (diff && s.scenario) for (const d of s.scenario.option_deltas) if (d.delta !== null) deltas.set(d.receiver_id, d.delta);
     const bx = toCanvasX(tf, a.ball_x);
     const by = toCanvasY(tf, a.ball_y);
-    const opts = [...a.pass_options].sort((p, q) => p.p_success - q.p_success);
+    const opts = [...a.pass_options].sort((p, q) => primaryP(p) - primaryP(q));
     const k = Math.max(0.6, Math.min(1.3, tf.scale / 9));
-    const top = new Set([...a.pass_options].sort((p, q) => q.p_success - p.p_success).slice(0, 3).map((o) => o.receiver_id));
+    const top = new Set([...a.pass_options].sort((p, q) => primaryP(q) - primaryP(p)).slice(0, 3).map((o) => o.receiver_id));
     ctx.save();
     ctx.lineCap = "round";
     for (const o of opts) {
       const hl = s.highlightReceiver === o.receiver_id;
-      const p = Math.max(0, Math.min(1, o.p_success));
+      const p = Math.max(0, Math.min(1, primaryP(o)));
       let colour = this.theme.text;
       let alpha = 0.16 + 0.7 * p;
       if (diff) {
@@ -467,7 +468,7 @@ export class PitchRenderer {
   }
 
   private optionTag(o: PassOptionOut, delta?: number): string {
-    const pct = `${Math.round(o.p_success * 100)}%`;
+    const pct = `${Math.round(primaryP(o) * 100)}%`;
     if (delta === undefined) return pct;
     const d = Math.round(delta * 100);
     return `${pct} (${d > 0 ? "+" : d < 0 ? "−" : "±"}${Math.abs(d)})`;

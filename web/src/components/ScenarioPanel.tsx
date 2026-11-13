@@ -5,10 +5,12 @@ import type {
   ResponsePolicy,
   ScenarioResponse,
   SummaryDict,
+  ValueModel,
 } from "../api/types";
 import { MAX_INTERVENTIONS } from "../api/types";
 import { fmtMetres, fmtSigned, playerLabel } from "../lib/format";
 import { agreementSentence } from "../lib/agreement";
+import { optionModelLabel, PHYSICS_LABEL, valueModelLabel } from "../lib/models";
 import { OptionDeltaTable } from "./OptionDeltaTable";
 import { ProvBadge } from "./ProvBadge";
 import { Segmented } from "./Segmented";
@@ -21,6 +23,8 @@ interface Props {
   interventions: InterventionIn[];
   policy: ResponsePolicy;
   onPolicy: (p: ResponsePolicy) => void;
+  valueModel: ValueModel;
+  onValueModel: (v: ValueModel) => void;
   status: "idle" | "loading" | "success" | "error";
   scenario: ScenarioResponse | null;
   error: Error | null;
@@ -34,9 +38,13 @@ interface Props {
 }
 
 const SUMMARY_ROWS: { key: string; label: string; kind: "area" | "player" | "prob" | "count" }[] = [
-  { key: "control_area_m2", label: "Attacking control area", kind: "area" },
+  { key: "control_area_m2", label: "Attacking control", kind: "area" },
   { key: "control_area_final_third_m2", label: "Control in final third", kind: "area" },
   { key: "best_option_receiver", label: "Best pass option", kind: "player" },
+  { key: "best_option_p_success_model", label: "Best option (model)", kind: "prob" },
+  { key: "best_option_p_success_physics", label: "Best option (physics)", kind: "prob" },
+  { key: "n_options_physics_over_0_5", label: "Physics options > 0.5", kind: "count" },
+  // pre-option-model key names, still shown if an older backend sends them
   { key: "best_option_p_success", label: "Best option P(success)", kind: "prob" },
   { key: "n_options_p_over_0_5", label: "Options with P > 0.5", kind: "count" },
 ];
@@ -127,6 +135,17 @@ export function ScenarioPanel(p: Props) {
         ]}
       />
 
+      <Segmented<ValueModel>
+        label="Compare using"
+        value={p.valueModel}
+        onChange={p.onValueModel}
+        testId="value-model"
+        options={[
+          { value: "option_model", label: "Option model", title: optionModelLabel(scenario?.observed.option_model) },
+          { value: "physics", label: "Physics heuristic", title: PHYSICS_LABEL },
+        ]}
+      />
+
       {p.notice ? (
         <p className="inline-warn" role="status">
           {p.notice}
@@ -184,8 +203,9 @@ export function ScenarioPanel(p: Props) {
           {top && top.delta !== null ? (
             <p className="headline" data-testid="scenario-headline">
               Largest change: pass to <strong>{playerLabel(top.receiver_id, players)}</strong>{" "}
-              <span className={top.delta > 0 ? "pos" : top.delta < 0 ? "neg" : ""}>{fmtSigned(top.delta)}</span> estimated
-              P(success) ({agreementSentence(top.delta_sign_agreement, scenario.ensemble_size, top.delta)}).
+              <span className={top.delta > 0 ? "pos" : top.delta < 0 ? "neg" : ""}>{fmtSigned(top.delta)}</span>{" "}
+              {scenario.value_model === "physics" ? "physics-heuristic" : "option-model"} probability{" "}
+              {`(${agreementSentence(top.delta_sign_agreement, scenario.ensemble_size, top.delta)}).`}
             </p>
           ) : null}
 
@@ -224,7 +244,11 @@ export function ScenarioPanel(p: Props) {
 
           <div className="subhead">
             <h3 className="h-sub">Pass options: observed vs hypothetical</h3>
+            <ProvBadge prov="estimated">model estimate</ProvBadge>
           </div>
+          <p className="small muted" data-testid="delta-model">
+            Values: {valueModelLabel(scenario.value_model, scenario.observed.option_model)}.
+          </p>
           <OptionDeltaTable
             deltas={scenario.option_deltas}
             players={players}

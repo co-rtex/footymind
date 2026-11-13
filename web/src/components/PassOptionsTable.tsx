@@ -1,5 +1,6 @@
 import type { PassOptionOut, PlayerOut } from "../api/types";
 import { fmtMetres, fmtProb, playerLabel } from "../lib/format";
+import { hasOptionModel, primaryP } from "../lib/models";
 
 interface Props {
   id?: string;
@@ -7,11 +8,18 @@ interface Props {
   players: Map<string, PlayerOut>;
   highlight: string | null;
   onHighlight: (id: string | null) => void;
+  /** label for the primary (calibrated) probability column */
+  modelLabel: string;
 }
 
-/** Ranked pass options. Doubles as the text alternative for the pass lines on the canvas. */
-export function PassOptionsTable({ id, options, players, highlight, onHighlight }: Props) {
-  const ranked = [...options].sort((a, b) => b.p_success - a.p_success);
+/**
+ * Ranked pass options. Doubles as the text alternative for the pass lines on
+ * the canvas. The calibrated option model is the primary probability, the
+ * physics heuristic is secondary.
+ */
+export function PassOptionsTable({ id, options, players, highlight, onHighlight, modelLabel }: Props) {
+  const ranked = [...options].sort((a, b) => primaryP(b) - primaryP(a));
+  const withModel = hasOptionModel(options);
   if (ranked.length === 0) {
     return (
       <p className="muted small" id={id} data-testid="pass-options-empty">
@@ -23,21 +31,25 @@ export function PassOptionsTable({ id, options, players, highlight, onHighlight 
     <div className="table-wrap" id={id}>
       <table className="table table--dense options-table" data-testid="pass-options">
         <caption className="sr-only">
-          Pass options from the ball, ranked by estimated probability of success (model estimate, uncalibrated). Each row
-          lists the closest defender to the passing lane.
+          Pass options from the ball, ranked by {withModel ? modelLabel : "the physics heuristic"}. Each row lists the
+          physics heuristic, its lane and control components, and the closest defender to the passing lane. All values
+          are model estimates.
         </caption>
         <thead>
           <tr>
             <th scope="col" title="Second line: the defender closest to the passing lane and their perpendicular distance">
               Receiver
             </th>
-            <th scope="col" title="Estimated P(success) = P(lane clear) x P(control at target)">
-              P(success)
+            <th scope="col" title={withModel ? modelLabel : "Option model unavailable at this frame"}>
+              {withModel ? "Model" : "Model n/a"}
             </th>
-            <th scope="col" className="num" title="Estimated probability that no defender intercepts in the lane">
+            <th scope="col" className="num" title="Physics heuristic (uncalibrated) = lane clear x control at target">
+              Phys.
+            </th>
+            <th scope="col" className="num" title="Physics: estimated probability that no defender intercepts in the lane">
               Lane
             </th>
-            <th scope="col" className="num" title="Estimated attacking pitch control at the target">
+            <th scope="col" className="num" title="Physics: estimated attacking pitch control at the target">
               Ctrl
             </th>
             <th scope="col" className="num" title="Pass distance in metres">
@@ -79,13 +91,20 @@ export function PassOptionsTable({ id, options, players, highlight, onHighlight 
                 </span>
               </th>
               <td>
-                <span className="pbar" aria-hidden="true">
-                  <span className="pbar-fill" style={{ width: `${Math.round(o.p_success * 100)}%` }} />
-                </span>
-                <span className="pbar-val">{fmtProb(o.p_success)}</span>
+                {o.p_success_model !== null ? (
+                  <>
+                    <span className="pbar" aria-hidden="true">
+                      <span className="pbar-fill" style={{ width: `${Math.round(o.p_success_model * 100)}%` }} />
+                    </span>
+                    <span className="pbar-val">{fmtProb(o.p_success_model)}</span>
+                  </>
+                ) : (
+                  <span className="muted">n/a</span>
+                )}
               </td>
-              <td className="num">{fmtProb(o.p_lane_clear)}</td>
-              <td className="num">{fmtProb(o.p_control_at_target)}</td>
+              <td className="num muted">{fmtProb(o.p_success)}</td>
+              <td className="num muted">{fmtProb(o.p_lane_clear)}</td>
+              <td className="num muted">{fmtProb(o.p_control_at_target)}</td>
               <td className="num">{o.distance_m.toFixed(0)}</td>
               <td className={`num ${o.forward_progress_m >= 0.5 ? "pos" : o.forward_progress_m <= -0.5 ? "neg" : ""}`}>
                 {o.forward_progress_m >= 0.5 ? "+" : o.forward_progress_m <= -0.5 ? "−" : ""}

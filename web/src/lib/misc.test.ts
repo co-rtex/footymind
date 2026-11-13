@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { controlColour, controlDelta, deltaColour, rasterRow } from "../render/heatmap";
 import { syntheticAnalysis } from "../test/fixtures";
 import { agreementLabel, agreementSentence } from "./agreement";
+import { optionModelLabel, trainingPasses } from "./models";
 import { fmtClock, fmtSigned, matchClockSeconds } from "./format";
 import { matchOfPossession, parseRoute, routeHash } from "./hooks";
 import { Playback } from "./playback";
@@ -33,8 +34,25 @@ describe("agreement wording", () => {
     expect(agreementLabel(0.96).word).toBe("robust");
     expect(agreementLabel(0.75).word).toBe("mixed");
     expect(agreementLabel(0.4).word).toBe("sensitive");
-    expect(agreementLabel(0.46, 0.0).word).toBe("no change");
+    expect(agreementLabel(0.46, 0.0).word).toBe("negligible");
+    // the backend sends null agreement for negligible deltas: that is "negligible", not missing data
+    expect(agreementLabel(null, 0.003).word).toBe("negligible");
+    expect(agreementLabel(null, 0.2).word).toBe("n/a");
     expect(agreementSentence(0.96, 24, -0.1)).toBe("robust: 96% of 24 parameter settings agree on the direction");
+  });
+});
+
+describe("option model labels", () => {
+  it("reads the training size from the option model status", () => {
+    const info = {
+      name: "option_model_v1",
+      reference: "ref",
+      status: "logistic regression ...; trained on 3633 attempted passes; held-out log loss 0.422",
+      params: {},
+    };
+    expect(trainingPasses(info)).toBe(3633);
+    expect(optionModelLabel(info)).toBe("Option model (calibrated on 3,633 real passes)");
+    expect(optionModelLabel(null)).toBe("Option model (calibrated on real passes)");
   });
 });
 

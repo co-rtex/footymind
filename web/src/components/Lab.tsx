@@ -8,6 +8,7 @@ import type {
   PlayerOut,
   ResponsePolicy,
   ScenarioResponse,
+  ValueModel,
 } from "../api/types";
 import { MAX_INTERVENTIONS } from "../api/types";
 import { playerLabel, speedOf, teamLabel, titleCase } from "../lib/format";
@@ -93,6 +94,7 @@ function LabView({ replay, match, onBack }: { replay: ReplayData; match: MatchSu
   const [highlight, setHighlight] = useState<string | null>(null);
   const [interventions, setInterventions] = useState<InterventionIn[]>([]);
   const [policy, setPolicy] = useState<ResponsePolicy>("none");
+  const [valueModel, setValueModel] = useState<ValueModel>("option_model");
   const [dragWarn, setDragWarn] = useState<{ outside: boolean | null; id: string } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -170,6 +172,7 @@ function LabView({ replay, match, onBack }: { replay: ReplayData; match: MatchSu
           response_policy: policy,
           horizon_s: HORIZON_S,
           ensemble: ENSEMBLE,
+          value_model: valueModel,
         },
         ac.signal,
       )
@@ -182,7 +185,7 @@ function LabView({ replay, match, onBack }: { replay: ReplayData; match: MatchSu
         },
       );
     return () => ac.abort();
-  }, [mode, interventions, policy, frame, replay.matchId, scNonce]);
+  }, [mode, interventions, policy, valueModel, frame, replay.matchId, scNonce]);
   const scenario = mode === "edit" && interventions.length > 0 ? sc.data : null;
 
   const pending = useMemo(() => {
@@ -411,7 +414,9 @@ function LabView({ replay, match, onBack }: { replay: ReplayData; match: MatchSu
         : an.status === "loading"
           ? "Analysing frame..."
           : analysis
-            ? "Paused · model overlay"
+            ? analysis.pitch_control || analysis.pass_options.length > 0
+              ? "Paused · model overlay"
+              : "Paused · no model overlay at this frame"
             : null;
 
   return (
@@ -570,6 +575,8 @@ function LabView({ replay, match, onBack }: { replay: ReplayData; match: MatchSu
               interventions={interventions}
               policy={policy}
               onPolicy={setPolicy}
+              valueModel={valueModel}
+              onValueModel={setValueModel}
               status={sc.status}
               scenario={scenario}
               error={sc.error}

@@ -154,7 +154,10 @@ export interface PassOptionOut {
   ball_travel_time_s: number;
   p_control_at_target: number;
   p_lane_clear: number;
+  /** physics heuristic: p_control_at_target * p_lane_clear (uncalibrated) */
   p_success: number;
+  /** data-calibrated option model (see FrameAnalysisOut.option_model); null if unavailable */
+  p_success_model: number | null;
   lane_min_margin_s: number | null;
   lane_closest_defender_id: string | null;
   lane_closest_defender_perp_m: number | null;
@@ -197,6 +200,8 @@ export interface FrameAnalysisOut {
   control_area_m2: number | null;
   control_area_final_third_m2: number | null;
   model: ModelInfo;
+  /** calibrated option model behind PassOptionOut.p_success_model; status holds held-out metrics and caveats */
+  option_model: ModelInfo | null;
   warnings: string[];
 }
 
@@ -210,6 +215,7 @@ export interface InterventionIn {
 
 export type ResponsePolicy = "none" | "marker_follows";
 export type VelocityMode = "keep" | "zero";
+export type ValueModel = "option_model" | "physics";
 
 export interface ScenarioRequest {
   match_id: string;
@@ -222,6 +228,8 @@ export interface ScenarioRequest {
   horizon_s?: number;
   ensemble?: number;
   seed?: number;
+  /** which per-option probability the deltas use (default "option_model") */
+  value_model?: ValueModel;
 }
 
 export interface FeasibilityOut {
@@ -256,7 +264,7 @@ export interface OptionDeltaOut {
   observed_p90: number | null;
   hypothetical_p10: number | null;
   hypothetical_p90: number | null;
-  /** share of the parameter ensemble whose delta has the same sign */
+  /** share of the parameter ensemble whose delta has the same sign; null when |delta| < 0.005 (negligible) */
   delta_sign_agreement: number | null;
 }
 
@@ -275,6 +283,8 @@ export interface ScenarioResponse {
   warnings: string[];
   assumptions: string[];
   disclaimer: string;
+  /** which per-option probability option_deltas use */
+  value_model: ValueModel;
 }
 
 /** Schema bounds for interventions, mirrored from InterventionIn. */

@@ -8,7 +8,7 @@ export function isNegligible(delta: number | null): boolean {
 }
 
 export function agreementLabel(a: number | null, delta?: number | null): { word: string; cls: string } {
-  if (delta !== undefined && isNegligible(delta)) return { word: "no change", cls: "agree--na" };
+  if (delta !== undefined && isNegligible(delta)) return { word: "negligible", cls: "agree--na" };
   if (a === null || !Number.isFinite(a)) return { word: "n/a", cls: "agree--na" };
   if (a >= 0.9) return { word: "robust", cls: "agree--robust" };
   if (a >= 0.7) return { word: "mixed", cls: "agree--mostly" };

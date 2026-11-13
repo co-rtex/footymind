@@ -58,6 +58,7 @@ export function syntheticAnalysis(overrides: Partial<FrameAnalysisOut> = {}): Fr
     control_area_m2: 100,
     control_area_final_third_m2: 10,
     model: { name: "synthetic", reference: "none", status: "synthetic", params: {} },
+    option_model: null,
     warnings: [],
     ...overrides,
   };

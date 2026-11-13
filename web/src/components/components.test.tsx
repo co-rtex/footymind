@@ -14,7 +14,7 @@ const players = new Map<string, PlayerOut>([
   ["away_4", { player_id: "away_4", team: "away", jersey: 4 }],
 ]);
 
-function option(id: string, p: number): PassOptionOut {
+function option(id: string, p: number, model: number | null = p): PassOptionOut {
   return {
     receiver_id: id,
     target_x: 0,
@@ -25,6 +25,7 @@ function option(id: string, p: number): PassOptionOut {
     p_control_at_target: 0.9,
     p_lane_clear: 0.8,
     p_success: p,
+    p_success_model: model,
     lane_min_margin_s: 0.3,
     lane_closest_defender_id: "away_4",
     lane_closest_defender_perp_m: 2.5,
@@ -35,7 +36,7 @@ function option(id: string, p: number): PassOptionOut {
 
 describe("PassOptionsTable", () => {
   it("ranks options by p_success and names the lane defender", () => {
-    render(<PassOptionsTable options={[option("home_9", 0.3), option("home_7", 0.92)]} players={players} highlight={null} onHighlight={() => {}} />);
+    render(<PassOptionsTable options={[option("home_9", 0.3), option("home_7", 0.92)]} players={players} highlight={null} onHighlight={() => {}} modelLabel="Option model" />);
     const rows = within(screen.getByTestId("pass-options")).getAllByRole("row").slice(1);
     expect(rows[0]).toHaveTextContent("#7 Home");
     expect(rows[0]).toHaveTextContent("0.92");
@@ -43,14 +44,45 @@ describe("PassOptionsTable", () => {
     expect(rows[1]).toHaveTextContent("#9 Home");
   });
 
+  it("ranks by the calibrated option model, not the physics heuristic", () => {
+    render(
+      <PassOptionsTable
+        options={[option("home_7", 0.95, 0.4), option("home_9", 0.2, 0.8)]}
+        players={players}
+        highlight={null}
+        onHighlight={() => {}}
+        modelLabel="Option model"
+      />,
+    );
+    const rows = within(screen.getByTestId("pass-options")).getAllByRole("row").slice(1);
+    expect(rows[0]).toHaveTextContent("#9 Home");
+    expect(rows[0]).toHaveTextContent("0.80");
+    expect(rows[0]).toHaveTextContent("0.20");
+  });
+
+  it("falls back to physics ranking and says so when the option model is missing", () => {
+    render(
+      <PassOptionsTable
+        options={[option("home_7", 0.3, null), option("home_9", 0.6, null)]}
+        players={players}
+        highlight={null}
+        onHighlight={() => {}}
+        modelLabel="Option model"
+      />,
+    );
+    expect(screen.getByRole("columnheader", { name: "Model n/a" })).toBeInTheDocument();
+    const rows = within(screen.getByTestId("pass-options")).getAllByRole("row").slice(1);
+    expect(rows[0]).toHaveTextContent("#9 Home");
+  });
+
   it("handles an empty option list", () => {
-    render(<PassOptionsTable options={[]} players={players} highlight={null} onHighlight={() => {}} />);
+    render(<PassOptionsTable options={[]} players={players} highlight={null} onHighlight={() => {}} modelLabel="Option model" />);
     expect(screen.getByText("No pass options at this frame.")).toBeInTheDocument();
   });
 
   it("highlights a receiver from the keyboard", async () => {
     const onHighlight = vi.fn();
-    render(<PassOptionsTable options={[option("home_7", 0.92)]} players={players} highlight={null} onHighlight={onHighlight} />);
+    render(<PassOptionsTable options={[option("home_7", 0.92)]} players={players} highlight={null} onHighlight={onHighlight} modelLabel="Option model" />);
     await userEvent.tab();
     expect(onHighlight).toHaveBeenCalledWith("home_7");
   });
@@ -84,7 +116,7 @@ describe("OptionDeltaTable", () => {
     expect(rows[0]).toHaveTextContent("−0.12");
     expect(rows[0]).toHaveTextContent("96% robust");
     // a negligible delta must not claim a sign agreement
-    expect(rows[1]).toHaveTextContent("no change");
+    expect(rows[1]).toHaveTextContent("negligible");
     expect(rows[1]).not.toHaveTextContent("46%");
     expect(screen.getAllByRole("img")[0]).toHaveAccessibleName(/Observed 0\.50/);
   });

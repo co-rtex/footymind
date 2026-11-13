@@ -1,5 +1,6 @@
 import type { FrameAnalysisOut, PlayerOut } from "../api/types";
 import { fmtMetres, playerLabel, teamLabel } from "../lib/format";
+import { optionModelLabel, PHYSICS_LABEL } from "../lib/models";
 import { PassOptionsTable } from "./PassOptionsTable";
 import { ProvBadge } from "./ProvBadge";
 import { StatusBlock } from "./StatusBlock";
@@ -124,24 +125,44 @@ export function AnalysisPanel({ playing, status, analysis, error, onRetry, playe
         <h3 className="h-sub">Pass options</h3>
         <ProvBadge prov="estimated">model estimate</ProvBadge>
       </div>
+      <p className="model-key small" data-testid="model-key">
+        <span>
+          <strong>Model</strong> {optionModelLabel(a.option_model)}
+          {a.option_model ? "" : " is unavailable at this frame"}
+        </span>
+        <span className="muted">
+          <strong>Phys.</strong> {PHYSICS_LABEL}: lane clear × control at target
+        </span>
+      </p>
       <PassOptionsTable
         id={PASS_TABLE_ID}
         options={a.pass_options}
         players={players}
         highlight={highlight}
         onHighlight={onHighlight}
+        modelLabel={optionModelLabel(a.option_model)}
       />
 
       <Notices warnings={a.warnings} />
 
+      {a.option_model ? (
+        <details className="model-note" data-testid="option-model-info">
+          <summary>
+            {optionModelLabel(a.option_model)} · {a.option_model.name}
+          </summary>
+          <p className="small muted">
+            {a.option_model.reference}. Status: {a.option_model.status}.
+          </p>
+        </details>
+      ) : null}
       <details className="model-note">
         <summary>
-          Model: {a.model.name} · {a.model.status}
+          Pitch control and physics heuristic: {a.model.name} · {a.model.status}
         </summary>
         <p className="small muted">
           {a.model.reference}. Pitch control is the probability that the attacking team would control a ball arriving at
-          each point. P(success) multiplies an estimated lane-clear probability by control at the target. Both are
-          uncalibrated estimates, not observed outcomes.
+          each point. The physics heuristic multiplies an estimated lane-clear probability by control at the target. Both
+          are uncalibrated estimates, not observed outcomes.
         </p>
         <ul className="params">
           {Object.entries(a.model.params).map(([k, v]) => (

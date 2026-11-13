@@ -771,7 +771,7 @@ kbd {
 }
 .lab-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 460px);
   gap: var(--sp-5);
   align-items: start;
 }
@@ -1132,8 +1132,8 @@ kbd {
   font-size: var(--fs-xs);
   color: var(--c-text-muted);
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 4px;
 }
 .stat dd {
@@ -1141,6 +1141,15 @@ kbd {
   font-size: var(--fs-lg);
   font-weight: 650;
   font-variant-numeric: tabular-nums;
+}
+.model-key {
+  display: grid;
+  gap: 2px;
+  margin-top: calc(-1 * var(--sp-1));
+}
+.model-key strong {
+  font-weight: 650;
+  color: var(--c-text);
 }
 .pressure-line {
   line-height: 1.45;

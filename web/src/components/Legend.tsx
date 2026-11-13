@@ -52,7 +52,7 @@ export function Legend({ attackingTeam, showHeat, scenarioLayer, view }: Props) 
           <svg width="28" height="12" viewBox="0 0 28 12" aria-hidden="true">
             <line x1="2" y1="9" x2="26" y2="3" stroke="var(--c-text)" strokeOpacity="0.85" strokeWidth="3.5" strokeLinecap="round" />
           </svg>
-          Pass option (width and opacity: est. P(success))
+          Pass option (width and opacity: option-model probability)
         </li>
         <li>
           <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
