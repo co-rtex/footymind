@@ -68,11 +68,12 @@ def _rank_hits(scores: dict[str, float], target: str) -> tuple[int, int]:
     return int(order[:1] == [target]), int(target in order[:3])
 
 
-def main(provider: str = "metrica", seed: int = 0) -> None:
+def main(provider: str = "metrica", seed: int = 0, max_matches: int | None = None) -> None:
     """Per provider, never pooled. Metrica writes ``shadow_validation_v1``."""
     t0 = time.time()
     rows = []
-    for mid in [m for m in available_matches() if m.startswith(provider + "-")]:
+    mids = [m for m in available_matches() if m.startswith(provider + "-")][:max_matches]
+    for mid in mids:
         for r in intercepted_passes(mid).iter_rows(named=True):
             st = frame_state(mid, r["frame"])
             if st.attacking_team != r["team"] or np.isnan(st.ball).any():
@@ -128,6 +129,7 @@ def main(provider: str = "metrica", seed: int = 0) -> None:
     result = {
         "name": name,
         "provider": provider,
+        "matches": mids,
         "code_revision": git_revision(),
         "runtime_s": round(time.time() - t0, 1),
         "summary": summary,
@@ -142,4 +144,7 @@ def main(provider: str = "metrica", seed: int = 0) -> None:
 if __name__ == "__main__":
     import sys
 
-    main(sys.argv[1] if len(sys.argv) > 1 else "metrica")
+    main(
+        sys.argv[1] if len(sys.argv) > 1 else "metrica",
+        max_matches=int(sys.argv[2]) if len(sys.argv) > 2 else None,
+    )
