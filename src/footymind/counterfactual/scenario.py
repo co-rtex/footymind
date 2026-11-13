@@ -27,7 +27,8 @@ import numpy as np
 import numpy.typing as npt
 
 from footymind.data.store import load_match
-from footymind.spatial.analysis import FrameAnalysis, analyze, summary
+from footymind.spatial.analysis import FrameAnalysis, PassOption, analyze, summary
+from footymind.spatial.option_model import load_default
 from footymind.spatial.pitch_control import (
     DEFAULT_GRID,
     DEFAULT_PARAMS,
@@ -41,10 +42,13 @@ F = npt.NDArray[np.float64]
 
 REACH_SPEED_MPS = 7.0  # sustained high-intensity running speed for reachability
 MIN_SEPARATION_M = 0.5
+# Below this absolute change in probability, a delta is reported but no sign-robustness score.
+NEGLIGIBLE_DELTA = 0.005
 PITCH_MARGIN_M = 2.0
 
 ResponsePolicy = Literal["none", "marker_follows"]
 VelocityMode = Literal["keep", "zero"]
+ValueModel = Literal["option_model", "physics"]
 
 
 @dataclass
@@ -103,6 +107,7 @@ class ScenarioResult:
     supported: bool
     warnings: list[str]
     assumptions: list[str]
+    value_model: ValueModel
 
 
 ASSUMPTIONS = [
@@ -117,6 +122,13 @@ ASSUMPTIONS = [
     "Comparisons are model-based counterfactuals. They do not identify causal effects of "
     "the intervention on the real match.",
 ]
+
+
+OPTION_MODEL_ASSUMPTION = (
+    "Option values come from a logistic option model calibrated on attempted passes "
+    "(leave-one-match-out evaluated). Applying it to options players did not choose "
+    "extrapolates under selection bias."
+)
 
 
 def check_feasibility(
@@ -228,6 +240,7 @@ def run_scenario(
     horizon_s: float = 1.5,
     ensemble: int = 24,
     seed: int = 0,
+    value_model: ValueModel = "option_model",
 ) -> ScenarioResult:
     if not interventions:
         raise ValueError("at least one intervention is required")
@@ -244,16 +257,24 @@ def run_scenario(
     hyp_a = analyze(hyp_state, DEFAULT_PARAMS, DEFAULT_GRID)
 
     params_list = _ensemble_params(ensemble, seed)
+
+    def val(o: PassOption) -> float:
+        if value_model == "option_model" and o.p_success_model is not None:
+            return o.p_success_model
+        return o.p_success
+
     obs_ens: dict[str, list[float]] = {}
     hyp_ens: dict[str, list[float]] = {}
     for p in params_list:
         for o in analyze(observed_state, p, grid=None).pass_options:
-            obs_ens.setdefault(o.receiver_id, []).append(o.p_success)
+            obs_ens.setdefault(o.receiver_id, []).append(val(o))
         for o in analyze(hyp_state, p, grid=None).pass_options:
-            hyp_ens.setdefault(o.receiver_id, []).append(o.p_success)
+            hyp_ens.setdefault(o.receiver_id, []).append(val(o))
 
-    obs_map = {o.receiver_id: o.p_success for o in obs_a.pass_options}
-    hyp_map = {o.receiver_id: o.p_success for o in hyp_a.pass_options}
+    obs_map = {o.receiver_id: val(o) for o in obs_a.pass_options}
+    hyp_map = {o.receiver_id: val(o) for o in hyp_a.pass_options}
+    if value_model == "option_model" and load_default() is None:
+        value_model = "physics"
     deltas = []
     for rid in sorted(set(obs_map) | set(hyp_map)):
         op, hp = obs_map.get(rid), hyp_map.get(rid)
@@ -262,7 +283,11 @@ def run_scenario(
         agree = None
         if delta is not None and oe.size == he.size and oe.size > 0:
             d_ens = he - oe
-            agree = float(np.mean(np.sign(d_ens) == np.sign(delta))) if abs(delta) > 1e-6 else None
+            agree = (
+                float(np.mean(np.sign(d_ens) == np.sign(delta)))
+                if abs(delta) >= NEGLIGIBLE_DELTA
+                else None
+            )
         deltas.append(
             OptionDelta(
                 receiver_id=rid,
@@ -320,5 +345,7 @@ def run_scenario(
         ensemble_size=ensemble,
         supported=all(f.supported for f in feas),
         warnings=warnings,
-        assumptions=ASSUMPTIONS,
+        assumptions=ASSUMPTIONS
+        + ([OPTION_MODEL_ASSUMPTION] if value_model == "option_model" else []),
+        value_model=value_model,
     )

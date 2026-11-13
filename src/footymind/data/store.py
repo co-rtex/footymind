@@ -29,7 +29,7 @@ import polars as pl
 from footymind.data import sources
 from footymind.data.quality import validate
 from footymind.paths import PROCESSED_DIR, RAW_DIR, REPO_ROOT
-from footymind.tracking import metrica
+from footymind.tracking import metrica, metrica_epts
 from footymind.tracking.model import DatasetProvenance, PitchSpec, PlayerInfo, TrackingData
 from footymind.tracking.possessions import assign_possessions
 
@@ -56,8 +56,6 @@ def git_revision() -> str:
 def ingest(match_id: str, raw_root: Path = RAW_DIR, out_root: Path = PROCESSED_DIR) -> Path:
     src = sources.SOURCES[match_id]
     hashes = sources.verify(src, raw_root)
-    if src.fmt != "metrica_csv":
-        raise NotImplementedError(f"format {src.fmt} not yet supported (see ROADMAP)")
     d = src.local_dir(raw_root)
     game = match_id.rsplit("-", 1)[-1]
     prov = DatasetProvenance(
@@ -67,13 +65,24 @@ def ingest(match_id: str, raw_root: Path = RAW_DIR, out_root: Path = PROCESSED_D
         license_note=sources.METRICA_LICENSE_NOTE,
         files=hashes,
     )
-    td = metrica.load_tracking(
-        match_id,
-        d / f"Sample_Game_{game}_RawTrackingData_Home_Team.csv",
-        d / f"Sample_Game_{game}_RawTrackingData_Away_Team.csv",
-        prov,
-    )
-    events = metrica.load_events(d / f"Sample_Game_{game}_RawEventsData.csv")
+    if src.fmt == "metrica_csv":
+        td = metrica.load_tracking(
+            match_id,
+            d / f"Sample_Game_{game}_RawTrackingData_Home_Team.csv",
+            d / f"Sample_Game_{game}_RawTrackingData_Away_Team.csv",
+            prov,
+        )
+        events = metrica.load_events(d / f"Sample_Game_{game}_RawEventsData.csv")
+    elif src.fmt == "metrica_epts":
+        td, meta = metrica_epts.load_tracking(
+            match_id,
+            d / f"Sample_Game_{game}_tracking.txt",
+            d / f"Sample_Game_{game}_metadata.xml",
+            prov,
+        )
+        events = metrica_epts.load_events(d / f"Sample_Game_{game}_events.json", meta)
+    else:
+        raise NotImplementedError(f"format {src.fmt}")
     report = validate(td, events)
     events, possessions = assign_possessions(events, match_id)
 

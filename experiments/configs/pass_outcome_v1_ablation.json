@@ -1,0 +1,21 @@
+{
+  "name": "pass_outcome_v1_ablation",
+  "description": "Which spatial feature groups carry the gain? Logistic-regression ablations (leave-one-match-out). Defender-only groups use no teammate positions.",
+  "matches": ["metrica-sample-1", "metrica-sample-2"],
+  "seed": 0,
+  "dataset": {"include_ball_out": true},
+  "n_boot": 2000,
+  "models": ["A_logreg", "B_logreg",
+    "abl_A+pressure_logreg", "abl_A+ray_defense_logreg", "abl_A+defender_only_logreg",
+    "abl_A+target_geometry_logreg", "abl_A+target_geometry+target_defense_logreg",
+    "abl_B_minus_target_geometry_logreg"],
+  "comparisons": [
+    ["A_logreg", "abl_A+pressure_logreg"],
+    ["A_logreg", "abl_A+ray_defense_logreg"],
+    ["A_logreg", "abl_A+defender_only_logreg"],
+    ["A_logreg", "abl_A+target_geometry_logreg"],
+    ["abl_A+target_geometry_logreg", "abl_A+target_geometry+target_defense_logreg"],
+    ["abl_A+target_geometry_logreg", "B_logreg"],
+    ["A_logreg", "abl_B_minus_target_geometry_logreg"]
+  ]
+}

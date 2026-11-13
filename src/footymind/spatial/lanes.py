@@ -19,6 +19,16 @@ reach the lane before the ball passes. The heuristic interception probability
 is ``p_d = sigmoid(-m_d * pi / (sqrt(3) sigma))``, and lane clearance is
 ``prod_d (1 - p_d)``. Defenders are treated as independent, which is a stated
 simplification.
+
+Players are not points: a defender can block the ball within ``reach_m``
+(default 1 m, about a stride or leg reach) of their position, so the distance to
+cover is reduced by ``reach_m``.
+
+Known limitation: the reaction time applies uniformly, as in the PPCF
+model. A defender standing almost in the lane of a *short, fast* pass is
+therefore given a moderate, not high, interception probability. The
+research experiments measure whether this matters empirically. The
+derived perpendicular-distance features do not share this limitation.
 """
 
 from __future__ import annotations
@@ -28,7 +38,7 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 
-from footymind.spatial.pitch_control import DEFAULT_PARAMS, PitchControlParams, time_to_intercept
+from footymind.spatial.pitch_control import DEFAULT_PARAMS, PitchControlParams
 
 F = npt.NDArray[np.float64]
 
@@ -65,6 +75,7 @@ def lane(
     n_samples: int = 24,
     start_exclusion_m: float = 1.0,
     end_exclusion_m: float = 2.0,
+    reach_m: float = 1.0,
 ) -> LaneResult:
     ball = np.asarray(ball, dtype=np.float64)
     target = np.asarray(target, dtype=np.float64)
@@ -82,7 +93,9 @@ def lane(
     s = np.linspace(lo, hi, n_samples)
     pts = ball[None, :] + (s / length)[:, None] * vec[None, :]
     t_b = s / params.average_ball_speed
-    tau = time_to_intercept(pts, def_pos[ok], def_vel[ok], params)  # (S, D)
+    react = def_pos[ok] + np.nan_to_num(def_vel[ok]) * params.reaction_time
+    dist = np.linalg.norm(pts[:, None, :] - react[None, :, :], axis=-1)  # (S, D)
+    tau = params.reaction_time + np.maximum(dist - reach_m, 0.0) / params.max_player_speed
     margin = (tau - t_b[:, None]).min(axis=0)  # (D,)
     k = np.pi / (np.sqrt(3.0) * params.tti_sigma)
     p_ok = 1.0 / (1.0 + np.exp(k * margin))

@@ -16,7 +16,7 @@ def main(argv: list[str] | None = None) -> int:
     p_dl.add_argument("match_ids", nargs="*", help="default: all registered sources")
 
     p_in = sub.add_parser("ingest", help="build processed match bundles")
-    p_in.add_argument("match_ids", nargs="*", help="default: all CSV-format Metrica games")
+    p_in.add_argument("match_ids", nargs="*", help="default: all registered sources")
 
     p_srv = sub.add_parser("serve", help="run the API server")
     p_srv.add_argument("--host", default="127.0.0.1")
@@ -24,6 +24,9 @@ def main(argv: list[str] | None = None) -> int:
 
     p_exp = sub.add_parser("experiment", help="run a research experiment from a config file")
     p_exp.add_argument("config", help="path to experiment JSON config")
+
+    p_opt = sub.add_parser("train-option-model", help="evaluate (LOMO) and export the option model")
+    p_opt.add_argument("match_ids", nargs="*", help="default: all processed matches")
 
     args = parser.parse_args(argv)
 
@@ -38,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cmd == "ingest":
         from footymind.data import sources, store
 
-        ids = args.match_ids or [m for m, s in sources.SOURCES.items() if s.fmt == "metrica_csv"]
+        ids = args.match_ids or list(sources.SOURCES)
         for mid in ids:
             t0 = time.time()
             out = store.ingest(mid)
@@ -55,6 +58,12 @@ def main(argv: list[str] | None = None) -> int:
         from footymind.research.runner import run_from_config
 
         run_from_config(args.config)
+    elif args.cmd == "train-option-model":
+        from footymind.data.store import available_matches
+        from footymind.research.train_option_model import train
+
+        m = train(args.match_ids or available_matches())
+        print(json.dumps({k: m.meta[k] for k in ("n_train", "lomo_pooled", "code_revision")}))
     return 0
 
 

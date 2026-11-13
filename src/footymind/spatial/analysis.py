@@ -13,6 +13,8 @@ import numpy as np
 import numpy.typing as npt
 
 from footymind.spatial.lanes import lane
+from footymind.spatial.option_features import option_feature_rows
+from footymind.spatial.option_model import load_default
 from footymind.spatial.pitch_control import (
     DEFAULT_GRID,
     DEFAULT_PARAMS,
@@ -36,6 +38,8 @@ class PassOption:
     p_control_at_target: float  # ESTIMATED: PPCF of attacking team at receiver location
     p_lane_clear: float  # ESTIMATED: heuristic
     p_success: float  # ESTIMATED: p_control_at_target * p_lane_clear (heuristic, uncalibrated)
+    # ESTIMATED: data-calibrated option model (None if no packaged model is available)
+    p_success_model: float | None
     lane_min_margin_s: float  # DERIVED
     lane_closest_defender_id: str | None
     lane_closest_defender_perp_m: float  # DERIVED
@@ -159,6 +163,18 @@ def pass_options(
         params,
     )
     def_ids = [state.player_ids[i] for i in np.flatnonzero(dfn)]
+    model = load_default()
+    p_model: list[float | None] = [None] * len(receivers)
+    if model is not None and state.attacking_team is not None:
+        rows = option_feature_rows(
+            state,
+            state.attacking_team,
+            state.ball,
+            [int(i) for i in receivers],
+            state.carrier,
+            params,
+        )
+        p_model = [float(v) for v in model.predict(rows)]
     out = []
     for k, i in enumerate(receivers):
         tgt = state.xy[i]
@@ -174,6 +190,7 @@ def pass_options(
                 p_control_at_target=p_ctrl,
                 p_lane_clear=lr.p_lane_clear,
                 p_success=p_ctrl * lr.p_lane_clear,
+                p_success_model=p_model[k],
                 lane_min_margin_s=lr.min_margin_s,
                 lane_closest_defender_id=(
                     def_ids[lr.closest_defender_index]
@@ -184,7 +201,7 @@ def pass_options(
                 defenders_within_3m_of_lane=lr.n_defenders_within_3m_of_lane,
             )
         )
-    out.sort(key=lambda o: -o.p_success)
+    out.sort(key=lambda o: -(o.p_success_model if o.p_success_model is not None else o.p_success))
     return out
 
 
@@ -220,6 +237,7 @@ def summary(a: FrameAnalysis) -> dict[str, Any]:
         "control_area_m2": a.control_area_m2,
         "control_area_final_third_m2": a.control_area_final_third_m2,
         "best_option_receiver": best.receiver_id if best else None,
-        "best_option_p_success": best.p_success if best else None,
-        "n_options_p_over_0_5": sum(o.p_success > 0.5 for o in a.pass_options),
+        "best_option_p_success_physics": best.p_success if best else None,
+        "best_option_p_success_model": best.p_success_model if best else None,
+        "n_options_physics_over_0_5": sum(o.p_success > 0.5 for o in a.pass_options),
     }

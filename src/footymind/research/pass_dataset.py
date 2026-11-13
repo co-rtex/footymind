@@ -1,0 +1,395 @@
+"""Leakage-safe dataset of attempted passes for outcome prediction.
+
+Research question (operationalised): does tracking-derived spatial context
+improve the prediction of whether an *attempted* pass is completed, beyond
+event-level information available at the moment of the pass?
+
+Labels (Metrica event semantics, verified on the sample files)
+--------------------------------------------------------------
+* success = ``PASS`` (Metrica records only completed passes as PASS, with a receiver).
+* failure = ``BALL LOST`` whose subtype indicates a failed pass/kick, plus
+  (optionally) ``BALL OUT`` that is not a shot or clearance. Excluded are
+  dispossessions (``THEFT``, ``FORCED``), ``HAND BALL``, ``OFFSIDE``,
+  ``END HALF``, ``REFEREE HIT``, ``WOODWORK`` and all clearances. These are
+  not pass attempts, or their outcome is not a pass outcome.
+
+Information cutoff
+------------------
+Features use only:
+
+* tracking at the event ``start_frame`` (positions) and causal velocities
+  (backward 0.2 s window), and
+* the *action* itself: the ball's release direction and speed, estimated
+  over at most ``RELEASE_WINDOW_FRAMES`` frames after the start frame and
+  truncated so the window never reaches the outcome frame (``end_frame``),
+* event history strictly before the pass.
+
+Explicitly excluded because they leak the label: ``End X/Y`` (for failures,
+this is the loss location, not the intended target), ``end_frame`` and the pass
+duration, the receiver id (only known for successes), and event subtypes that
+encode the outcome (e.g. ``INTERCEPTION``).
+
+Intended target. For failures the intended target is unobserved. The
+spatial models infer a *candidate* receiver from the release direction: the
+teammate minimising angular deviation plus a distance penalty. The inference is
+validated against the true receiver on completed passes (see
+``inferred_receiver_accuracy``).
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+import numpy as np
+import polars as pl
+
+from footymind.data.store import load_match
+from footymind.spatial.lanes import lane, point_segment_distance
+from footymind.spatial.option_features import option_feature_rows
+from footymind.spatial.pitch_control import DEFAULT_PARAMS, pitch_control
+from footymind.spatial.state import frame_state
+from footymind.tracking.model import TrackingData
+
+RELEASE_WINDOW_FRAMES = 3  # 0.12 s at 25 Hz
+
+# Label rules are token-based: a subtype such as "CROSS-INTERCEPTION" (CSV) or
+# ["CROSS", "INTERCEPTION"] (JSON) qualifies if all of its tokens are allowed. A
+# null subtype qualifies. Any other token (THEFT, FORCED, CLEARANCE, HAND BALL,
+# OFFSIDE, END HALF, REFEREE HIT, WOODWORK, ...) excludes the event.
+FAILED_PASS_LOST_TOKENS = frozenset({"INTERCEPTION", "HEAD", "CROSS", "GOAL KICK", "DEEP BALL"})
+FAILED_PASS_OUT_TOKENS = frozenset({"HEAD", "CROSS", "GOAL KICK"})
+# Event types excluded from event-history features. CARRY exists only in the EPTS/JSON
+# format (Game 3). Including it would shift "previous event" distributions between matches.
+HISTORY_EXCLUDED_TYPES = frozenset({"CARRY"})
+
+EVENT_FEATURES = [
+    "ball_x_att",
+    "ball_y_abs",
+    "dist_to_goal",
+    "angle_to_goal",
+    "release_cos",
+    "release_sin_abs",
+    "release_speed",
+    "is_head",
+    "is_cross",
+    "is_goal_kick",
+    "is_restart",
+    "prev_type_pass",
+    "prev_type_recovery",
+    "prev_type_challenge",
+    "possession_pass_index",
+    "time_in_possession_s",
+    "period",
+    "match_minute",
+]
+SPATIAL_FEATURES = [
+    "press_nearest_def_m",
+    "press_closing_speed",
+    "press_def_within_5m",
+    "press_def_within_10m",
+    "cand_distance_m",
+    "cand_angle_dev",
+    "cand_forward_m",
+    "cand_ppcf",
+    "cand_p_lane_clear",
+    "cand_lane_margin_s",
+    "cand_lane_perp_m",
+    "cand_def_within_3m_lane",
+    "cand_p_success_physics",
+    "ray_min_def_perp_m",
+    "ray_def_in_cone",
+    "passer_speed",
+]
+# Feature groups for ablations. "Defender-only" groups use no teammate positions.
+GROUP_PRESSURE = [
+    "press_nearest_def_m",
+    "press_closing_speed",
+    "press_def_within_5m",
+    "press_def_within_10m",
+    "passer_speed",
+]
+GROUP_RAY_DEFENSE = ["ray_min_def_perp_m", "ray_def_in_cone"]
+GROUP_TARGET_GEOMETRY = ["cand_distance_m", "cand_angle_dev", "cand_forward_m"]
+GROUP_TARGET_DEFENSE = [
+    "cand_ppcf",
+    "cand_p_lane_clear",
+    "cand_lane_margin_s",
+    "cand_lane_perp_m",
+    "cand_def_within_3m_lane",
+    "cand_p_success_physics",
+]
+
+INTERACTION_FEATURES = [
+    "cand2_p_success_physics",
+    "cand3_p_success_physics",
+    "best_option_p_success_physics",
+    "n_options_over_0_5",
+    "cand_marker_dist_m",
+    "def_goal_side_of_ball",
+    "def_line_depth_m",
+    "def_compactness_m",
+    "att_width_m",
+    "att_depth_m",
+    "sum_p_intercept_ray",
+]
+
+
+@dataclass(frozen=True)
+class DatasetConfig:
+    include_ball_out: bool = True
+    min_release_speed: float = 1.0  # m/s; below this the release is not observable
+    cone_half_angle_deg: float = 15.0
+    ray_length_m: float = 40.0
+
+
+def label_events(ev: pl.DataFrame, cfg: DatasetConfig) -> pl.DataFrame:
+    """Select attempted passes and attach the binary label ``success``."""
+    tokens = pl.col("subtype").fill_null("").str.split("-")
+
+    def allowed(tok: frozenset[str]) -> pl.Expr:
+        return (
+            pl.col("subtype").is_null() | tokens.list.eval(pl.element().is_in(list(tok))).list.all()
+        )
+
+    is_pass = pl.col("type") == "PASS"
+    is_lost = (pl.col("type") == "BALL LOST") & allowed(FAILED_PASS_LOST_TOKENS)
+    is_out = (pl.col("type") == "BALL OUT") & allowed(FAILED_PASS_OUT_TOKENS)
+    cond = is_pass | is_lost | (is_out if cfg.include_ball_out else pl.lit(False))
+    return (
+        ev.filter(cond & pl.col("from_player_id").is_not_null())
+        .with_columns(is_pass.cast(pl.Int8).alias("success"))
+        .with_columns(
+            pl.col("type").alias("label_source"),
+        )
+    )
+
+
+def _prev_event_features(ev: pl.DataFrame) -> pl.DataFrame:
+    """Per event: previous event type in the same possession, pass index, time in possession."""
+    # Raw previous event (including CARRY), kept as label-side metadata for the
+    # symmetric "after carry" sensitivity filter. It is never a model feature.
+    ev = ev.sort(["start_frame", "event_id"]).with_columns(
+        pl.col("type").shift(1).alias("prev_raw_type"),
+        (pl.col("from_player_id").shift(1) == pl.col("from_player_id")).alias(
+            "prev_raw_same_player"
+        ),
+    )
+    ev = ev.filter(~pl.col("type").is_in(list(HISTORY_EXCLUDED_TYPES)))
+    ev = ev.with_columns(
+        pl.col("type").shift(1).over("possession_id").alias("prev_type"),
+        pl.col("subtype").shift(1).over("possession_id").alias("prev_subtype"),
+        pl.col("start_frame").shift(1).over("possession_id").alias("prev_start_frame"),
+        (pl.col("type") == "PASS")
+        .cast(pl.Int32)
+        .cum_sum()
+        .shift(1, fill_value=0)
+        .over("possession_id")
+        .alias("possession_pass_index"),
+        pl.col("start_time_s").min().over("possession_id").alias("possession_start_s"),
+    )
+    return ev
+
+
+def _angle_dev(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """Unsigned angle in radians between direction ``a`` (2,) and vectors ``b`` (N,2)."""
+    na = np.linalg.norm(a)
+    nb = np.linalg.norm(b, axis=1)
+    cos = (b @ a) / np.maximum(na * nb, 1e-9)
+    return np.arccos(np.clip(cos, -1, 1))
+
+
+def build(match_ids: list[str], cfg: DatasetConfig = DatasetConfig()) -> pl.DataFrame:
+    rows: list[dict[str, object]] = []
+    for mid in match_ids:
+        b = load_match(mid)
+        td = b.tracking
+        ev = _prev_event_features(b.events)
+        cand = label_events(ev, cfg)
+        for r in cand.iter_rows(named=True):
+            row = _features_for(mid, r, td, cfg)
+            if row is not None:
+                rows.append(row)
+    return pl.DataFrame(rows, infer_schema_length=None)
+
+
+def _features_for(
+    mid: str, r: dict[str, Any], td: TrackingData, cfg: DatasetConfig
+) -> dict[str, object] | None:
+    f0 = int(r["start_frame"])
+    i0 = td.index_of_frame(f0)
+    k = RELEASE_WINDOW_FRAMES
+    if r["end_frame"] is not None:
+        k = min(k, max(1, int(r["end_frame"]) - f0 - 1))
+    if i0 + k >= td.n_frames or td.period[i0 + k] != td.period[i0]:
+        return None
+    b0, b1 = td.ball_xy[i0].astype(float), td.ball_xy[i0 + k].astype(float)
+    if np.isnan(b0).any() or np.isnan(b1).any():
+        return None
+    rel = (b1 - b0) / (k / td.fps)
+    speed = float(np.linalg.norm(rel))
+    if speed < cfg.min_release_speed:
+        return None
+
+    s = frame_state(mid, f0)
+    team = r["team"]
+    sign = td.attack_sign(team, int(r["period"]))
+    passer = td.player_index(r["from_player_id"])
+    ball = s.ball if not np.isnan(s.ball).any() else b0
+    # attacking frame (team attacks +x)
+    bx, by = ball * sign
+    d_dir = rel * sign  # release direction in attacking frame
+    goal = np.array([52.5, 0.0])
+    to_goal = goal - np.array([bx, by])
+    dist_goal = float(np.linalg.norm(to_goal))
+    # opening angle of the goal mouth (7.32 m) from the ball
+    a1 = np.arctan2(3.66 - by, 52.5 - bx)
+    a2 = np.arctan2(-3.66 - by, 52.5 - bx)
+    st = (r["subtype"] or "").upper()
+    prev = r["prev_type"]
+    restart = (
+        prev == "SET PIECE"
+        and r["prev_start_frame"] is not None
+        and (f0 - int(r["prev_start_frame"]) <= 2)
+    )
+    row: dict[str, object] = {
+        "match_id": mid,
+        "event_id": int(r["event_id"]),
+        "possession_id": r["possession_id"],
+        "frame": f0,
+        "team": team,
+        "passer_id": r["from_player_id"],
+        "receiver_id": r["to_player_id"],  # label-side info: never a feature
+        "success": int(r["success"]),
+        "label_source": r["label_source"],
+        "release_window_frames": k,
+        "after_own_carry": int(r["prev_raw_type"] == "CARRY" and bool(r["prev_raw_same_player"])),
+        "ball_x_att": float(bx),
+        "ball_y_abs": float(abs(by)),
+        "dist_to_goal": dist_goal,
+        "angle_to_goal": float(abs(a1 - a2)),
+        "release_cos": float(d_dir[0] / speed),
+        "release_sin_abs": float(abs(d_dir[1]) / speed),
+        "release_speed": speed,
+        "is_head": int("HEAD" in st),
+        "is_cross": int("CROSS" in st),
+        "is_goal_kick": int("GOAL KICK" in st),
+        "is_restart": int(bool(restart)),
+        "prev_type_pass": int(prev == "PASS"),
+        "prev_type_recovery": int(prev == "RECOVERY"),
+        "prev_type_challenge": int(prev == "CHALLENGE"),
+        "possession_pass_index": int(r["possession_pass_index"] or 0),
+        "time_in_possession_s": float(r["start_time_s"] - r["possession_start_s"]),
+        "period": int(r["period"]),
+        "match_minute": float(r["start_time_s"] / 60.0),
+    }
+
+    att = s.team_mask(team) & s.on_pitch()
+    dfn = (~s.team_mask(team)) & s.on_pitch()
+    att_idx = np.flatnonzero(att)
+    def_idx = np.flatnonzero(dfn)
+    dxy, dvel = s.xy[def_idx], s.vel[def_idx]
+
+    # pressure on the passer (DERIVED)
+    rel_d = dxy - s.xy[passer][None, :]
+    dd = np.linalg.norm(rel_d, axis=1)
+    j = int(np.argmin(dd))
+    closing = np.nan
+    if not (np.isnan(dvel[j]).any() or np.isnan(s.vel[passer]).any()) and dd[j] > 0:
+        closing = float(-(dvel[j] - s.vel[passer]) @ (rel_d[j] / dd[j]))
+    row.update(
+        press_nearest_def_m=float(dd[j]),
+        press_closing_speed=closing,
+        press_def_within_5m=int((dd < 5).sum()),
+        press_def_within_10m=int((dd < 10).sum()),
+        passer_speed=float(np.linalg.norm(s.vel[passer]))
+        if not np.isnan(s.vel[passer]).any()
+        else np.nan,
+    )
+
+    # candidate receivers ranked by alignment with the release direction
+    mates = np.array([i for i in att_idx if i != passer])
+    vecs = s.xy[mates] - ball[None, :]
+    dist = np.linalg.norm(vecs, axis=1)
+    dev = _angle_dev(rel, vecs)
+    score = dev + 0.004 * dist  # prefer aligned, then nearer (0.004 rad/m)
+    order = np.argsort(score)
+    targets = s.xy[mates[order[:3]]]
+    att_xy, att_v = s.xy[att_idx], s.vel[att_idx]
+    ppcf, _, _ = pitch_control(
+        targets, ball, att_xy, att_v, dxy, dvel, s.is_gk[att_idx], s.is_gk[def_idx], DEFAULT_PARAMS
+    )
+    phys = []
+    lanes = []
+    for t_i in range(targets.shape[0]):
+        lr = lane(ball, targets[t_i], dxy, dvel, DEFAULT_PARAMS)
+        lanes.append(lr)
+        phys.append(float(ppcf[t_i]) * lr.p_lane_clear)
+    c = order[0]
+    lr0 = lanes[0]
+    row.update(
+        inferred_receiver_id=s.player_ids[mates[c]],
+        target_x_att=float(s.xy[mates[c], 0] * sign),
+        target_y_abs=float(abs(s.xy[mates[c], 1] * sign)),
+        **{
+            k: v
+            for k, v in option_feature_rows(s, team, ball, [int(mates[c])], passer)[0].items()
+            if k in ("target_marker_dist_m", "pass_forward_cos", "target_speed_along_pass")
+        },
+        cand_distance_m=float(dist[c]),
+        cand_angle_dev=float(dev[c]),
+        cand_forward_m=float((s.xy[mates[c], 0] - ball[0]) * sign),
+        cand_ppcf=float(ppcf[0]),
+        cand_p_lane_clear=lr0.p_lane_clear,
+        cand_lane_margin_s=lr0.min_margin_s,
+        cand_lane_perp_m=lr0.closest_defender_perp_m,
+        cand_def_within_3m_lane=lr0.n_defenders_within_3m_of_lane,
+        cand_p_success_physics=phys[0],
+        cand2_p_success_physics=phys[1] if len(phys) > 1 else np.nan,
+        cand3_p_success_physics=phys[2] if len(phys) > 2 else np.nan,
+    )
+
+    # ray along the release direction (independent of receiver inference)
+    u = rel / speed
+    end = ball + u * cfg.ray_length_m
+    perp = point_segment_distance(dxy, ball, end)
+    ahead = (dxy - ball[None, :]) @ u
+    ang = _angle_dev(rel, dxy - ball[None, :])
+    in_cone = (ang < np.deg2rad(cfg.cone_half_angle_deg)) & (ahead > 0) & (ahead < cfg.ray_length_m)
+    ray_lane = lane(ball, end, dxy, dvel, DEFAULT_PARAMS)
+    row.update(
+        # censored at the ray length when no defender is ahead of the ball
+        ray_min_def_perp_m=float(min(np.min(np.where(ahead > 0, perp, np.inf)), cfg.ray_length_m)),
+        ray_def_in_cone=int(in_cone.sum()),
+        sum_p_intercept_ray=float(ray_lane.p_intercept_by_defender.sum()),
+    )
+
+    # interaction / structure features
+    all_targets = s.xy[mates]
+    ppcf_all, _, _ = pitch_control(
+        all_targets, ball, att_xy, att_v, dxy, dvel, s.is_gk[att_idx], s.is_gk[def_idx]
+    )
+    all_phys = [
+        float(ppcf_all[m]) * lane(ball, all_targets[m], dxy, dvel).p_lane_clear
+        for m in range(len(mates))
+    ]
+    cand_xy = s.xy[mates[c]]
+    def_att = dxy * sign
+    outfield = ~s.is_gk[def_idx]
+    row.update(
+        best_option_p_success_physics=float(max(all_phys)),
+        n_options_over_0_5=int(sum(p > 0.5 for p in all_phys)),
+        cand_marker_dist_m=float(np.min(np.linalg.norm(dxy - cand_xy[None, :], axis=1))),
+        def_goal_side_of_ball=int((def_att[:, 0] > bx).sum()),
+        def_line_depth_m=float(np.max(def_att[outfield, 0]) - np.min(def_att[outfield, 0])),
+        def_compactness_m=float(np.mean(np.std(dxy[outfield], axis=0))),
+        att_width_m=float(np.ptp(att_xy[:, 1])),
+        att_depth_m=float(np.ptp(att_xy[:, 0])),
+    )
+    return row
+
+
+def inferred_receiver_accuracy(df: pl.DataFrame) -> dict[str, float]:
+    ok = df.filter(pl.col("success") == 1)
+    acc = (ok["inferred_receiver_id"] == ok["receiver_id"]).cast(pl.Float64).mean()
+    return {"n_completed": ok.height, "accuracy": float(acc or 0.0)}  # type: ignore[arg-type]

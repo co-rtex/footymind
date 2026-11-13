@@ -11,7 +11,12 @@ from tests.conftest import METRICA_RAW, requires_metrica
 pytestmark = [requires_metrica, pytest.mark.data]
 
 
-@pytest.fixture(scope="module", params=["metrica-sample-1", "metrica-sample-2"])
+GAMES = ["metrica-sample-1", "metrica-sample-2"] + (
+    ["metrica-sample-3"] if (METRICA_RAW / "Sample_Game_3_tracking.txt").exists() else []
+)
+
+
+@pytest.fixture(scope="module", params=GAMES)
 def bundle(request, tmp_path_factory):  # type: ignore[no-untyped-def]
     out = tmp_path_factory.mktemp("processed")
     ingest(request.param, out_root=out)

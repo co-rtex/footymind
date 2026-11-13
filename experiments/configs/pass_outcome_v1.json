@@ -1,0 +1,19 @@
+{
+  "name": "pass_outcome_v1",
+  "description": "Does tracking-derived spatial context improve attempted-pass outcome prediction over event-only features? Leave-one-match-out on Metrica sample games 1-2.",
+  "matches": ["metrica-sample-1", "metrica-sample-2"],
+  "seed": 0,
+  "dataset": {"include_ball_out": true},
+  "n_boot": 2000,
+  "comparisons": [
+    ["base_rate", "A_logreg"],
+    ["A_logreg", "B_logreg"],
+    ["A_gbm", "B_gbm"],
+    ["B_logreg", "C_logreg"],
+    ["B_gbm", "C_gbm"],
+    ["A_logreg", "physics_platt"],
+    ["physics_platt", "B_logreg"]
+  ],
+  "calibration": ["A_logreg", "B_logreg", "C_gbm", "physics_raw", "physics_platt"],
+  "importances": ["B_logreg", "C_gbm"]
+}
