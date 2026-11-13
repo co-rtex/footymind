@@ -52,17 +52,15 @@ from footymind.tracking.model import TrackingData
 
 RELEASE_WINDOW_FRAMES = 3  # 0.12 s at 25 Hz
 
-FAILED_PASS_LOST_SUBTYPES = {
-    None,
-    "INTERCEPTION",
-    "HEAD",
-    "CROSS-INTERCEPTION",
-    "HEAD-INTERCEPTION",
-    "GOAL KICK-INTERCEPTION",
-    "GOAL KICK",
-    "DEEP BALL",
-}
-FAILED_PASS_OUT_SUBTYPES = {None, "HEAD", "CROSS", "GOAL KICK"}
+# Label rules are token-based: a subtype such as "CROSS-INTERCEPTION" (CSV) or
+# ["CROSS", "INTERCEPTION"] (JSON) qualifies if all of its tokens are allowed. A
+# null subtype qualifies. Any other token (THEFT, FORCED, CLEARANCE, HAND BALL,
+# OFFSIDE, END HALF, REFEREE HIT, WOODWORK, ...) excludes the event.
+FAILED_PASS_LOST_TOKENS = frozenset({"INTERCEPTION", "HEAD", "CROSS", "GOAL KICK", "DEEP BALL"})
+FAILED_PASS_OUT_TOKENS = frozenset({"HEAD", "CROSS", "GOAL KICK"})
+# Event types excluded from event-history features. CARRY exists only in the EPTS/JSON
+# format (Game 3). Including it would shift "previous event" distributions between matches.
+HISTORY_EXCLUDED_TYPES = frozenset({"CARRY"})
 
 EVENT_FEATURES = [
     "ball_x_att",
@@ -146,14 +144,16 @@ class DatasetConfig:
 
 def label_events(ev: pl.DataFrame, cfg: DatasetConfig) -> pl.DataFrame:
     """Select attempted passes and attach the binary label ``success``."""
-    sub = pl.col("subtype")
+    tokens = pl.col("subtype").fill_null("").str.split("-")
+
+    def allowed(tok: frozenset[str]) -> pl.Expr:
+        return (
+            pl.col("subtype").is_null() | tokens.list.eval(pl.element().is_in(list(tok))).list.all()
+        )
+
     is_pass = pl.col("type") == "PASS"
-    is_lost = (pl.col("type") == "BALL LOST") & (
-        sub.is_null() | sub.is_in([s for s in FAILED_PASS_LOST_SUBTYPES if s])
-    )
-    is_out = (pl.col("type") == "BALL OUT") & (
-        sub.is_null() | sub.is_in([s for s in FAILED_PASS_OUT_SUBTYPES if s])
-    )
+    is_lost = (pl.col("type") == "BALL LOST") & allowed(FAILED_PASS_LOST_TOKENS)
+    is_out = (pl.col("type") == "BALL OUT") & allowed(FAILED_PASS_OUT_TOKENS)
     cond = is_pass | is_lost | (is_out if cfg.include_ball_out else pl.lit(False))
     return (
         ev.filter(cond & pl.col("from_player_id").is_not_null())
@@ -166,7 +166,15 @@ def label_events(ev: pl.DataFrame, cfg: DatasetConfig) -> pl.DataFrame:
 
 def _prev_event_features(ev: pl.DataFrame) -> pl.DataFrame:
     """Per event: previous event type in the same possession, pass index, time in possession."""
-    ev = ev.sort(["start_frame", "event_id"])
+    # Raw previous event (including CARRY), kept as label-side metadata for the
+    # symmetric "after carry" sensitivity filter. It is never a model feature.
+    ev = ev.sort(["start_frame", "event_id"]).with_columns(
+        pl.col("type").shift(1).alias("prev_raw_type"),
+        (pl.col("from_player_id").shift(1) == pl.col("from_player_id")).alias(
+            "prev_raw_same_player"
+        ),
+    )
+    ev = ev.filter(~pl.col("type").is_in(list(HISTORY_EXCLUDED_TYPES)))
     ev = ev.with_columns(
         pl.col("type").shift(1).over("possession_id").alias("prev_type"),
         pl.col("subtype").shift(1).over("possession_id").alias("prev_subtype"),
@@ -254,6 +262,7 @@ def _features_for(
         "success": int(r["success"]),
         "label_source": r["label_source"],
         "release_window_frames": k,
+        "after_own_carry": int(r["prev_raw_type"] == "CARRY" and bool(r["prev_raw_same_player"])),
         "ball_x_att": float(bx),
         "ball_y_abs": float(abs(by)),
         "dist_to_goal": dist_goal,

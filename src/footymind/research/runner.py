@@ -42,6 +42,8 @@ def run_from_config(path: str | Path) -> dict[str, Any]:
     for flt in cfg.get("filters", []):
         if flt == "exclude_truncated_release":
             df = df.filter(pl.col("release_window_frames") == 3)
+        elif flt == "exclude_after_own_carry":
+            df = df.filter(pl.col("after_own_carry") == 0)
         else:
             raise ValueError(f"unknown filter {flt}")
     specs = model_specs()

@@ -16,7 +16,7 @@ def main(argv: list[str] | None = None) -> int:
     p_dl.add_argument("match_ids", nargs="*", help="default: all registered sources")
 
     p_in = sub.add_parser("ingest", help="build processed match bundles")
-    p_in.add_argument("match_ids", nargs="*", help="default: all CSV-format Metrica games")
+    p_in.add_argument("match_ids", nargs="*", help="default: all registered sources")
 
     p_srv = sub.add_parser("serve", help="run the API server")
     p_srv.add_argument("--host", default="127.0.0.1")
@@ -38,7 +38,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cmd == "ingest":
         from footymind.data import sources, store
 
-        ids = args.match_ids or [m for m, s in sources.SOURCES.items() if s.fmt == "metrica_csv"]
+        ids = args.match_ids or list(sources.SOURCES)
         for mid in ids:
             t0 = time.time()
             out = store.ingest(mid)

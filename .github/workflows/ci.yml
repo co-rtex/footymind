@@ -45,7 +45,7 @@ jobs:
         with:
           path: data/raw
           key: raw-${{ hashFiles('src/footymind/data/sources.py') }}
-      - run: uv run footymind download metrica-sample-1 metrica-sample-2
+      - run: uv run footymind download
       - run: uv run footymind ingest
       - run: uv run pytest -q
 
