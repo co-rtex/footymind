@@ -9,7 +9,7 @@ uv sync                                   # Python env (3.11+; developed on 3.13
 uv run footymind download                 # fetch Metrica sample data (checksum-verified, ~180 MB)
 uv run footymind ingest                   # build data/processed/<match>/ bundles (~3 s/match)
 uv run pytest -q                          # all tests; real-data tests skip if data is absent
-uv run ruff check src tests && uv run ruff format --check src tests && uv run mypy
+scripts/check.sh                          # every CI gate locally (Python + web); run before committing
 uv run footymind serve                    # API on :8000 (serves web/dist at / if built)
 uv run footymind experiment experiments/configs/pass_outcome_v1.json
 cd web && npm ci && npm run dev           # frontend on :5173 (proxies /api to the API)

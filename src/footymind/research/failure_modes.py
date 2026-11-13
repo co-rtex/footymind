@@ -53,8 +53,11 @@ def main(n_boot: int = 2000, seed: int = 0) -> None:
     cfg = json.loads((res_dir / "results.json").read_text())
     oof = pl.read_parquet(res_dir / "oof_predictions.parquet")
     ds = build(cfg["config"]["matches"], DatasetConfig(**cfg["config"].get("dataset", {})))
-    df = ds.join(oof.select("match_id", "event_id", "p_A_logreg", "p_B_logreg"),
-                 on=["match_id", "event_id"], how="inner")
+    df = ds.join(
+        oof.select("match_id", "event_id", "p_A_logreg", "p_B_logreg"),
+        on=["match_id", "event_id"],
+        how="inner",
+    )
     if df.height != oof.height:
         raise RuntimeError(f"join mismatch: {df.height} vs {oof.height}")
     rng = np.random.default_rng(seed)
@@ -74,20 +77,31 @@ def main(n_boot: int = 2000, seed: int = 0) -> None:
         for _ in range(n_boot):
             idx = np.concatenate([members[g] for g in rng.integers(0, uniq.size, uniq.size)])
             boots.append(d[idx].mean())
-        out.append({
-            "context": name, "n": int(sub.height), "completion_rate": float(y.mean()),
-            "log_loss_A": float(la.mean()), "log_loss_B": float(lb.mean()),
-            "delta_B_minus_A": float(d.mean()),
-            "ci95": [float(np.percentile(boots, 2.5)), float(np.percentile(boots, 97.5))],
-        })
-    result = {"name": "failure_modes_v2", "source_experiment": NAME,
-              "source_code_revision": cfg["code_revision"], "code_revision": git_revision(),
-              "contexts": out}
+        out.append(
+            {
+                "context": name,
+                "n": int(sub.height),
+                "completion_rate": float(y.mean()),
+                "log_loss_A": float(la.mean()),
+                "log_loss_B": float(lb.mean()),
+                "delta_B_minus_A": float(d.mean()),
+                "ci95": [float(np.percentile(boots, 2.5)), float(np.percentile(boots, 97.5))],
+            }
+        )
+    result = {
+        "name": "failure_modes_v2",
+        "source_experiment": NAME,
+        "source_code_revision": cfg["code_revision"],
+        "code_revision": git_revision(),
+        "contexts": out,
+    }
     (res_dir / "failure_modes.json").write_text(json.dumps(result, indent=2))
     for r in out:
-        print(f"{r['context']:45s} n={r['n']:5d} rate={r['completion_rate']:.2f} "
-              f"A={r['log_loss_A']:.3f} B={r['log_loss_B']:.3f} Δ={r['delta_B_minus_A']:+.3f} "
-              f"[{r['ci95'][0]:+.3f}, {r['ci95'][1]:+.3f}]")
+        print(
+            f"{r['context']:45s} n={r['n']:5d} rate={r['completion_rate']:.2f} "
+            f"A={r['log_loss_A']:.3f} B={r['log_loss_B']:.3f} Δ={r['delta_B_minus_A']:+.3f} "
+            f"[{r['ci95'][0]:+.3f}, {r['ci95'][1]:+.3f}]"
+        )
 
 
 if __name__ == "__main__":
