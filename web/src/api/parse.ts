@@ -6,6 +6,7 @@
  * Float32Arrays, and every consumer must treat NaN as "do not draw".
  */
 import type {
+  DefensiveShadowOut,
   EventOut,
   FrameAnalysisOut,
   MatchSummary,
@@ -77,6 +78,38 @@ export function parseScenario(raw: unknown): ScenarioResponse {
   parseAnalysis(raw.observed);
   parseAnalysis(raw.hypothetical);
   return raw as unknown as ScenarioResponse;
+}
+
+const SHADOW_DEFENDER_KEYS = [
+  "player_id",
+  "x",
+  "y",
+  "shadow_best",
+  "shadow_sum",
+  "alt_radius_m",
+  "alternatives",
+  "most_suppressed_receiver",
+  "most_suppressed_delta",
+  "distinguishable_from_noise",
+];
+
+export function parseDefensiveShadow(raw: unknown): DefensiveShadowOut {
+  needKeys(raw, ["frame", "attacking_team", "defenders", "assumptions", "status", "v_sum_observed"], "defensive shadow");
+  need(Array.isArray(raw.defenders), "defensive shadow defenders is not an array");
+  need(Array.isArray(raw.assumptions), "defensive shadow assumptions is not an array");
+  for (const d of raw.defenders as unknown[]) {
+    needKeys(d, SHADOW_DEFENDER_KEYS, "shadow defender");
+    need(typeof d.shadow_sum === "number" && Number.isFinite(d.shadow_sum), "shadow defender shadow_sum is not a number");
+    need(typeof d.distinguishable_from_noise === "boolean", "shadow defender distinguishable_from_noise is not a boolean");
+    need(Array.isArray(d.alternatives), "shadow defender alternatives is not an array");
+    for (const a of d.alternatives as unknown[]) {
+      need(
+        Array.isArray(a) && a.length === 2 && a.every((v) => typeof v === "number"),
+        "shadow alternative is not an [x, y] pair",
+      );
+    }
+  }
+  return raw as unknown as DefensiveShadowOut;
 }
 
 /** Replay in render-ready form. NaN marks unobserved values. */
