@@ -5,7 +5,7 @@ import react from "@vitejs/plugin-react";
 // The API is always addressed at the relative path /api. In development Vite
 // proxies it to the FastAPI backend. In production FastAPI serves web/dist
 // itself, so the same relative path works with no configuration.
-const API_TARGET = process.env.FOOTYMIND_API ?? "http://127.0.0.1:8765";
+const API_TARGET = process.env.FOOTYMIND_API ?? "http://127.0.0.1:8000";
 
 export default defineConfig({
   plugins: [react()],

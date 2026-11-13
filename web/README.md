@@ -21,16 +21,17 @@ shows the attribution returned by the API on every page.
 ```bash
 # 1. backend (from the repository root)
 uv sync
-FOOTYMIND_DATA_DIR=/path/to/data uv run uvicorn footymind.api.app:app --port 8765
+uv run footymind download && uv run footymind ingest   # first time only
+uv run footymind serve                                  # API on :8000
 
-# 2. frontend dev server (proxies /api to :8765)
+# 2. frontend dev server (proxies /api to :8000)
 cd web
 npm install
 npm run dev            # http://localhost:5173
 ```
 
 Production: `npm run build` writes `web/dist`, which FastAPI mounts at `/` when it
-exists, so `http://127.0.0.1:8765/` serves the app and API from one origin.
+exists, so `http://127.0.0.1:8000/` serves the app and API from one origin.
 Set `FOOTYMIND_API` to proxy the dev server to a different backend.
 
 ## Check

@@ -6,7 +6,7 @@ import { defineConfig, devices } from "@playwright/test";
  *
  * Both servers are started automatically unless they are already running:
  *   - FastAPI on :8765 (needs FOOTYMIND_DATA_DIR pointing at processed data)
- *   - Vite dev server on :5173 (proxies /api to :8765)
+ *   - Vite dev server on :5173 (proxies /api to :8765 via FOOTYMIND_API)
  *
  * In sandboxes with a preinstalled Chromium, set PW_CHROMIUM or rely on the
  * /opt/pw-browsers fallback below. Never run `playwright install` here.
@@ -42,6 +42,7 @@ export default defineConfig({
         },
         {
           command: "npm run dev -- --port 5173 --strictPort",
+          env: { FOOTYMIND_API: "http://127.0.0.1:8765" },
           url: "http://127.0.0.1:5173",
           reuseExistingServer: true,
           timeout: 60_000,
