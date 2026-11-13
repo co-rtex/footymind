@@ -85,6 +85,17 @@ pooled. The receiver inference reaches 72.4% top-1.
    evidence for a graph model.
 5. The literature physics estimate is again badly calibrated.
 
+**Which decision-time features carry the effect?** (`pass_outcome_skillcorner_v1_importance`,
+held-out permutation importance, Δ log loss, 20 LOMO folds). Location dominates both
+the event and spatial models: distance to goal +0.414, ball x +0.304. Among the spatial
+additions, the largest are **defenders goal-side of the ball** (+0.018) and **attacking-team
+width** (+0.014). Pressure closing speed (+0.002), the number of physics-estimated
+options above 0.5 (+0.002) and defensive line depth (+0.001) follow. The decision-time gain
+therefore comes mainly from *defensive structure relative to the ball and the attack's
+shape*, not from the pressure on the passer alone. Permutation importance with correlated
+features understates shared contributions, so it is read as a ranking, not an additive
+decomposition.
+
 ![Cross-provider replication](figures/replication_v1.png)
 
 Caveats: one season of one league. Provider annotations differ (SkillCorner pass outcomes vs
@@ -422,7 +433,13 @@ candidate receiver is ranked, and the outcome is the actual receiver.
 The chosen receiver's run value exceeds the mean of the other candidates by **+0.012
 [+0.005, +0.019]**.
 
-**Conclusion (mostly negative).** Receivers had, on average, made themselves slightly more
+**SkillCorner replication (`run_value_validation_v1_skillcorner`, code f25e9fa; 2,974
+completed passes from 20 matches).** Receiver minus other candidates: +0.004 [+0.002, +0.006].
+Top-1: run value 0.092 (chance 0.100), availability 0.202, speed 0.231. Availability + run
+lowers top-1 by −0.052 [−0.071, −0.033]. On broadcast data many 1 s-earlier positions are
+extrapolations, which weakens the counterfactual further.
+
+**Conclusion (negative, replicated).** Receivers had, on average, made themselves slightly more
 available in the second before the pass, so there is a small, statistically detectable
 association. As a predictor of who receives the ball, run value is barely above chance
 and below both current availability and plain speed. The pre-specified equal-weight
@@ -476,6 +493,7 @@ it is not evidence of what would have happened.
   (displacement sensitivity of option value per defender); off-ball valuation (Ghost Value).
 
 ## Log
+* **2026-11-13**: Run value replicated on SkillCorner: tiny positive association (+0.004) but at-chance ranking. The negative result is confirmed. Decision-time importance: defensive structure relative to the ball and attacking width.
 * **2026-11-13**: SkillCorner (20 A-League matches, broadcast) integrated. Cross-provider replication: the decision-time spatial gain replicates (−0.024 vs −0.026; 20/20 matches); interaction features show a small significant gain with 4× the data.
 * **2026-11-13**: Run value (off-ball Ghost Value v1): small positive association with being chosen (+0.012 [+0.005, +0.019]) but weak as a ranking (top-1 0.134 vs availability 0.249). Mostly negative result, recorded without tuning.
 * **2026-11-13**: Independent review (no hard leakage; headline reframed into decision-time vs action-conditioned; rules v2; scenario feasibility and ensemble fixes). RQ1 v3: decision-time Δ −0.026 [−0.034, −0.018], action-conditioned Δ −0.071. Option model v2 adopted.
