@@ -15,9 +15,9 @@ Format facts verified against the downloaded files (2026-11-13):
   ``pass_outcome``. ``frame_end`` is when the possession ended, i.e. the release for a pass.
 
 Orientation: the attacking direction declared in ``home_team_side`` is cross-checked
-against goalkeeper positions, and a contradiction raises. The sign convention of the
-SkillCorner y axis could not be verified against video. Our features use ``|y|`` or
-rotation-invariant quantities, so a y-mirror would not change them.
+against goalkeeper positions, and a contradiction raises. The x *and* y sign conventions
+were verified independently: event positions (attacking-team frame) rotated by the attack
+sign coincide with the tracked passer in all 20 matches (independent review, 2026-11-13).
 """
 
 from __future__ import annotations
@@ -123,24 +123,40 @@ def load_tracking(
     return td, meta
 
 
-def load_events(events_csv: Path, meta: dict[str, Any], td: TrackingData) -> pl.DataFrame:
-    """Map SkillCorner player possessions to the canonical event vocabulary.
+INTERRUPTION_OUT = ("throw_in", "corner", "goal_kick")
 
-    * ``end_type == pass``: successful → ``PASS``, unsuccessful → ``BALL LOST`` (subtype
-      ``INTERCEPTION``). Offside and unlabelled outcomes are skipped. ``start_frame`` is the
-      **release** (``frame_end`` of the possession). ``end_frame`` is the start of the next
-      player possession (reception or interception) when known.
-    * ``possession_loss`` → ``BALL LOST``/``THEFT``; ``clearance`` → ``BALL LOST``/``CLEARANCE``;
-      ``shot`` → ``SHOT``. All of these are excluded from pass labels by the rules.
-    * The pass receiver is the player of the next possession by the same team for a
-      successful pass.
-    Event x/y are not used (the provider says they are unscaled), so they are NaN here.
+
+def load_events(events_csv: Path, meta: dict[str, Any], td: TrackingData) -> pl.DataFrame:
+    """Map SkillCorner player possessions to the canonical event vocabulary (adapter v2).
+
+    Per ``player_possession`` row, in this order:
+
+    * ``RECOVERY`` at ``frame_start`` when ``start_type`` is a recovery or an interception
+      (and the possession is not a restart).
+    * ``SET PIECE`` immediately before the release when ``game_interruption_before`` is a
+      restart awarded to this team (``*_for``). It is placed in the release frame, as Metrica
+      encodes set-piece passes, so the restart flag and possession splitting behave the same.
+    * The end event at ``frame_end`` (the release):
+      - ``end_type == pass``: ``successful`` → ``PASS``. The receiver is ``player_targeted_id``,
+        and a ``goal_kick_for`` restart gives subtype ``GOAL KICK``. ``unsuccessful`` →
+        ``BALL OUT`` if play stopped for a throw-in, corner or goal kick
+        (``game_interruption_after``), ``BALL LOST`` with no subtype for a free kick, otherwise
+        ``BALL LOST``/``INTERCEPTION``. Offside and unlabelled outcomes are skipped.
+      - ``possession_loss`` → ``BALL LOST``/``THEFT``; ``clearance`` → ``BALL LOST``/``CLEARANCE``;
+        ``shot`` → ``SHOT``. None of these are pass attempts under the label rules.
+
+    ``end_frame`` is the start of the next player possession (reception or interception).
+    Event positions come from ``x_end``/``y_end``, the passer at ``frame_end``. These are
+    metres in the attacking team's frame (verified: after the attack sign they match the
+    tracked passer, with a median distance of 0 m). They are rotated into the canonical frame.
+    Mapping limitations: SkillCorner has no duel events (``CHALLENGE`` is never produced),
+    and the restart mapping is approximate (documented in docs/DATA_SOURCES.md).
     """
     raw = pl.read_csv(events_csv, infer_schema_length=50000)
     _, index, side = _players(meta)
     pid_of = {pid_num: td.players[i].player_id for pid_num, i in index.items()}
     pp = raw.filter(pl.col("event_type") == "player_possession").sort("frame_start")
-    recs = pp.select(
+    cols = [
         "frame_start",
         "frame_end",
         "period",
@@ -148,26 +164,68 @@ def load_events(events_csv: Path, meta: dict[str, Any], td: TrackingData) -> pl.
         "player_id",
         "end_type",
         "pass_outcome",
-        "time_start",
-        "time_end",
-    ).to_dicts()
+        "player_targeted_id",
+        "start_type",
+        "game_interruption_before",
+        "game_interruption_after",
+        "x_end",
+        "y_end",
+    ]
+    recs = pp.select([c for c in cols if c in pp.columns]).to_dicts()
     frames = set(td.frame.tolist())
-    out = []
+    out: list[dict[str, Any]] = []
+
+    def emit(**kw: Any) -> None:
+        blank = {"end_time_s": None, "end_x": np.nan, "end_y": np.nan}
+        out.append({"event_id": len(out), **blank, **kw})
+
     for k, r in enumerate(recs):
         nxt = recs[k + 1] if k + 1 < len(recs) else None
-        et, po = r["end_type"], r["pass_outcome"]
         team = side.get(r["team_id"])
         if team is None:
             continue
-        typ: str | None
+        f0, fs = int(r["frame_end"]), int(r["frame_start"])
+        if f0 not in frames:
+            continue
+        per = int(r["period"])
+        sign = td.attack_sign(team, per)
+        x, y = r.get("x_end"), r.get("y_end")
+        sx, sy = (np.nan, np.nan) if x is None or y is None else (float(x) * sign, float(y) * sign)
+        player = pid_of.get(int(r["player_id"]))
+        gib = r.get("game_interruption_before") or ""
+        gia = r.get("game_interruption_after") or ""
+        start_type = r.get("start_type") or ""
+        restart = gib.endswith("_for")
+        base = {"team": team, "period": per, "from_player_id": player}
+        won_ball = start_type == "recovery" or "interception" in start_type
+        if not restart and won_ball and fs in frames:
+            emit(
+                type="RECOVERY",
+                subtype=None,
+                start_frame=fs,
+                end_frame=None,
+                start_time_s=fs / SKILLCORNER_FPS,
+                to_player_id=None,
+                start_x=np.nan,
+                start_y=np.nan,
+                **base,
+            )
+        et, po = r["end_type"], r["pass_outcome"]
         sub: str | None = None
         to = None
         if et == "pass" and po == "successful":
             typ = "PASS"
-            if nxt is not None and side.get(nxt["team_id"]) == team:
-                to = pid_of.get(int(nxt["player_id"]))
+            tgt = r.get("player_targeted_id")
+            to = pid_of.get(int(tgt)) if tgt is not None else None
+            if gib == "goal_kick_for":
+                sub = "GOAL KICK"
         elif et == "pass" and po == "unsuccessful":
-            typ, sub = "BALL LOST", "INTERCEPTION"
+            if gia.startswith(INTERRUPTION_OUT):
+                typ = "BALL OUT"
+            elif gia.startswith("free_kick"):
+                typ = "BALL LOST"
+            else:
+                typ, sub = "BALL LOST", "INTERCEPTION"
         elif et == "possession_loss":
             typ, sub = "BALL LOST", "THEFT"
         elif et == "clearance":
@@ -176,26 +234,27 @@ def load_events(events_csv: Path, meta: dict[str, Any], td: TrackingData) -> pl.
             typ = "SHOT"
         else:
             continue
-        f0 = int(r["frame_end"])
-        if f0 not in frames:
-            continue
-        out.append(
-            {
-                "event_id": k,
-                "team": team,
-                "type": typ,
-                "subtype": sub,
-                "period": int(r["period"]),
-                "start_frame": f0,
-                "end_frame": int(nxt["frame_start"]) if nxt is not None else None,
-                "start_time_s": f0 / SKILLCORNER_FPS,
-                "end_time_s": None,
-                "from_player_id": pid_of.get(int(r["player_id"])),
-                "to_player_id": to,
-                "start_x": np.nan,
-                "start_y": np.nan,
-                "end_x": np.nan,
-                "end_y": np.nan,
-            }
+        if restart:
+            emit(
+                type="SET PIECE",
+                subtype=gib.removesuffix("_for").replace("_", " ").upper(),
+                start_frame=f0,
+                end_frame=None,
+                start_time_s=f0 / SKILLCORNER_FPS,
+                to_player_id=None,
+                start_x=sx,
+                start_y=sy,
+                **base,
+            )
+        emit(
+            type=typ,
+            subtype=sub,
+            start_frame=f0,
+            end_frame=int(nxt["frame_start"]) if nxt is not None else None,
+            start_time_s=f0 / SKILLCORNER_FPS,
+            to_player_id=to,
+            start_x=sx,
+            start_y=sy,
+            **base,
         )
     return pl.DataFrame(out, schema=EVENT_SCHEMA)

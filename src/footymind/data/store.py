@@ -33,7 +33,7 @@ from footymind.tracking import metrica, metrica_epts, skillcorner
 from footymind.tracking.model import DatasetProvenance, PitchSpec, PlayerInfo, TrackingData
 from footymind.tracking.possessions import assign_possessions
 
-PIPELINE_VERSION = "1"
+PIPELINE_VERSION = "2"  # 2: SkillCorner adapter v2 events (restarts, recoveries, ball-outs)
 
 
 def git_revision() -> str:

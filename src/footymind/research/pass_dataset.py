@@ -296,7 +296,9 @@ def _features_for(
 ) -> dict[str, object] | None:
     f0 = int(r["start_frame"])
     i0 = td.index_of_frame(f0)
-    k_full = max(1, round(RELEASE_WINDOW_S * td.fps))
+    # At low frame rates one frame often precedes the ball leaving the foot (SkillCorner review),
+    # so at least 2 frames are used below 20 fps. Metrica (25 Hz) keeps 3 frames.
+    k_full = max(2 if td.fps < 20 else 1, round(RELEASE_WINDOW_S * td.fps))
     k = k_full
     if cfg.rules == "v2" and r["end_frame"] is not None and int(r["end_frame"]) - f0 < 2:
         return None  # resolved before a pre-outcome release window exists

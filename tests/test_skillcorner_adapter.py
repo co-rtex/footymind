@@ -55,14 +55,22 @@ def _fixture(tmp_path: Path, home_side_p1: str = "left_to_right") -> dict[str, P
     mj = tmp_path / "m.json"
     mj.write_text(json.dumps(meta))
     ev = tmp_path / "e.csv"
-    header = "event_type,frame_start,frame_end,period,team_id,player_id,end_type,pass_outcome,time_start,time_end"
+    header = (
+        "event_type,frame_start,frame_end,period,team_id,player_id,end_type,pass_outcome,"
+        "player_targeted_id,start_type,game_interruption_before,game_interruption_after,x_end,y_end"
+    )
     ev.write_text(
         header + "\n"
-        "player_possession,10,11,1,1,102,pass,successful,1.0,1.1\n"
-        "player_possession,12,12,1,1,101,pass,unsuccessful,1.2,1.2\n"
-        "player_possession,13,13,1,2,202,possession_loss,,1.3,1.3\n"
-        "passing_option,13,13,1,1,102,,,1.3,1.3\n"
-        "player_possession,20,21,2,1,102,pass,offside,2.0,2.1\n"
+        # home throw-in restart, completed pass to home_1 (targeted id 101); attacking frame x=10
+        "player_possession,10,11,1,1,102,pass,successful,101,throw_in_reception,throw_in_for,,10.0,5.0\n"
+        # home GK pass intercepted (in play)
+        "player_possession,12,12,1,1,101,pass,unsuccessful,,pass_reception,,,50.0,0.0\n"
+        # away wins the ball by interception, then loses it
+        "player_possession,13,13,1,2,202,possession_loss,,,pass_interception,,,0.0,0.0\n"
+        "passing_option,13,13,1,1,102,,,,,,,,\n"
+        # home pass that goes out for a throw-in: a failed attempt recorded as BALL OUT
+        "player_possession,20,21,2,1,102,pass,unsuccessful,,pass_reception,,throw_in_against,0.0,0.0\n"
+        "player_possession,22,22,2,1,102,pass,offside,202,pass_reception,,,0.0,0.0\n"
     )
     return {"trk": trk, "meta": mj, "ev": ev}
 
@@ -93,13 +101,19 @@ def test_event_mapping(tmp_path: Path) -> None:
     fx = _fixture(tmp_path)
     td, meta = load_tracking("skillcorner-syn", fx["trk"], fx["meta"], None)
     ev = load_events(fx["ev"], meta, td)
-    rows = ev.select(
+    got = ev.select(
         "type", "subtype", "start_frame", "end_frame", "from_player_id", "to_player_id"
-    )
-    got = rows.rows()
-    # successful pass: release = frame_end, receiver = next same-team possession (home_1)
-    assert got[0] == ("PASS", None, 11, 12, "home_8", "home_1")
-    # unsuccessful pass -> failed attempt; next possession (other team) gives the end frame
-    assert got[1] == ("BALL LOST", "INTERCEPTION", 12, 13, "home_1", None)
-    assert got[2][:2] == ("BALL LOST", "THEFT")  # possession loss: not a pass attempt
-    assert len(got) == 3  # passing_option rows and offside passes are skipped
+    ).rows()
+    # restart: SET PIECE in the release frame, then the PASS; receiver from player_targeted_id
+    assert got[0] == ("SET PIECE", "THROW IN", 11, None, "home_8", None)
+    assert got[1] == ("PASS", None, 11, 12, "home_8", "home_1")
+    # in-play failure -> interception
+    assert got[2] == ("BALL LOST", "INTERCEPTION", 12, 13, "home_1", None)
+    # interception start -> RECOVERY at possession start, then the possession loss
+    assert got[3][:3] == ("RECOVERY", None, 13)
+    assert got[4][:2] == ("BALL LOST", "THEFT")
+    # failure ending in a throw-in -> BALL OUT
+    assert got[5][:3] == ("BALL OUT", None, 21)
+    assert len(got) == 6  # passing_option rows and offside passes are skipped
+    # event positions are attacking-frame metres rotated by the attack sign (home attacks +x in P1)
+    assert ev["start_x"][1] == pytest.approx(10.0) and ev["start_y"][1] == pytest.approx(5.0)

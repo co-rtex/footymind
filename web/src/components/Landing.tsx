@@ -34,7 +34,7 @@ const FEATURED = {
 const FEATURED_BROADCAST = {
   href: routeHash({
     name: "lab",
-    possessionId: "skillcorner-1899585:p0152",
+    possessionId: "skillcorner-1899585:p0181",
     frame: 39177,
     moves: [{ player_id: "home_25", x: 22.46, y: -5.77 }],
   }),

@@ -475,11 +475,11 @@ it is not evidence of what would have happened.
 passes in 8 SkillCorner matches, kept only frames where the passer, receiver and moved
 defender are *detected* and at least 70% of players within 25 m of the ball are detected, and
 then required a supported, sign-robust scenario. Selected: `skillcorner-1899585`, P2, frame
-39177 (possession p0152). away_27 → away_14 is completed. home_25 has shadow 0.20. Moving him
+39177 (possession p0181 under pipeline v2; p0152 under v1). away_27 → away_14 is completed. home_25 has shadow 0.20. Moving him
 to (22.46, −5.77), which is reachable and supported, takes the SkillCorner option model's
 estimate for the pass from 0.60 [0.55–0.62] to 0.80 [0.78–0.82], with 24/24 members agreeing.
 The API warns that 9 of 22 positions (away from the ball) are extrapolations. Deep link:
-`#/lab/skillcorner-1899585%3Ap0152?f=39177&move=home_25,22.46,-5.77`. Selection effects apply
+`#/lab/skillcorner-1899585%3Ap0181?f=39177&move=home_25,22.46,-5.77`. Selection effects apply
 as for the Metrica example.
 
 ## Prior art and references
