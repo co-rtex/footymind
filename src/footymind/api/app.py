@@ -21,6 +21,7 @@ from footymind.counterfactual.scenario import REACH_SPEED_MPS, Intervention, run
 from footymind.data.store import MatchBundle, StaleBundleError, available_matches, load_match
 from footymind.paths import REPO_ROOT
 from footymind.spatial.analysis import FrameAnalysis, analyze
+from footymind.spatial.option_model import load_default
 from footymind.spatial.pitch_control import DEFAULT_GRID, DEFAULT_PARAMS
 from footymind.spatial.state import frame_state
 
@@ -56,7 +57,7 @@ def _f(x: Any, nd: int = 3) -> float | None:
     if x is None:
         return None
     x = float(x)
-    return None if math.isnan(x) or math.isinf(x) else round(x, nd)
+    return None if math.isnan(x) or math.isinf(x) else round(x, nd) + 0.0  # no -0.0
 
 
 def _bundle(match_id: str) -> MatchBundle:
@@ -296,6 +297,7 @@ def _analysis_out(a: FrameAnalysis, horizon_s: float = 1.5) -> S.FrameAnalysisOu
             ball_travel_time_s=round(o.ball_travel_time_s, 3),
             p_control_at_target=round(o.p_control_at_target, 4),
             p_lane_clear=round(o.p_lane_clear, 4),
+            p_success_model=_f(o.p_success_model, 4),
             p_success=round(o.p_success, 4),
             lane_min_margin_s=_f(o.lane_min_margin_s),
             lane_closest_defender_id=o.lane_closest_defender_id,
@@ -339,7 +341,25 @@ def _analysis_out(a: FrameAnalysis, horizon_s: float = 1.5) -> S.FrameAnalysisOu
             status="literature parameters; not calibrated on this dataset",
             params=a.params.as_dict(),
         ),
+        option_model=_option_model_info(),
         warnings=a.warnings,
+    )
+
+
+def _option_model_info() -> S.ModelInfo | None:
+    m = load_default()
+    if m is None:
+        return None
+    lomo = m.meta.get("lomo_pooled", {})
+    return S.ModelInfo(
+        name=str(m.meta.get("name", "option_model")),
+        reference="FootyMind RQ1 option model (docs/RESEARCH.md)",
+        status=(
+            f"{m.meta.get('status', '')}; trained on {m.meta.get('n_train')} attempted passes; "
+            f"held-out log loss {lomo.get('log_loss', float('nan')):.3f}, "
+            f"AUC {lomo.get('auc', float('nan')):.3f}, ECE {lomo.get('ece', float('nan')):.3f}"
+        ),
+        params={"n_features": float(len(m.features))},
     )
 
 
@@ -390,6 +410,7 @@ def scenario(req: S.ScenarioRequest) -> S.ScenarioResponse:
             horizon_s=req.horizon_s,
             ensemble=req.ensemble,
             seed=req.seed,
+            value_model=req.value_model,
         )
     except KeyError as e:
         raise HTTPException(404, f"unknown player {e}") from e
@@ -450,6 +471,7 @@ def scenario(req: S.ScenarioRequest) -> S.ScenarioResponse:
         warnings=r.warnings,
         assumptions=r.assumptions,
         disclaimer=DISCLAIMER,
+        value_model=r.value_model,
     )
 
 

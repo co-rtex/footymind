@@ -36,6 +36,7 @@ from footymind.research.pass_dataset import (
     INTERACTION_FEATURES,
     SPATIAL_FEATURES,
 )
+from footymind.spatial.option_model import OPTION_FEATURES
 
 EPS = 1e-4
 
@@ -88,6 +89,13 @@ def model_specs() -> dict[str, ModelSpec]:
             ["logit_physics"],
             lambda s: _logreg(),
             "physics estimate recalibrated with a 1-feature logistic regression",
+        ),
+        ModelSpec(
+            "option_logreg",
+            "option",
+            OPTION_FEATURES,
+            lambda s: _logreg(),
+            "option model: per-target features computable for any receiver (serving model)",
         ),
         ModelSpec("B_logreg", "B", b, lambda s: _logreg(), "event + spatial, logistic regression"),
         ModelSpec("B_gbm", "B", b, _gbm, "event + spatial, gradient boosting"),

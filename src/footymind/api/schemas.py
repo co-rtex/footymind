@@ -161,7 +161,10 @@ class PassOptionOut(BaseModel):
     ball_travel_time_s: float
     p_control_at_target: float
     p_lane_clear: float
-    p_success: float
+    p_success: float = Field(description="physics heuristic: p_control_at_target * p_lane_clear")
+    p_success_model: float | None = Field(
+        None, description="data-calibrated option model (see model.option_model)"
+    )
     lane_min_margin_s: float | None
     lane_closest_defender_id: str | None
     lane_closest_defender_perp_m: float | None
@@ -204,6 +207,7 @@ class FrameAnalysisOut(BaseModel):
     control_area_m2: float | None
     control_area_final_third_m2: float | None
     model: ModelInfo
+    option_model: ModelInfo | None = None
     warnings: list[str]
 
 
@@ -223,6 +227,7 @@ class ScenarioRequest(BaseModel):
     horizon_s: float = Field(1.5, gt=0.0, le=5.0)
     ensemble: int = Field(24, ge=0, le=64)
     seed: int = 0
+    value_model: Literal["option_model", "physics"] = "option_model"
 
 
 class FeasibilityOut(BaseModel):
@@ -275,3 +280,6 @@ class ScenarioResponse(BaseModel):
     warnings: list[str]
     assumptions: list[str]
     disclaimer: str
+    value_model: Literal["option_model", "physics"] = Field(
+        description="which per-option probability the deltas use"
+    )

@@ -46,6 +46,7 @@ import polars as pl
 
 from footymind.data.store import load_match
 from footymind.spatial.lanes import lane, point_segment_distance
+from footymind.spatial.option_features import option_feature_rows
 from footymind.spatial.pitch_control import DEFAULT_PARAMS, pitch_control
 from footymind.spatial.state import frame_state
 from footymind.tracking.model import TrackingData
@@ -328,6 +329,13 @@ def _features_for(
     lr0 = lanes[0]
     row.update(
         inferred_receiver_id=s.player_ids[mates[c]],
+        target_x_att=float(s.xy[mates[c], 0] * sign),
+        target_y_abs=float(abs(s.xy[mates[c], 1] * sign)),
+        **{
+            k: v
+            for k, v in option_feature_rows(s, team, ball, [int(mates[c])], passer)[0].items()
+            if k in ("target_marker_dist_m", "pass_forward_cos", "target_speed_along_pass")
+        },
         cand_distance_m=float(dist[c]),
         cand_angle_dev=float(dev[c]),
         cand_forward_m=float((s.xy[mates[c], 0] - ball[0]) * sign),

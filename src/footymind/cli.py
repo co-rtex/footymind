@@ -25,6 +25,9 @@ def main(argv: list[str] | None = None) -> int:
     p_exp = sub.add_parser("experiment", help="run a research experiment from a config file")
     p_exp.add_argument("config", help="path to experiment JSON config")
 
+    p_opt = sub.add_parser("train-option-model", help="evaluate (LOMO) and export the option model")
+    p_opt.add_argument("match_ids", nargs="*", help="default: all processed matches")
+
     args = parser.parse_args(argv)
 
     if args.cmd == "download":
@@ -55,6 +58,12 @@ def main(argv: list[str] | None = None) -> int:
         from footymind.research.runner import run_from_config
 
         run_from_config(args.config)
+    elif args.cmd == "train-option-model":
+        from footymind.data.store import available_matches
+        from footymind.research.train_option_model import train
+
+        m = train(args.match_ids or available_matches())
+        print(json.dumps({k: m.meta[k] for k in ("n_train", "lomo_pooled", "code_revision")}))
     return 0
 
 
