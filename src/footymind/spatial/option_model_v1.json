@@ -102,8 +102,8 @@
   "intercept": 1.712182482616097,
   "meta": {
     "name": "option_model_v1",
-    "trained_utc": "2026-11-13T21:22:05+00:00",
-    "code_revision": "1bedc1403eb8b59df7207a83c4538342e90d6bf8+dirty",
+    "trained_utc": "2026-11-13T21:24:19+00:00",
+    "code_revision": "0d32b0a750965e5f85fbbc0ba86f44538b88f8c5",
     "training_matches": [
       "metrica-sample-1",
       "metrica-sample-2",
