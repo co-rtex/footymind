@@ -140,12 +140,35 @@ class OptionModel:
 _CACHE: dict[str, OptionModel | None] = {}
 
 
-def load_default() -> OptionModel | None:
-    """The packaged option model, or None if it has not been trained yet."""
-    if MODEL_RESOURCE not in _CACHE:
+# Providers differ in frame rate, visibility and labels, so each one gets its own model,
+# trained and evaluated (LOMO) only on its own matches. Models are never pooled across providers.
+PROVIDER_RESOURCES = {
+    "metrica": MODEL_RESOURCE,
+    "skillcorner": "option_model_v2_skillcorner.json",
+}
+
+
+def provider_of(match_id: str) -> str:
+    return match_id.split("-", 1)[0]
+
+
+def resource_for(provider: str) -> str:
+    if provider not in PROVIDER_RESOURCES:
+        raise ValueError(f"no option model registered for provider {provider!r}")
+    return PROVIDER_RESOURCES[provider]
+
+
+def load_default(match_id: str | None = None) -> OptionModel | None:
+    """The packaged option model for the match's provider (Metrica if no match is given).
+
+    Returns None if that provider's model has not been trained yet. Callers then fall back
+    to the physics heuristic and say so.
+    """
+    resource = resource_for(provider_of(match_id) if match_id else "metrica")
+    if resource not in _CACHE:
         try:
-            text = resources.files("footymind.spatial").joinpath(MODEL_RESOURCE).read_text()
-            _CACHE[MODEL_RESOURCE] = OptionModel.from_json(text)
+            text = resources.files("footymind.spatial").joinpath(resource).read_text()
+            _CACHE[resource] = OptionModel.from_json(text)
         except FileNotFoundError:
-            _CACHE[MODEL_RESOURCE] = None
-    return _CACHE[MODEL_RESOURCE]
+            _CACHE[resource] = None
+    return _CACHE[resource]

@@ -318,7 +318,7 @@ def run_scenario(
 
     obs_map = {o.receiver_id: val(o) for o in obs_a.pass_options}
     hyp_map = {o.receiver_id: val(o) for o in hyp_a.pass_options}
-    if value_model == "option_model" and load_default() is None:
+    if value_model == "option_model" and load_default(match_id) is None:
         value_model = "physics"
     deltas = []
     for rid in sorted(set(obs_map) | set(hyp_map)):

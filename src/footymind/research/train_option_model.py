@@ -18,12 +18,24 @@ from sklearn.linear_model import LogisticRegression
 from footymind.data.store import git_revision
 from footymind.research.evaluate import lomo_predictions, metrics, model_specs
 from footymind.research.pass_dataset import DatasetConfig, build
-from footymind.spatial.option_model import MODEL_RESOURCE, SERVING_FEATURES, OptionModel
+from footymind.spatial.option_model import (
+    SERVING_FEATURES,
+    OptionModel,
+    provider_of,
+    resource_for,
+)
 
-OUT = Path(__file__).resolve().parents[1] / "spatial" / MODEL_RESOURCE
+SPATIAL_DIR = Path(__file__).resolve().parents[1] / "spatial"
 
 
-def train(match_ids: list[str], out: Path = OUT, seed: int = 0, n_boot: int = 32) -> OptionModel:
+def train(
+    match_ids: list[str], out: Path | None = None, seed: int = 0, n_boot: int = 32
+) -> OptionModel:
+    providers = {provider_of(m) for m in match_ids}
+    if len(providers) != 1:
+        raise ValueError(f"refusing to pool providers {sorted(providers)}; train one at a time")
+    provider = providers.pop()
+    out = out or SPATIAL_DIR / resource_for(provider)
     df = build(match_ids, DatasetConfig(rules="v2"))
     spec = model_specs()["option_v2_logreg"]
     oof, folds, _ = lomo_predictions(df, {"option_v2_logreg": spec}, seed)
@@ -53,6 +65,7 @@ def train(match_ids: list[str], out: Path = OUT, seed: int = 0, n_boot: int = 32
         {
             "name": "option_model_v2",
             "dataset_rules": "v2",
+            "provider": provider,
             "trained_utc": datetime.now(UTC).isoformat(timespec="seconds"),
             "code_revision": git_revision(),
             "training_matches": match_ids,

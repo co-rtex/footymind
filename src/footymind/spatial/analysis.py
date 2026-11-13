@@ -167,7 +167,7 @@ def pass_options(
         params,
     )
     def_ids = [state.player_ids[i] for i in np.flatnonzero(dfn)]
-    model = load_default()
+    model = load_default(state.match_id)
     p_model: list[float | None] = [None] * len(receivers)
     if model is not None and state.attacking_team is not None:
         rows = option_feature_rows(

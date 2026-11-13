@@ -26,7 +26,8 @@ def main(argv: list[str] | None = None) -> int:
     p_exp.add_argument("config", help="path to experiment JSON config")
 
     p_opt = sub.add_parser("train-option-model", help="evaluate (LOMO) and export the option model")
-    p_opt.add_argument("match_ids", nargs="*", help="default: all processed matches")
+    p_opt.add_argument("match_ids", nargs="*", help="default: all processed matches of --provider")
+    p_opt.add_argument("--provider", default="metrica", choices=["metrica", "skillcorner"])
 
     args = parser.parse_args(argv)
 
@@ -62,7 +63,10 @@ def main(argv: list[str] | None = None) -> int:
         from footymind.data.store import available_matches
         from footymind.research.train_option_model import train
 
-        m = train(args.match_ids or available_matches())
+        ids = args.match_ids or [
+            m for m in available_matches() if m.startswith(args.provider + "-")
+        ]
+        m = train(ids)
         print(json.dumps({k: m.meta[k] for k in ("n_train", "lomo_pooled", "code_revision")}))
     return 0
 

@@ -346,13 +346,13 @@ def _analysis_out(a: FrameAnalysis, horizon_s: float = 1.5) -> S.FrameAnalysisOu
             status="literature parameters; not calibrated on this dataset",
             params=a.params.as_dict(),
         ),
-        option_model=_option_model_info(),
+        option_model=_option_model_info(st.match_id),
         warnings=a.warnings,
     )
 
 
-def _option_model_info() -> S.ModelInfo | None:
-    m = load_default()
+def _option_model_info(match_id: str) -> S.ModelInfo | None:
+    m = load_default(match_id)
     if m is None:
         return None
     lomo = m.meta.get("lomo_pooled", {})

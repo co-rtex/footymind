@@ -68,3 +68,16 @@ def test_packaged_model_loads_and_is_documented() -> None:
     assert m.features == OPTION_FEATURES_V2
     assert m.meta["n_train"] > 1000 and "lomo_pooled" in m.meta
     assert pl.Series(m.coef).is_finite().all()
+
+
+def test_providers_are_never_pooled_and_models_are_per_provider() -> None:
+    from footymind.research.train_option_model import train
+    from footymind.spatial.option_model import provider_of, resource_for
+
+    assert provider_of("metrica-sample-1") == "metrica"
+    assert provider_of("skillcorner-2017461") == "skillcorner"
+    assert resource_for("metrica") != resource_for("skillcorner")
+    with pytest.raises(ValueError, match="pool"):
+        train(["metrica-sample-1", "skillcorner-2017461"])
+    with pytest.raises(ValueError):
+        resource_for("unknown-provider")
