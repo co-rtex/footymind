@@ -24,6 +24,9 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.11",
 ]
+research = [
+    "matplotlib>=3.11.2",
+]
 
 [project.scripts]
 footymind = "footymind.cli:main"

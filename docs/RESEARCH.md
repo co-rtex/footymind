@@ -105,6 +105,40 @@ The v2 conclusions match v1. The spatial gain holds in every fold, including the
 fold. Defender-only information gives a small, consistently positive gain. Interaction
 features add nothing measurable, and the raw physics estimate stays miscalibrated.
 
+### Figures and failure modes (RQ1 v2)
+
+![Calibration on held-out matches](figures/calibration_v2.png)
+![Ablation forest plot](figures/ablation_v2.png)
+![Per-fold log loss](figures/folds_v2.png)
+
+Figures are generated from the committed `results.json` by
+`uv run --group research python -m footymind.research.figures`.
+
+**Failure modes** (`experiments/results/pass_outcome_v2_3match/failure_modes.json`,
+`python -m footymind.research.failure_modes`). These are out-of-fold log losses of A
+(event) and B (spatial) logistic models by decision-time context, with
+possession-clustered 95% CIs:
+
+| context | n | completion | A | B | Δ (B − A) [95% CI] |
+|---|---|---|---|---|---|
+| all | 3,633 | 0.79 | 0.429 | 0.358 | −0.071 [−0.085, −0.057] |
+| short (< 12 m) | 1,145 | 0.82 | 0.413 | 0.345 | −0.067 [−0.092, −0.042] |
+| long (> 25 m) | 690 | 0.69 | 0.546 | 0.465 | −0.081 [−0.122, −0.041] |
+| under pressure (< 3 m) | 1,371 | 0.72 | 0.515 | 0.431 | −0.085 [−0.110, −0.058] |
+| forward | 1,449 | 0.67 | 0.600 | 0.517 | −0.084 [−0.108, −0.058] |
+| backward | 849 | 0.90 | 0.289 | 0.225 | −0.064 [−0.091, −0.038] |
+| final third | 725 | 0.70 | 0.528 | 0.418 | −0.110 [−0.145, −0.076] |
+| restart (set piece) | 224 | 0.83 | 0.360 | 0.280 | −0.081 [−0.142, −0.015] |
+| header | 152 | 0.53 | 0.753 | 0.727 | −0.025 [−0.140, +0.086] |
+| **misaligned (> 20° from any teammate)** | 598 | 0.49 | 0.743 | 0.557 | **−0.186 [−0.246, −0.125]** |
+
+**Reading.** The largest gain is on releases that point at no teammate (49% completion).
+This quantifies the caveat above: part of the spatial signal detects passes into space or
+mis-hits from the executed direction, rather than defensive availability. Gains are also
+robust in the final third, under pressure and on forward passes, which are the situations
+where tactical context should matter. Headers show no reliable gain. Both learned models
+are slightly conservative below p ≈ 0.5 (observed > predicted), where few passes sit.
+
 ### Interpretation
 1. **Spatial context helps, robustly, on held-out matches.** It reduces log loss by about
    16% relative to the event baseline (0.438 → 0.369) and improves discrimination
@@ -233,9 +267,32 @@ receiver-specific effects. Low correlation is not evidence of validity. **Noise 
 |shadow_sum| < 0.025 is not distinguishable from tracking noise. The API flags this per
 defender (`distinguishable_from_noise`).
 
-**Not yet done:** outcome validation, for example whether team-level shadow before a pass
-predicts its failure beyond Model B. That is the next research step before any
-"defender rating" claim.
+### Outcome validation (`experiments/results/shadow_validation_v1`, code identical to 057bc04)
+
+**Test.** For 386 intercepted pass attempts (BALL LOST followed within 2 s by a RECOVERY
+from the other team; all 3 matches; goalkeeper interceptions excluded), rank outfield
+defenders at the **release frame** and check whether the eventual interceptor is ranked
+first or in the top 3. No post-release information is used. The pass direction is not
+used either, because the shadow is direction-agnostic.
+
+| ranking | top-1 hit [95% CI] | top-3 hit [95% CI] |
+|---|---|---|
+| chance (1 / outfield defenders) | 0.100 | 0.300 |
+| Defensive Shadow | 0.215 [0.171, 0.254] | 0.383 [0.334, 0.433] |
+| nearest defender to the ball | 0.218 [0.176, 0.259] | **0.503 [0.453, 0.552]** |
+| lane presence (summed interception p) | 0.041 [0.023, 0.062] | 0.189 [0.153, 0.228] |
+
+Paired top-3 differences: shadow − lane presence **+0.194 [+0.132, +0.254]**; shadow −
+nearest defender **−0.119 [−0.181, −0.060]**.
+
+**Conclusion (partly negative).** The shadow carries genuine outcome-related signal: it
+finds the interceptor at twice the chance rate and far better than lane presence. It does
+**not** beat the trivial proximity baseline at identifying who intercepts. It must therefore
+not be presented as identifying the defender who stops passes. It remains an
+*explanatory sensitivity* quantity: it says how much passing value a position removes
+under the model. The parameters are deliberately left unchanged to avoid tuning on this
+evaluation. Next: evaluate on held-out data with direction-aware variants, and test
+team-level shadow as a pass-failure predictor beyond Model B.
 
 ## Prior art and references
 * Spearman, W., Basye, A., Dick, G., Hotovy, R., Pop, P. (2017). *Physics-Based Modeling of Pass Probabilities in Soccer.* MIT Sloan Sports Analytics Conference.
@@ -259,6 +316,7 @@ predicts its failure beyond Model B. That is the next research step before any
   (displacement sensitivity of option value per defender); off-ball valuation (Ghost Value).
 
 ## Log
+* **2026-11-13**: Defensive Shadow outcome validation: 2× chance at identifying interceptors, but not better than the nearest-defender baseline (top-3 0.38 vs 0.50). Added failure-mode analysis and figures.
 * **2026-11-13**: Physics calibration: fitted parameters improve log loss (0.772 → 0.487) but cut AUC (0.751 → 0.725) and converge to implausible bounds, so the model is structurally misspecified. Literature parameters kept for geometry, and the option model is used for probabilities.
 * **2026-11-13**: Option model v1 trained (LOMO log loss 0.422, AUC 0.789, ECE 0.017). It is now the default value model in scenarios.
 * **2026-11-13**: Added the Metrica Game 3 EPTS adapter (direction cross-checked against the
