@@ -43,11 +43,23 @@ ends on a change of team, a period change, or after `BALL OUT`/`SHOT`. A `SET PI
 opens a new possession. `CHALLENGE`, `CARD` and `FAULT RECEIVED` never switch possession.
 Game 1: 381 possessions. Game 2: 366.
 
+### SkillCorner open data (A-League 2024/25, 20 matches), integrated 2026-11-13
+
+| Field | Value |
+|---|---|
+| URL | https://github.com/SkillCorner/opendata (tracking via Git LFS media URLs) |
+| Licence | MIT. The provider asks users to credit SkillCorner. Raw files are not redistributed. |
+| Content | 20 matches: `match.json` (lineups, pitch size, attacking side per period, period frame ranges), broadcast tracking at **10 fps** (`tracking_extrapolated.jsonl`), dynamic events (player possessions with pass outcome, passing options, off-ball runs) |
+| Pinned files | `src/footymind/data/skillcorner_manifest.json` (SHA-256 for 60 files, about 1.8 GB) |
+| Visibility | Players outside the camera view carry provider **extrapolations** (`is_detected = false`): only about 22% of present player-frames are detected. FootyMind stores a `detected` mask and labels extrapolated positions `estimated`. About a third of in-period frames have no player data at all (replays or close-ups) and stay NaN. |
+| Verified facts | The declared home attacking side agrees with goalkeeper-based inference in all 20 matches. The median passer-to-ball distance at the release frame is 1.12–1.39 m: a 10 fps release catches the ball leaving the foot, so the sync gate is 2.5 m for this provider. The passer is detected at about 95% of releases. Pitch lengths are 104–106 m, and goal geometry uses each match's length. |
+| Label mapping | `player_possession` with `end_type = pass`: `pass_outcome = successful` → completed, `unsuccessful` → failed; offside or unlabelled outcomes are skipped. Release frame = possession `frame_end`. Possession losses, clearances and shots are not pass attempts. |
+| Caveats | Provider-specific: event definitions, frame rate and visibility differ from Metrica, so results are **evaluated separately and never pooled** with Metrica. The y-axis sign convention could not be verified against video (features use `|y|` or rotation-invariant quantities). Player names exist in the metadata but are deliberately not stored. |
+
 ## Candidates investigated, not yet integrated
 
 | Source | Notes | Status |
 |---|---|---|
-| SkillCorner open data (https://github.com/SkillCorner/opendata) | Broadcast tracking (players out of camera view are missing or extrapolated, so visibility must be modelled). Newer releases include dynamic events (off-ball runs, passing options). | Not yet verified in this session. Licence and schema must be checked before use. |
 | StatsBomb / Hudl open data (https://github.com/hudl/open-data) | Large event dataset. 360 freeze-frames are **snapshots at events, not continuous tracking**, and show only the players visible in the broadcast frame. | Candidate for an event-scale xT/possession-value surface. Licence terms must be followed (attribution, non-commercial). |
 | kloppy (https://github.com/PySport/kloppy) | Provider-agnostic loaders | Candidate for the EPTS Game 3 adapter and future providers. Cross-validate against our adapter on Games 1–2. |
 
