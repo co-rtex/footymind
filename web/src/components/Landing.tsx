@@ -92,7 +92,7 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
           </h2>
           <p className="muted">
             Away #27 passes to #14 (completed). Home #25&apos;s position is the most suppressive here (Defensive Shadow
-            0.20). Moved within his reachable region, the option model&apos;s estimate for that pass rises from about 0.60
+            0.21). Moved within his reachable region, the option model&apos;s estimate for that pass rises from about 0.60
             to 0.80, with every ensemble member agreeing. Passer, receiver and #25 are all camera-detected; 9 of 22
             positions, away from the ball, are provider extrapolations and are drawn as estimates.
           </p>

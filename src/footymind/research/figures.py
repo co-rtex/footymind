@@ -173,7 +173,7 @@ def replication(path: Path) -> None:
     """Same comparisons on two providers, side by side (never pooled)."""
     runs = [
         (EXPERIMENT, "Metrica (3 matches)"),
-        ("pass_outcome_skillcorner_v1", "SkillCorner (20 matches)"),
+        ("pass_outcome_skillcorner_v2", "SkillCorner (20 matches)"),
     ]
     comps = [
         (("Adt_logreg", "Bdt_logreg"), "Decision-time: + spatial"),

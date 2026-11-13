@@ -41,12 +41,12 @@ Metrica (3 matches, optical, 25 Hz) and SkillCorner (20 A-League matches, broadc
 
 * **Before the pass is played** (decision-time, nothing from the kick): adding tracking-derived
   spatial context reduces log loss by **Δ −0.026 [−0.034, −0.018]** on Metrica (AUC 0.65 → 0.72)
-  and by **Δ −0.024 [−0.027, −0.020]** on SkillCorner (15,867 passes). The gain holds in every
+  and by **Δ −0.021 [−0.025, −0.018]** on SkillCorner (15,914 passes). The gain holds in every
   held-out match of both providers (3/3 and 20/20).
 * **Given the executed kick** (action-conditioned: release direction and speed known):
-  Δ −0.071 on Metrica and −0.044 on SkillCorner. This is provider-dependent, because much of it
+  Δ −0.071 on Metrica and −0.046 on SkillCorner. This is provider-dependent, because much of it
   is where the ball was actually played relative to teammates, which is partly execution quality.
-* **Defender-only** information adds a small but consistent improvement (Δ −0.015 / −0.017).
+* **Defender-only** information adds a small but consistent improvement (Δ −0.015 / −0.018).
   Interaction features add nothing on 3 matches and a small, significant amount (−0.004) on 20.
 * **Negative results:** the literature physics model is poorly calibrated (ECE 0.17), and
   fitting its parameters drives them to implausible bounds, so it is structurally

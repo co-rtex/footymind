@@ -53,7 +53,30 @@ more than 20° from any teammate: −0.189 [−0.250, −0.131], n = 588. Gains 
 the final third (−0.110), under pressure (−0.087) and on forward passes (−0.086). Headers
 show no reliable gain (−0.027 [−0.142, +0.093], n = 144).
 
-### Cross-provider replication: SkillCorner broadcast tracking (`pass_outcome_skillcorner_v1`, code cf54026)
+### Cross-provider replication: SkillCorner broadcast tracking
+
+**Current result (`pass_outcome_skillcorner_v2`, code ece721b, adapter v2 / pipeline 2).**
+A second independent review (2026-11-13) reproduced v1 exactly and found no leakage and no
+camera-framing artefact. The gain held on fully detected subsets: −0.026 where every player
+within 20 m of the ball is detected (n = 9,199). The review did find that the v1 SkillCorner event baseline lacked
+restart, recovery and stoppage context: 4 of 13 decision-time event features were constant
+zero. Adapter v2 adds that context. On 15,914 passes:
+
+| effect (SkillCorner v2) | Δ log loss [95% CI] | matches better |
+|---|---|---|
+| **decision-time: event → + spatial (LR)** | **−0.0214 [−0.0248, −0.0181]** | 20/20 |
+| decision-time (GBM) | −0.0209 [−0.0239, −0.0180] | — |
+| action-conditioned (LR) | −0.0460 [−0.0502, −0.0412] | 20/20 |
+| + defender-only (action-cond.) | −0.0180 [−0.0210, −0.0151] | — |
+| interaction (B GBM → C GBM) | −0.0041 [−0.0057, −0.0023] | 16/20 |
+| option model v1 → v2 | −0.0028 [−0.0041, −0.0016] | — |
+
+The decision-time effect is somewhat smaller than v1's −0.024 because the baseline is
+stronger. The reviewer, who also added the passer's time on the ball, estimated −0.018
+(not a committed experiment). The conclusion is unchanged: decision-time spatial context
+helps on both providers, by about 0.02 in log loss.
+
+**Superseded v1 (`pass_outcome_skillcorner_v1`, code cf54026, adapter v1).**
 
 Same rules (v2), feature definitions, model families and protocol, run on a **different
 provider, competition and technology**: SkillCorner open data, A-League 2024/25, 20 matches,
@@ -74,8 +97,9 @@ pooled. The receiver inference reaches 72.4% top-1.
 | physics, raw (ECE) | 0.174 | 0.184 |
 
 **Reading.**
-1. The **decision-time effect replicates almost exactly** across providers (Δ ≈ −0.025) and in
-   every held-out SkillCorner match. This is the most robust finding of the project so far.
+1. The **decision-time effect replicates** across providers (Metrica −0.026; SkillCorner
+   −0.021 under adapter v2) and holds in every held-out SkillCorner match. This is the most
+   robust finding of the project so far.
 2. Defender-only information replicates (Δ ≈ −0.016).
 3. The execution-alignment ("teammate geometry") component is much weaker on 10 fps broadcast
    data. That is plausible, because a 1-frame (0.1 s) release estimate on broadcast tracking
@@ -475,9 +499,10 @@ it is not evidence of what would have happened.
 passes in 8 SkillCorner matches, kept only frames where the passer, receiver and moved
 defender are *detected* and at least 70% of players within 25 m of the ball are detected, and
 then required a supported, sign-robust scenario. Selected: `skillcorner-1899585`, P2, frame
-39177 (possession p0181 under pipeline v2; p0152 under v1). away_27 → away_14 is completed. home_25 has shadow 0.20. Moving him
-to (22.46, −5.77), which is reachable and supported, takes the SkillCorner option model's
-estimate for the pass from 0.60 [0.55–0.62] to 0.80 [0.78–0.82], with 24/24 members agreeing.
+39177 (possession p0181 under pipeline v2; p0152 under v1). away_27 → away_14 is completed. home_25 has shadow 0.20 (0.21 under pipeline v2). Moving
+him to (22.46, −5.77), which is reachable and supported, takes the SkillCorner option model's
+estimate for the pass from 0.60 to 0.80 (0.59 → 0.81 with the retrained pipeline-v2 model),
+with 24/24 members agreeing.
 The API warns that 9 of 22 positions (away from the ball) are extrapolations. Deep link:
 `#/lab/skillcorner-1899585%3Ap0181?f=39177&move=home_25,22.46,-5.77`. Selection effects apply
 as for the Metrica example.
@@ -504,6 +529,7 @@ as for the Metrica example.
   (displacement sensitivity of option value per defender); off-ball valuation (Ghost Value).
 
 ## Log
+* **2026-11-13**: Second independent review (SkillCorner): C23 held but its baseline lacked context. Adapter v2 / pipeline 2. Restated replication −0.021 [−0.025, −0.018], 20/20.
 * **2026-11-13**: Run value replicated on SkillCorner: tiny positive association (+0.004) but at-chance ranking. The negative result is confirmed. Decision-time importance: defensive structure relative to the ball and attacking width.
 * **2026-11-13**: SkillCorner (20 A-League matches, broadcast) integrated. Cross-provider replication: the decision-time spatial gain replicates (−0.024 vs −0.026; 20/20 matches); interaction features show a small significant gain with 4× the data.
 * **2026-11-13**: Run value (off-ball Ghost Value v1): small positive association with being chosen (+0.012 [+0.005, +0.019]) but weak as a ranking (top-1 0.134 vs availability 0.249). Mostly negative result, recorded without tuning.
