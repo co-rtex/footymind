@@ -1,0 +1,158 @@
+/**
+ * Runtime checks and conversion of API payloads.
+ *
+ * The replay is converted to typed arrays once on arrival so the render loop
+ * never touches boxed JSON numbers. `null` (not observed) becomes NaN in the
+ * Float32Arrays, and every consumer must treat NaN as "do not draw".
+ */
+import type {
+  EventOut,
+  FrameAnalysisOut,
+  MatchSummary,
+  Pitch,
+  PlayerOut,
+  PossessionSummary,
+  ProvenanceLabel,
+  Replay,
+  ScenarioResponse,
+  SourceInfo,
+  Team,
+} from "./types";
+
+export class ContractError extends Error {
+  constructor(message: string) {
+    super(`API contract violation: ${message}`);
+    this.name = "ContractError";
+  }
+}
+
+function isObj(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function need(cond: unknown, msg: string): asserts cond {
+  if (!cond) throw new ContractError(msg);
+}
+
+function needKeys(v: unknown, keys: string[], what: string): asserts v is Record<string, unknown> {
+  need(isObj(v), `${what} is not an object`);
+  for (const k of keys) need(k in v, `${what} is missing "${k}"`);
+}
+
+export function parseMatches(raw: unknown): MatchSummary[] {
+  need(Array.isArray(raw), "matches is not an array");
+  for (const m of raw) needKeys(m, ["match_id", "source", "fps", "periods", "pitch"], "match");
+  return raw as MatchSummary[];
+}
+
+export function parsePossessions(raw: unknown): PossessionSummary[] {
+  need(Array.isArray(raw), "possessions is not an array");
+  for (const p of raw)
+    needKeys(p, ["possession_id", "team", "period", "start_frame", "end_frame", "n_passes"], "possession");
+  return raw as PossessionSummary[];
+}
+
+export function parseAnalysis(raw: unknown): FrameAnalysisOut {
+  needKeys(raw, ["frame", "players", "pass_options", "attacking_team", "warnings", "model"], "analysis");
+  need(Array.isArray(raw.players), "analysis.players is not an array");
+  need(Array.isArray(raw.pass_options), "analysis.pass_options is not an array");
+  const pc = raw.pitch_control;
+  if (pc !== null && pc !== undefined) {
+    needKeys(pc, ["nx", "ny", "x0", "y0", "dx", "dy", "values"], "pitch_control");
+    need(Array.isArray(pc.values), "pitch_control.values is not an array");
+    need(
+      (pc.values as unknown[]).length === (pc.nx as number) * (pc.ny as number),
+      `pitch_control.values has ${(pc.values as unknown[]).length} cells, expected nx*ny`,
+    );
+  }
+  return raw as unknown as FrameAnalysisOut;
+}
+
+export function parseScenario(raw: unknown): ScenarioResponse {
+  needKeys(
+    raw,
+    ["observed", "hypothetical", "feasibility", "movements", "option_deltas", "supported", "disclaimer"],
+    "scenario",
+  );
+  parseAnalysis(raw.observed);
+  parseAnalysis(raw.hypothetical);
+  return raw as unknown as ScenarioResponse;
+}
+
+/** Replay in render-ready form. NaN marks unobserved values. */
+export interface ReplayData {
+  matchId: string;
+  fps: number;
+  step: number;
+  pitch: Pitch;
+  players: PlayerOut[];
+  nPlayers: number;
+  nFrames: number;
+  frame: Int32Array;
+  timeS: Float64Array;
+  period: Int16Array;
+  /** [frame][player][x|y], NaN when not observed */
+  xy: Float32Array;
+  /** [frame][x|y], NaN when not observed */
+  ball: Float32Array;
+  events: EventOut[];
+  possession: PossessionSummary | null;
+  /** period -> team -> +1 | -1 */
+  attackSign: Map<number, Record<Team, number>>;
+  provenance: ProvenanceLabel;
+  source: SourceInfo;
+}
+
+function toF32(src: (number | null)[]): Float32Array {
+  const out = new Float32Array(src.length);
+  for (let i = 0; i < src.length; i++) {
+    const v = src[i];
+    out[i] = typeof v === "number" && Number.isFinite(v) ? v : NaN;
+  }
+  return out;
+}
+
+export function parseReplay(raw: unknown): ReplayData {
+  needKeys(
+    raw,
+    ["match_id", "fps", "step", "pitch", "players", "frame", "time_s", "period", "players_xy", "ball_xy", "events", "attack_sign", "source"],
+    "replay",
+  );
+  const r = raw as unknown as Replay;
+  const nFrames = r.frame.length;
+  const nPlayers = r.players.length;
+  need(nFrames > 0, "replay has no frames");
+  need(r.time_s.length === nFrames, "replay.time_s length differs from frame length");
+  need(r.period.length === nFrames, "replay.period length differs from frame length");
+  need(
+    r.players_xy.length === nFrames * nPlayers * 2,
+    `replay.players_xy has ${r.players_xy.length} values, expected ${nFrames * nPlayers * 2}`,
+  );
+  need(r.ball_xy.length === nFrames * 2, `replay.ball_xy has ${r.ball_xy.length} values, expected ${nFrames * 2}`);
+  for (let i = 1; i < nFrames; i++) {
+    need((r.frame[i] as number) > (r.frame[i - 1] as number), "replay.frame is not strictly increasing");
+  }
+  const attackSign = new Map<number, Record<Team, number>>();
+  for (const [p, signs] of Object.entries(r.attack_sign)) {
+    attackSign.set(Number(p), { home: signs.home ?? 0, away: signs.away ?? 0 });
+  }
+  return {
+    matchId: r.match_id,
+    fps: r.fps,
+    step: r.step,
+    pitch: r.pitch,
+    players: r.players,
+    nPlayers,
+    nFrames,
+    frame: Int32Array.from(r.frame),
+    timeS: Float64Array.from(r.time_s),
+    period: Int16Array.from(r.period),
+    xy: toF32(r.players_xy),
+    ball: toF32(r.ball_xy),
+    events: r.events,
+    possession: r.possession,
+    attackSign,
+    provenance: r.provenance,
+    source: r.source,
+  };
+}
