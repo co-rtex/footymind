@@ -13,11 +13,23 @@ export interface Vec2 {
   y: number;
 }
 
+/** Result of sampling a track: nothing drawable, an observed position, or a provider estimate. */
+export const NOT_DRAWN = 0;
+export const OBSERVED = 1;
+export const ESTIMATED = 2;
+export type SampleKind = typeof NOT_DRAWN | typeof OBSERVED | typeof ESTIMATED;
+
 /**
- * Sample item `k` of a flat [frame][item][x|y] array at fractional frame index `t`.
- * Writes into `out` and returns true, or returns false for "not observed".
+ * Sample item `k` of a flat [frame][item][x|y] array at fractional frame index `t`,
+ * and report its provenance.
+ *
+ * `detected` ([frame][item], 1 = detected, 0 = provider extrapolation) is
+ * optional; without it every drawn position is observed. A sample is
+ * ESTIMATED if ANY frame that contributes to it is an extrapolation, so an
+ * estimated position is never blended into an observed one unmarked. A frame
+ * with zero interpolation weight does not contribute.
  */
-export function sampleXY(
+export function sampleTrack(
   arr: Float32Array,
   nItems: number,
   nFrames: number,
@@ -25,8 +37,9 @@ export function sampleXY(
   k: number,
   out: Vec2,
   period?: ArrayLike<number>,
-): boolean {
-  if (nFrames <= 0 || !Number.isFinite(t)) return false;
+  detected?: Uint8Array | null,
+): SampleKind {
+  if (nFrames <= 0 || !Number.isFinite(t)) return NOT_DRAWN;
   const tc = t < 0 ? 0 : t > nFrames - 1 ? nFrames - 1 : t;
   const i0 = Math.floor(tc);
   const i1 = i0 + 1 < nFrames ? i0 + 1 : i0;
@@ -41,23 +54,47 @@ export function sampleXY(
   const ok0 = Number.isFinite(x0) && Number.isFinite(y0);
   const ok1 = Number.isFinite(x1) && Number.isFinite(y1);
   const samePeriod = !period || period[i0] === period[i1];
+  const est = (i: number) => (detected ? detected[i * nItems + k] === 0 : false);
   if (ok0 && ok1 && samePeriod) {
     out.x = x0 + (x1 - x0) * a;
     out.y = y0 + (y1 - y0) * a;
-    return true;
+    const uses1 = a > 0 && i1 !== i0;
+    return est(i0) || (uses1 && est(i1)) ? ESTIMATED : OBSERVED;
   }
   const nearestIs0 = a < 0.5 || i1 === i0;
   if (nearestIs0 && ok0) {
     out.x = x0;
     out.y = y0;
-    return true;
+    return est(i0) ? ESTIMATED : OBSERVED;
   }
   if (!nearestIs0 && ok1) {
     out.x = x1;
     out.y = y1;
-    return true;
+    return est(i1) ? ESTIMATED : OBSERVED;
   }
-  return false;
+  return NOT_DRAWN;
+}
+
+/**
+ * Sample item `k` of a flat [frame][item][x|y] array at fractional frame index `t`.
+ * Writes into `out` and returns true, or returns false for "not observed".
+ */
+export function sampleXY(
+  arr: Float32Array,
+  nItems: number,
+  nFrames: number,
+  t: number,
+  k: number,
+  out: Vec2,
+  period?: ArrayLike<number>,
+): boolean {
+  return sampleTrack(arr, nItems, nFrames, t, k, out, period) !== NOT_DRAWN;
+}
+
+/** True when either end of the segment between frames i-1 and i is a provider extrapolation. */
+export function segmentEstimated(detected: Uint8Array | null | undefined, nItems: number, i: number, k: number): boolean {
+  if (!detected || i <= 0) return false;
+  return detected[(i - 1) * nItems + k] === 0 || detected[i * nItems + k] === 0;
 }
 
 /** Observed value at an integer frame index, or null. */

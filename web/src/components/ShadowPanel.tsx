@@ -57,8 +57,9 @@ export function ShadowPanel({ playing, status, shadow, unavailable, error, onRet
       ) : (
         <>
           <p className="muted small tabular">
-            Frame {shadow.frame} · {shadow.defenders.length} defenders compared with positions up to{" "}
-            {shadow.defenders[0]?.alt_radius_m ?? "n/a"} m away · value model {shadow.value_model.replace("_", " ")}
+            Frame {shadow.frame} · {shadow.defenders.length} defenders compared with positions {shadow.alt_radius_m} m away
+            ({shadow.horizon_s} s horizon) · within noise when |value| &lt; {shadow.noise_floor} · value model{" "}
+            {shadow.value_model.replace("_", " ")}
             {status === "loading" ? <span className="spinner spinner--inline" aria-label="Updating" /> : null}
           </p>
           {shadow.defenders.length === 0 ? (

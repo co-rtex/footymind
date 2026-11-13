@@ -44,6 +44,9 @@ function syntheticShadow(defenders: DefenderShadowOut[]): DefensiveShadowOut {
     v_sum_observed: 5.1,
     defenders,
     assumptions: ["synthetic assumption"],
+    noise_floor: 0.02,
+    horizon_s: 1,
+    alt_radius_m: 3.5,
     status: "experimental: synthetic",
   };
 }
