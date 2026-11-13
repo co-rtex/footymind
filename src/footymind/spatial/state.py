@@ -145,11 +145,9 @@ def frame_state(match_id: str, frame: int) -> FrameState:
     carrier = find_carrier(xy, ball, teams, team)
     if carrier is None and team is not None:
         carrier = event_carrier(bundle, frame, team)
-    on = ~np.isnan(xy[:, 0])
-    vprov = [
-        Provenance.DERIVED if (o and not np.isnan(v[0])) else Provenance.OBSERVED
-        for o, v in zip(on, vel, strict=True)
-    ]
+    # Velocity is always a derived quantity. A null value means it could not be derived
+    # (player absent, window incomplete, or implausible-motion artefact).
+    vprov = [Provenance.DERIVED] * len(td.players)
     return FrameState(
         match_id=match_id,
         frame=int(frame),

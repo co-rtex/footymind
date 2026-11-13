@@ -59,12 +59,26 @@ class OptionModel:
     coef: np.ndarray
     intercept: float
     meta: dict[str, Any]
+    # Possession-clustered bootstrap refits of the coefficients (same preprocessing).
+    # They represent estimation uncertainty of the fitted model, sampled by the
+    # scenario ensemble. Shapes (B, k) and (B,).
+    boot_coef: np.ndarray | None = None
+    boot_intercept: np.ndarray | None = None
 
-    def predict(self, rows: list[dict[str, float]]) -> np.ndarray:
+    @property
+    def n_members(self) -> int:
+        return 0 if self.boot_coef is None else int(self.boot_coef.shape[0])
+
+    def predict(self, rows: list[dict[str, float]], member: int | None = None) -> np.ndarray:
+        """Point prediction, or bootstrap member ``member % n_members`` if given."""
         x = np.array([[r.get(f, np.nan) for f in self.features] for r in rows], dtype=np.float64)
         x = np.where(np.isnan(x), self.medians[None, :], x)
         z = (x - self.mean[None, :]) / self.scale[None, :]
-        return 1.0 / (1.0 + np.exp(-(z @ self.coef + self.intercept)))
+        coef, intercept = self.coef, self.intercept
+        if member is not None and self.boot_coef is not None and self.boot_intercept is not None:
+            k = member % self.n_members
+            coef, intercept = self.boot_coef[k], float(self.boot_intercept[k])
+        return 1.0 / (1.0 + np.exp(-(z @ coef + intercept)))
 
     def to_json(self) -> str:
         return json.dumps(
@@ -76,6 +90,10 @@ class OptionModel:
                 "coef": self.coef.tolist(),
                 "intercept": self.intercept,
                 "meta": self.meta,
+                "boot_coef": None if self.boot_coef is None else self.boot_coef.tolist(),
+                "boot_intercept": None
+                if self.boot_intercept is None
+                else self.boot_intercept.tolist(),
             },
             indent=2,
         )
@@ -91,6 +109,10 @@ class OptionModel:
             coef=np.asarray(d["coef"], dtype=np.float64),
             intercept=float(d["intercept"]),
             meta=dict(d["meta"]),
+            boot_coef=None if d.get("boot_coef") is None else np.asarray(d["boot_coef"], float),
+            boot_intercept=None
+            if d.get("boot_intercept") is None
+            else np.asarray(d["boot_intercept"], float),
         )
 
     @classmethod

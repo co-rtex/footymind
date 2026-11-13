@@ -114,3 +114,69 @@ def test_scenario_endpoint_deterministic(
     b = client.post("/api/scenarios", json=body).json()
     assert a["option_deltas"] == b["option_deltas"]
     assert a["disclaimer"] and a["assumptions"]
+
+
+# --- regressions reported by the frontend review (2026-11-13) ---
+
+
+def _absent_player_frame() -> tuple[int, str]:
+    """A frame where a registered player is not on the pitch (a substitute)."""
+    td = load_match(MID).tracking
+    i = td.player_index("home_1")  # observed in ~32% of frames in game 1
+    row = int(np.flatnonzero(np.isnan(td.xy[:, i, 0]) & (td.period == 2))[100])
+    return int(td.frame[row]), "home_1"
+
+
+def test_absent_player_velocity_provenance_is_derived(client: TestClient) -> None:
+    f, pid = _absent_player_frame()
+    a = client.get(f"/api/matches/{MID}/frames/{f}/analysis").json()
+    p = next(p for p in a["players"] if p["player_id"] == pid)
+    assert p["x"] is None and p["vx"] is None
+    assert p["velocity_provenance"] == "derived"  # null value = could not be derived
+
+
+def test_scenario_rejects_absent_player(client: TestClient) -> None:
+    f, pid = _absent_player_frame()
+    body = {"match_id": MID, "frame": f, "interventions": [{"player_id": pid, "x": 0.0, "y": 0.0}]}
+    r = client.post("/api/scenarios", json=body)
+    assert r.status_code == 422 and "not on the pitch" in r.json()["detail"]
+
+
+def test_feasibility_origin_rounded_and_model_info_structured(
+    client: TestClient, pass_frame: tuple[int, str, str]
+) -> None:
+    f, _, receiver = pass_frame
+    s = frame_state(MID, f)
+    i = s.index(receiver)
+    body = {
+        "match_id": MID,
+        "frame": f,
+        "ensemble": 4,
+        "interventions": [
+            {"player_id": receiver, "x": float(s.xy[i, 0]) + 1, "y": float(s.xy[i, 1])}
+        ],
+    }
+    j = client.post("/api/scenarios", json=body).json()
+    ox = j["feasibility"][0]["origin_x"]
+    assert ox is None or round(ox, 2) == ox
+    info = j["observed"]["option_model"]["params"]
+    assert info["n_train"] > 1000 and 0 < info["lomo_log_loss"] < 1 and info["n_bootstrap"] >= 16
+
+
+def test_ensemble_samples_option_model_uncertainty(pass_frame: tuple[int, str, str]) -> None:
+    """Option-model intervals must reflect bootstrap members, not only physics params."""
+    from footymind.spatial.analysis import analyze
+    from footymind.spatial.pitch_control import DEFAULT_PARAMS
+
+    f, _, _ = pass_frame
+    s = frame_state(MID, f)
+    point = {
+        o.receiver_id: o.p_success_model for o in analyze(s, DEFAULT_PARAMS, None).pass_options
+    }
+    members = [
+        {o.receiver_id: o.p_success_model for o in analyze(s, DEFAULT_PARAMS, None, m).pass_options}
+        for m in range(8)
+    ]
+    rid = next(iter(point))
+    vals = [m[rid] for m in members]
+    assert max(vals) - min(vals) > 1e-4  # same physics params, different coefficients

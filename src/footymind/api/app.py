@@ -360,7 +360,14 @@ def _option_model_info() -> S.ModelInfo | None:
             f"held-out log loss {lomo.get('log_loss', float('nan')):.3f}, "
             f"AUC {lomo.get('auc', float('nan')):.3f}, ECE {lomo.get('ece', float('nan')):.3f}"
         ),
-        params={"n_features": float(len(m.features))},
+        params={
+            "n_features": float(len(m.features)),
+            "n_train": float(m.meta.get("n_train", 0)),
+            "n_bootstrap": float(m.n_members),
+            "lomo_log_loss": float(lomo.get("log_loss", float("nan"))),
+            "lomo_auc": float(lomo.get("auc", float("nan"))),
+            "lomo_ece": float(lomo.get("ece", float("nan"))),
+        },
     )
 
 
@@ -470,8 +477,8 @@ def scenario(req: S.ScenarioRequest) -> S.ScenarioResponse:
                 displacement_m=round(f.displacement_m, 2),
                 reachable_radius_m=f.reachable_radius_m,
                 reachable=f.reachable,
-                origin_x=f.origin_xy[0] if f.origin_xy else None,
-                origin_y=f.origin_xy[1] if f.origin_xy else None,
+                origin_x=_f(f.origin_xy[0], 2) if f.origin_xy else None,
+                origin_y=_f(f.origin_xy[1], 2) if f.origin_xy else None,
                 inside_pitch=f.inside_pitch,
                 min_separation_m=round(f.min_separation_m, 2),
                 supported=f.supported,

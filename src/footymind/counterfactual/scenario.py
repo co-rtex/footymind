@@ -250,6 +250,8 @@ def run_scenario(
     for iv in interventions:
         if iv.player_id not in observed_state.player_ids:
             raise KeyError(iv.player_id)
+        if np.isnan(observed_state.xy[observed_state.index(iv.player_id)]).any():
+            raise ValueError(f"{iv.player_id} is not on the pitch at frame {frame}")
     feas = [check_feasibility(match_id, observed_state, iv, horizon_s) for iv in interventions]
     hyp_state, moves = _apply(observed_state, interventions, policy, follow_fraction, velocity_mode)
 
@@ -265,10 +267,12 @@ def run_scenario(
 
     obs_ens: dict[str, list[float]] = {}
     hyp_ens: dict[str, list[float]] = {}
-    for p in params_list:
-        for o in analyze(observed_state, p, grid=None).pass_options:
+    # Each ensemble member pairs one pitch-control parameter draw with one option-model
+    # bootstrap member, so both model-parameter and estimation uncertainty are sampled.
+    for member, p in enumerate(params_list):
+        for o in analyze(observed_state, p, grid=None, model_member=member).pass_options:
             obs_ens.setdefault(o.receiver_id, []).append(val(o))
-        for o in analyze(hyp_state, p, grid=None).pass_options:
+        for o in analyze(hyp_state, p, grid=None, model_member=member).pass_options:
             hyp_ens.setdefault(o.receiver_id, []).append(val(o))
 
     obs_map = {o.receiver_id: val(o) for o in obs_a.pass_options}
