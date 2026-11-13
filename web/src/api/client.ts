@@ -104,6 +104,14 @@ export function createApi(fetchImpl: Fetch = (...a) => fetch(...a)) {
     possessions: (matchId: string, minPasses = 3, signal?: AbortSignal): Promise<PossessionSummary[]> =>
       requestJson(`/matches/${enc(matchId)}/possessions?min_passes=${minPasses}`, parsePossessions, { signal }, fetchImpl),
 
+    framePossession: (matchId: string, frame: number, signal?: AbortSignal): Promise<PossessionSummary> =>
+      requestJson(
+        `/matches/${enc(matchId)}/frames/${frame}/possession`,
+        (raw: unknown) => parsePossessions([raw])[0] as PossessionSummary,
+        { signal },
+        fetchImpl,
+      ),
+
     possessionReplay: (possessionId: string, signal?: AbortSignal): Promise<ReplayData> =>
       requestJson(`/possessions/${enc(possessionId)}/replay`, parseReplay, { signal }, fetchImpl),
 

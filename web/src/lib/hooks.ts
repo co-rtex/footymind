@@ -67,7 +67,9 @@ export interface RouteMove {
 
 export type Route =
   | { name: "home"; matchId: string | null }
-  | { name: "lab"; possessionId: string; frame?: number; moves?: RouteMove[] };
+  | { name: "lab"; possessionId: string; frame?: number; moves?: RouteMove[] }
+  /** Stable deep link: (match, frame) resolved to its possession by the API. */
+  | { name: "at"; matchId: string; frame: number; moves?: RouteMove[] };
 
 /**
  * Hash routes:
@@ -97,11 +99,25 @@ export function parseRoute(hash: string): Route {
     if (moves.length) route.moves = moves.slice(0, 4);
     return route;
   }
+  if (head === "at" && arg) {
+    const params = new URLSearchParams(query);
+    const f = Number(params.get("f"));
+    const lab = parseRoute(`#/lab/${arg}?${query}`);
+    if (Number.isInteger(f) && f > 0 && lab.name === "lab") {
+      const route: Route = { name: "at", matchId: decodeURIComponent(arg), frame: f };
+      if (lab.moves) route.moves = lab.moves;
+      return route;
+    }
+  }
   if (head === "match" && arg) return { name: "home", matchId: decodeURIComponent(arg) };
   return { name: "home", matchId: null };
 }
 
 export function routeHash(r: Route): string {
+  if (r.name === "at") {
+    const lab = routeHash({ name: "lab", possessionId: r.matchId, frame: r.frame, moves: r.moves });
+    return lab.replace(/^#\/lab\//, "#/at/");
+  }
   if (r.name === "lab") {
     const params = new URLSearchParams();
     if (r.frame !== undefined) params.set("f", String(r.frame));

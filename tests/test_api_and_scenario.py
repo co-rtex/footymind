@@ -237,3 +237,10 @@ def test_period_time_starts_at_zero_each_period(client: TestClient) -> None:
     assert r["period_time_s"][-1] == pytest.approx(2.0, abs=0.05)
     a = client.get(f"/api/matches/{MID}/frames/{p2_first + 25}/analysis").json()
     assert a["period_time_s"] == pytest.approx(1.0, abs=0.05)
+
+
+def test_frame_possession_resolves_deep_links(client: TestClient) -> None:
+    j = client.get(f"/api/matches/{MID}/frames/53708/possession").json()
+    assert j["possession_id"] == "metrica-sample-1:p0163"
+    assert j["start_frame"] <= 53708 <= j["end_frame"]
+    assert client.get(f"/api/matches/{MID}/frames/999999999/possession").status_code == 404

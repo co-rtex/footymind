@@ -106,6 +106,14 @@ describe("routing", () => {
     });
   });
 
+  it("round-trips stable (match, frame) deep links", () => {
+    const r = { name: "at" as const, matchId: "skillcorner-1899585", frame: 39177, moves: [{ player_id: "home_25", x: 22.46, y: -5.77 }] };
+    const h = routeHash(r);
+    expect(h).toBe("#/at/skillcorner-1899585?f=39177&move=home_25,22.46,-5.77");
+    expect(parseRoute(h)).toEqual(r);
+    expect(parseRoute("#/at/skillcorner-1899585")).toEqual({ name: "home", matchId: null }); // frame required
+  });
+
   it("finds replay indices by frame", () => {
     const frames = Int32Array.from([10, 12, 14, 16]);
     expect(indexOfFrame(frames, 5)).toBe(0);

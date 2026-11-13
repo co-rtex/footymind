@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { api } from "./api/client";
-import type { MatchSummary } from "./api/types";
+import type { MatchSummary, PossessionSummary } from "./api/types";
 import { Landing } from "./components/Landing";
 import { Lab } from "./components/Lab";
 import { SourceAttribution } from "./components/SourceAttribution";
 import { StatusBlock } from "./components/StatusBlock";
 import { providerInfo } from "./lib/providers";
 import { matchOfPossession, parseRoute, routeHash, useAsync, useHash } from "./lib/hooks";
+import type { RouteMove } from "./lib/hooks";
 
 export function App() {
   const [hash, go] = useHash();
@@ -14,7 +15,11 @@ export function App() {
   const matches = useAsync<MatchSummary[]>("matches", (signal) => api.matches(signal));
 
   const matchId =
-    route.name === "lab" ? matchOfPossession(route.possessionId) : route.matchId ?? matches.data?.[0]?.match_id ?? null;
+    route.name === "lab"
+      ? matchOfPossession(route.possessionId)
+      : route.name === "at"
+        ? route.matchId
+        : route.matchId ?? matches.data?.[0]?.match_id ?? null;
   // On lab routes, fetch the one match summary (milliseconds) instead of waiting for the full list,
   // so the clock, top bar and attribution are right from the first paint.
   const single = useAsync<MatchSummary>(
@@ -56,7 +61,16 @@ export function App() {
       </header>
 
       <main id="main" className="main">
-        {route.name === "lab" ? (
+        {route.name === "at" ? (
+          <AtFrame
+            key={`${route.matchId}@${route.frame}`}
+            matchId={route.matchId}
+            frame={route.frame}
+            moves={route.moves}
+            match={match}
+            onBack={goHome}
+          />
+        ) : route.name === "lab" ? (
           // The lab needs only the possession replay; it does not wait for the match list
           // (the match clock falls back to provider time until the list arrives).
           <Lab
@@ -89,5 +103,37 @@ export function App() {
 
       <footer className="footer">{match ? <SourceAttribution source={match.source} /> : null}</footer>
     </div>
+  );
+}
+
+/** Resolves a stable (match, frame) deep link to its possession, then opens the lab there. */
+function AtFrame({
+  matchId,
+  frame,
+  moves,
+  match,
+  onBack,
+}: {
+  matchId: string;
+  frame: number;
+  moves?: RouteMove[];
+  match: MatchSummary | null;
+  onBack: () => void;
+}) {
+  const pos = useAsync<PossessionSummary>(`at:${matchId}@${frame}`, (signal) =>
+    api.framePossession(matchId, frame, signal),
+  );
+  if (pos.status === "error") {
+    return <StatusBlock kind="error" title="Could not resolve this link" detail={pos.error.message} onRetry={pos.reload} />;
+  }
+  if (!pos.data) return <StatusBlock kind="loading" title="Finding the possession" />;
+  return (
+    <Lab
+      possessionId={pos.data.possession_id}
+      match={match}
+      onBack={onBack}
+      initialFrame={frame}
+      initialMoves={moves}
+    />
   );
 }

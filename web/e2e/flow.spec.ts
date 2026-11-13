@@ -107,7 +107,7 @@ test("possession list loads with attribution and filters", async ({ page }) => {
 test("featured deep link opens a paused, physically supported scenario", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("featured-link").click();
-  await expect(page).toHaveURL(/#\/lab\/metrica-sample-1%3Ap0163\?f=53708&move=home_9,50.7,-8.75/);
+  await expect(page).toHaveURL(/#\/at\/metrica-sample-1\?f=53708&move=home_9,50.7,-8.75/);
   const deltas = page.getByTestId("option-deltas");
   await expect(deltas).toBeVisible({ timeout: 30_000 });
   // The pass actually played (#17 -> #18) is the largest change and it is robust.
@@ -192,7 +192,7 @@ test("broadcast tracking: extrapolated SkillCorner positions are marked as estim
 test("featured broadcast scenario opens with detected key players and a robust change", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("featured-broadcast-link").click();
-  await expect(page).toHaveURL(/skillcorner-1899585%3Ap0181\?f=39177&move=home_25,22.46,-5.77/);
+  await expect(page).toHaveURL(/#\/at\/skillcorner-1899585\?f=39177&move=home_25,22.46,-5.77/);
   const deltas = page.getByTestId("option-deltas");
   await expect(deltas).toBeVisible({ timeout: 30_000 });
   await expect(deltas.locator("tbody tr").first()).toContainText("#14");

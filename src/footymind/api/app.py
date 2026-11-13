@@ -33,7 +33,7 @@ from footymind.paths import PROCESSED_DIR, REPO_ROOT
 from footymind.spatial.analysis import FrameAnalysis, analyze
 from footymind.spatial.option_model import load_default
 from footymind.spatial.pitch_control import DEFAULT_GRID, DEFAULT_PARAMS
-from footymind.spatial.state import frame_state
+from footymind.spatial.state import attacking_team_at, frame_state
 from footymind.tracking.model import TrackingData
 
 MAX_REPLAY_FRAMES = 4000
@@ -420,6 +420,22 @@ def _frame_or_404(match_id: str, frame: int) -> None:
         b.tracking.index_of_frame(frame)
     except KeyError as e:
         raise HTTPException(404, f"frame {frame} not in {match_id}") from e
+
+
+@app.get("/api/matches/{match_id}/frames/{frame}/possession", response_model=S.PossessionSummary)
+def frame_possession(match_id: str, frame: int) -> S.PossessionSummary:
+    """The possession containing ``frame`` (else the latest one before it).
+
+    Deep links keyed by (match, frame) stay valid when possession segmentation changes
+    between pipeline versions, unlike links keyed by possession id.
+    """
+    _frame_or_404(match_id, frame)
+    b = _bundle(match_id)
+    _, pid = attacking_team_at(b, frame)
+    if pid is None:
+        raise HTTPException(404, f"no possession at or before frame {frame}")
+    row = b.possessions.filter(pl.col("possession_id") == pid).row(0, named=True)
+    return _possession_out(row, b.tracking.fps)
 
 
 @app.get("/api/matches/{match_id}/frames/{frame}/analysis", response_model=S.FrameAnalysisOut)

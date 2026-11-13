@@ -29,7 +29,7 @@ uv run footymind download metrica-sample-1 metrica-sample-2 metrica-sample-3   #
 ## Verification (last run in this session)
 | Gate | Result |
 |---|---|
-| `scripts/check.sh` (exit code 0) | Python: ruff, format, mypy, **76 pytest**; web: typecheck, lint, **73 vitest**, build |
+| `scripts/check.sh` (exit code 0) | Python: ruff, format, mypy, **77 pytest**; web: typecheck, lint, **74 vitest**, build |
 | `cd web && npx playwright test e2e/flow.spec.ts` | **6/6** against the real API (Metrica + SkillCorner, featured scenarios, shadow layer, broadcast provenance) |
 | Docker | image built locally, e2e passed against the container; CI `docker` job green |
 | GitHub CI | green through 75ebdba (run 20); later runs were queued or in progress at handoff |
@@ -56,9 +56,10 @@ uv run footymind download metrica-sample-1 metrica-sample-2 metrica-sample-3   #
 2. Research: simulated defender responses (learned ghosting) before any off-ball valuation
    claim. Add time-on-ball / one-touch context to both providers' baselines and re-run C20/C28
    (the second review estimated −0.018 for SkillCorner with it).
-3. Product: possession deep links are keyed by possession id, which can change with the
-   pipeline version (p0152 → p0181 happened). Consider frame-based deep links that resolve the
-   possession server-side.
+3. Product: done. Stable deep links `#/at/<match>?f=<frame>&move=...` resolve the possession
+   server-side (`GET /api/matches/{id}/frames/{frame}/possession`), and the featured scenarios
+   use them. Possession-id links (`#/lab/<pid>`) still work but can change between pipeline
+   versions.
 4. Hygiene: delete merged local branches; Vitest 5 upgrade (dev-only audit findings).
 
 ## Decisions needing the owner

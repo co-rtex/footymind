@@ -24,8 +24,8 @@ type TeamFilter = "all" | Team;
 const FEATURED = {
   matchId: "metrica-sample-1",
   href: routeHash({
-    name: "lab",
-    possessionId: "metrica-sample-1:p0163",
+    name: "at",
+    matchId: "metrica-sample-1",
     frame: 53708,
     moves: [{ player_id: "home_9", x: 50.7, y: -8.75 }],
   }),
@@ -33,8 +33,8 @@ const FEATURED = {
 
 const FEATURED_BROADCAST = {
   href: routeHash({
-    name: "lab",
-    possessionId: "skillcorner-1899585:p0181",
+    name: "at",
+    matchId: "skillcorner-1899585",
     frame: 39177,
     moves: [{ player_id: "home_25", x: 22.46, y: -5.77 }],
   }),
