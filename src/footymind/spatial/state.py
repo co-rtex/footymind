@@ -37,11 +37,11 @@ def goalkeepers(match_id: str) -> dict[tuple[int, TeamSide], int]:
             warnings.simplefilter("ignore", RuntimeWarning)
             med = np.nanmedian(td.xy[rows][:, :, 0], axis=0)
         for team in ("home", "away"):
-            idx = td.team_indices(team)  # type: ignore[arg-type]
-            sign = td.attack_sign(team, int(per))  # type: ignore[arg-type]
+            idx = td.team_indices(team)
+            sign = td.attack_sign(team, int(per))
             # The GK sits deepest towards their own goal: the minimum of x * sign
             vals = np.where(np.isnan(med[idx]), np.inf, med[idx] * sign)
-            out[(int(per), team)] = int(idx[int(np.argmin(vals))])  # type: ignore[index]
+            out[(int(per), team)] = int(idx[int(np.argmin(vals))])
     return out
 
 

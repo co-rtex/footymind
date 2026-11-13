@@ -25,7 +25,7 @@ class DataQualityError(RuntimeError):
     pass
 
 
-def _r(x: float, nd: int = 4) -> float | None:
+def _r(x: float | np.floating | None, nd: int = 4) -> float | None:
     return None if x is None or not np.isfinite(x) else round(float(x), nd)
 
 

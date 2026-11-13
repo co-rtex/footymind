@@ -358,6 +358,18 @@ def frame_analysis(match_id: str, frame: int, grid: bool = True) -> S.FrameAnaly
     return _analysis_out(a)
 
 
+def _summary(d: dict[str, object]) -> dict[str, float | int | str | None]:
+    out: dict[str, float | int | str | None] = {}
+    for k, v in d.items():
+        if isinstance(v, float):
+            out[k] = _f(v)
+        elif v is None or isinstance(v, int | str):
+            out[k] = v
+        else:
+            out[k] = str(v)
+    return out
+
+
 DISCLAIMER = (
     "Model-based counterfactual under stated assumptions. It shows how the spatial model's "
     "estimates change, not what would have happened in the match."
@@ -431,12 +443,8 @@ def scenario(req: S.ScenarioRequest) -> S.ScenarioResponse:
             )
             for d in r.option_deltas
         ],
-        summary_observed={
-            k: (_f(v) if isinstance(v, float) else v) for k, v in r.summary_observed.items()
-        },
-        summary_hypothetical={
-            k: (_f(v) if isinstance(v, float) else v) for k, v in r.summary_hypothetical.items()
-        },
+        summary_observed=_summary(r.summary_observed),
+        summary_hypothetical=_summary(r.summary_hypothetical),
         ensemble_size=r.ensemble_size,
         supported=r.supported,
         warnings=r.warnings,
