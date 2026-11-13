@@ -39,3 +39,16 @@ def test_sync_and_direction(bundle) -> None:  # type: ignore[no-untyped-def]
     assert set(bundle.tracking.home_attacks_positive_x) == {1, 2}
     assert bundle.tracking.home_attacks_positive_x[1] != bundle.tracking.home_attacks_positive_x[2]
     assert bundle.manifest["provenance"]["provider"] == "skillcorner"
+
+
+def test_replay_exposes_detected_mask() -> None:
+    from fastapi.testclient import TestClient
+
+    from footymind.api.app import app
+
+    c = TestClient(app)
+    pos = c.get(f"/api/matches/{SC[0]}/possessions", params={"min_passes": 3}).json()
+    r = c.get(f"/api/possessions/{pos[0]['possession_id']}/replay").json()
+    n = len(r["frame"]) * len(r["players"])
+    assert r["players_detected"] is not None and len(r["players_detected"]) == n
+    assert not all(r["players_detected"])  # broadcast tracking: some positions extrapolated

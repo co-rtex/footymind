@@ -53,6 +53,42 @@ more than 20° from any teammate: −0.189 [−0.250, −0.131], n = 588. Gains 
 the final third (−0.110), under pressure (−0.087) and on forward passes (−0.086). Headers
 show no reliable gain (−0.027 [−0.142, +0.093], n = 144).
 
+### Cross-provider replication: SkillCorner broadcast tracking (`pass_outcome_skillcorner_v1`, code cf54026)
+
+Same rules (v2), feature definitions, model families and protocol, run on a **different
+provider, competition and technology**: SkillCorner open data, A-League 2024/25, 20 matches,
+broadcast tracking at 10 fps, with off-camera players extrapolated by the provider. There
+are 15,867 attempted passes (84.1% completed), using LOMO over 20 matches with a
+possession-clustered bootstrap (1,000). The two providers are evaluated separately and never
+pooled. The receiver inference reaches 72.4% top-1.
+
+| effect | Metrica v3 (3 matches, 3,593) | SkillCorner (20 matches, 15,867) |
+|---|---|---|
+| **decision-time**: event → + spatial (LR) | −0.026 [−0.034, −0.018] | **−0.024 [−0.027, −0.020]**, better in 20/20 matches |
+| decision-time (GBM) | −0.022 [−0.031, −0.014] | −0.023 [−0.026, −0.019] |
+| action-conditioned: event → + spatial (LR) | −0.071 [−0.084, −0.057] | −0.044 [−0.049, −0.040], 20/20 matches |
+| + defender-only (action-cond.) | −0.015 [−0.022, −0.009] | −0.017 [−0.020, −0.014] |
+| + teammate geometry (action-cond.) | −0.048 [−0.060, −0.037] | −0.012 [−0.015, −0.009] |
+| interaction features (B GBM → C GBM) | −0.000 [−0.005, +0.004] | **−0.004 [−0.006, −0.003]**, 15/20 matches |
+| option model v1 → v2 | −0.004 [−0.008, −0.001] | −0.003 [−0.004, −0.002] |
+| physics, raw (ECE) | 0.174 | 0.184 |
+
+**Reading.**
+1. The **decision-time effect replicates almost exactly** across providers (Δ ≈ −0.025) and in
+   every held-out SkillCorner match. This is the most robust finding of the project so far.
+2. Defender-only information replicates (Δ ≈ −0.016).
+3. The execution-alignment ("teammate geometry") component is much weaker on 10 fps broadcast
+   data. That is plausible, because a 1-frame (0.1 s) release estimate on broadcast tracking
+   is noisier. The action-conditioned headline is therefore provider-dependent.
+4. With about 4× more data, interaction features give a **small but significant** gain. This
+   is consistent with ADR-0003: complexity must be earned by data volume. It is still not
+   evidence for a graph model.
+5. The literature physics estimate is again badly calibrated.
+
+Caveats: one season of one league. Provider annotations differ (SkillCorner pass outcomes vs
+Metrica event types). Many SkillCorner player positions are extrapolations; the passer is
+detected at about 95% of releases, but other players often are not.
+
 ## RQ1 v1/v2 history: Does tracking-derived spatial context improve attempted-pass outcome prediction over event-only information?
 
 _The sections below are kept for traceability. Their "spatial" models are
@@ -438,6 +474,7 @@ it is not evidence of what would have happened.
   (displacement sensitivity of option value per defender); off-ball valuation (Ghost Value).
 
 ## Log
+* **2026-11-13**: SkillCorner (20 A-League matches, broadcast) integrated. Cross-provider replication: the decision-time spatial gain replicates (−0.024 vs −0.026; 20/20 matches); interaction features show a small significant gain with 4× the data.
 * **2026-11-13**: Run value (off-ball Ghost Value v1): small positive association with being chosen (+0.012 [+0.005, +0.019]) but weak as a ranking (top-1 0.134 vs availability 0.249). Mostly negative result, recorded without tuning.
 * **2026-11-13**: Independent review (no hard leakage; headline reframed into decision-time vs action-conditioned; rules v2; scenario feasibility and ensemble fixes). RQ1 v3: decision-time Δ −0.026 [−0.034, −0.018], action-conditioned Δ −0.071. Option model v2 adopted.
 * **2026-11-13**: Defensive Shadow outcome validation: 2× chance at identifying interceptors, but not better than the nearest-defender baseline (top-3 0.38 vs 0.50). Added failure-mode analysis and figures.

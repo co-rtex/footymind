@@ -22,7 +22,7 @@ observed state, and reported with its sensitivity to the model's assumptions.
 
 | Capability | What it does | Status |
 |---|---|---|
-| Real tracking ingestion | Metrica Sports sample games 1–3 (CSV and EPTS formats): 25 Hz positions for 22 players + ball, synchronised events. Checksum-pinned downloads, data-quality gates, versioned bundles | ✅ |
+| Real tracking ingestion | Metrica Sports sample games 1–3 (CSV and EPTS) and 20 SkillCorner A-League matches (broadcast, off-camera extrapolations labelled as estimates): 25 Hz positions for 22 players + ball, synchronised events. Checksum-pinned downloads, data-quality gates, versioned bundles | ✅ |
 | Spatial analytics | Pitch control (Spearman 2018 time-to-intercept model), passing-lane geometry and interception heuristic, pressure on the ball carrier | ✅ (uncalibrated estimates, labelled as such) |
 | Possession Multiverse | Relocate players at a real frame → reachability check → recompute options → compare with observed → parameter-sensitivity ensemble → explicit assumptions | ✅ |
 | Calibrated option model | Logistic model over per-option features incl. lead-pass targets, evaluated leave-one-match-out (v2: log loss 0.414, AUC 0.796, ECE 0.019), served as plain-JSON coefficients with bootstrap uncertainty | ✅ |
@@ -32,17 +32,19 @@ observed state, and reported with its sensitivity to the model's assumptions.
 
 ## Key research findings
 
-On held-out matches (leave-one-match-out, 3,593 attempted passes, Metrica Games 1–3), two
-questions are kept separate after an independent methodology review:
+On held-out matches (leave-one-match-out), two questions are kept separate after an
+independent methodology review. The primary result is replicated across two providers:
+Metrica (3 matches, optical, 25 Hz) and SkillCorner (20 A-League matches, broadcast, 10 Hz).
 
 * **Before the pass is played** (decision-time, nothing from the kick): adding tracking-derived
-  spatial context reduces log loss from **0.482 to 0.456** (Δ −0.026, 95% CI [−0.034, −0.018];
-  AUC 0.65 → 0.72), and the gain holds in every held-out match.
-* **Given the executed kick** (action-conditioned: release direction and speed known): from
-  **0.423 to 0.352** (Δ −0.071 [−0.084, −0.057]; AUC 0.79 → 0.87). Most of this comes from
-  where the ball was actually played relative to teammates, which is partly execution quality.
-* **Defender-only** information adds a small but consistent improvement (Δ −0.015).
-  **Interaction features add nothing.**
+  spatial context reduces log loss by **Δ −0.026 [−0.034, −0.018]** on Metrica (AUC 0.65 → 0.72)
+  and by **Δ −0.024 [−0.027, −0.020]** on SkillCorner (15,867 passes). The gain holds in every
+  held-out match of both providers (3/3 and 20/20).
+* **Given the executed kick** (action-conditioned: release direction and speed known):
+  Δ −0.071 on Metrica and −0.044 on SkillCorner. This is provider-dependent, because much of it
+  is where the ball was actually played relative to teammates, which is partly execution quality.
+* **Defender-only** information adds a small but consistent improvement (Δ −0.015 / −0.017).
+  Interaction features add nothing on 3 matches and a small, significant amount (−0.004) on 20.
 * **Negative results:** the literature physics model is poorly calibrated (ECE 0.17), and
   fitting its parameters drives them to implausible bounds, so it is structurally
   misspecified. The experimental *Defensive Shadow* metric is robust to tracking noise and
@@ -51,8 +53,8 @@ questions are kept separate after an independent methodology review:
 ![Which information improves pass-outcome prediction](docs/figures/ablation_v3.png)
 
 These results are consistent with established findings (Power et al. 2017; Anzer & Bauer 2022)
-on open data, with an explicit leakage audit. They are not a new discovery. Three matches from
-one provider cannot support generalisation claims. See [`docs/RESEARCH.md`](docs/RESEARCH.md)
+on open data, with an explicit leakage audit and a cross-provider replication. They are not a
+new discovery, and two leagues' worth of samples cannot support universal claims. See [`docs/RESEARCH.md`](docs/RESEARCH.md)
 and the [claims ledger](docs/CLAIMS_LEDGER.md).
 
 ## Scientific guardrails
@@ -117,7 +119,8 @@ FastAPI. The frontend is Vite + React + TypeScript with a Canvas pitch renderer.
 ## Data and attribution
 
 Tracking and event data: **Metrica Sports sample data**
-(https://github.com/metrica-sports/sample-data), which is anonymised. Raw data is
+(https://github.com/metrica-sports/sample-data), which is anonymised, and **SkillCorner open
+data** (https://github.com/SkillCorner/opendata, MIT; credit SkillCorner). Raw data is
 downloaded at setup and is not redistributed in this repository. See
 [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md).
 
