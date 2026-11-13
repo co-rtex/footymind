@@ -227,6 +227,9 @@ def replay(
         time_s=np.round(td.time_s[rows], 2).tolist(),
         period=td.period[rows].astype(int).tolist(),
         players_xy=_flat(td.xy[rows]),
+        players_detected=None
+        if td.detected is None
+        else [bool(v) for v in td.detected[rows].ravel().tolist()],
         ball_xy=_flat(td.ball_xy[rows]),
         events=_events_out(ev),
         possession=poss,
