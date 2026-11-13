@@ -157,9 +157,21 @@ def load_events(events_csv: Path) -> pl.DataFrame:
     """Parse Metrica events into the canonical event table (coordinates in metres)."""
     raw = pl.read_csv(events_csv, infer_schema_length=10000, null_values=["NaN", ""])
     expected = [
-        "Team", "Type", "Subtype", "Period", "Start Frame", "Start Time [s]", "End Frame",
-        "End Time [s]", "From", "To", "Start X", "Start Y", "End X", "End Y",
-    ]  # fmt: skip
+        "Team",
+        "Type",
+        "Subtype",
+        "Period",
+        "Start Frame",
+        "Start Time [s]",
+        "End Frame",
+        "End Time [s]",
+        "From",
+        "To",
+        "Start X",
+        "Start Y",
+        "End X",
+        "End Y",
+    ]
     if raw.columns != expected:
         raise ValueError(f"{events_csv}: unexpected columns {raw.columns}")
 
@@ -168,13 +180,15 @@ def load_events(events_csv: Path) -> pl.DataFrame:
         raise ValueError(f"unexpected team labels {team.unique().to_list()}")
 
     sx, sy = metrica_to_canonical(
-        raw["Start X"].cast(pl.Float64).to_numpy(), raw["Start Y"].cast(pl.Float64).to_numpy(),
+        raw["Start X"].cast(pl.Float64).to_numpy(),
+        raw["Start Y"].cast(pl.Float64).to_numpy(),
         METRICA_PITCH,
-    )  # fmt: skip
+    )
     ex, ey = metrica_to_canonical(
-        raw["End X"].cast(pl.Float64).to_numpy(), raw["End Y"].cast(pl.Float64).to_numpy(),
+        raw["End X"].cast(pl.Float64).to_numpy(),
+        raw["End Y"].cast(pl.Float64).to_numpy(),
         METRICA_PITCH,
-    )  # fmt: skip
+    )
 
     def pid(col: str) -> pl.Series:
         # "Player19" + team "away" -> "away_19". The provider ids are per-match
@@ -211,6 +225,8 @@ def load_events(events_csv: Path) -> pl.DataFrame:
     # Metrica only fills "To" for completed passes and set-piece receptions.
     # Cross-team receivers would indicate a parse error.
     return df.with_columns(
-        pl.when(pl.col("end_time_s") <= 0).then(None).otherwise(pl.col("end_time_s"))
+        pl.when(pl.col("end_time_s") <= 0)
+        .then(None)
+        .otherwise(pl.col("end_time_s"))
         .alias("end_time_s")
-    )  # fmt: skip
+    )

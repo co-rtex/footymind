@@ -43,8 +43,11 @@ def git_revision() -> str:
         ).stdout.strip()
         dirty = subprocess.run(
             ["git", "status", "--porcelain", "--", "src"],
-            cwd=REPO_ROOT, capture_output=True, text=True, check=True,
-        ).stdout.strip()  # fmt: skip
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
         return rev + ("+dirty" if dirty else "")
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
