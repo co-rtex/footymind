@@ -24,6 +24,7 @@ import matplotlib.pyplot as plt
 from footymind.paths import EXPERIMENTS_DIR, REPO_ROOT
 
 OUT = REPO_ROOT / "docs" / "figures"
+EXPERIMENT = "pass_outcome_v3"
 SURFACE = "#fcfcfb"
 INK = "#0b0b0b"
 INK_2 = "#52514e"
@@ -47,7 +48,7 @@ def _style(ax: plt.Axes) -> None:
 
 
 def reliability(path: Path) -> None:
-    r = _load("pass_outcome_v2_3match")
+    r = _load(EXPERIMENT)
     curves = [
         ("A_logreg", "Event-only (A)"),
         ("B_logreg", "Spatial (B)"),
@@ -79,7 +80,7 @@ def reliability(path: Path) -> None:
     ax.set_xlabel("Predicted completion probability (bin mean)", color=INK, fontsize=9)
     ax.set_ylabel("Observed completion rate", color=INK, fontsize=9)
     ax.set_title(
-        "Calibration on held-out matches (LOMO, 3 matches, 3,633 passes)",
+        "Calibration on held-out matches (LOMO, 3 matches, 3,593 passes)",
         color=INK,
         fontsize=10,
         loc="left",
@@ -91,14 +92,16 @@ def reliability(path: Path) -> None:
 
 
 def ablation(path: Path) -> None:
-    r = _load("pass_outcome_v2_3match")
+    r = _load(EXPERIMENT)
     names = {
-        ("A_logreg", "B_logreg"): "Event → + all spatial (LR)",
-        ("A_gbm", "B_gbm"): "Event → + all spatial (GBM)",
-        ("A_logreg", "abl_A+target_geometry_logreg"): "Event → + teammate geometry",
-        ("A_logreg", "abl_A+defender_only_logreg"): "Event → + defender-only",
+        ("Adt_logreg", "Bdt_logreg"): "Decision-time: event → + spatial (LR)",
+        ("Adt_gbm", "Bdt_gbm"): "Decision-time: event → + spatial (GBM)",
+        ("A_logreg", "B_logreg"): "Action-conditioned: event → + spatial (LR)",
+        ("A_gbm", "B_gbm"): "Action-conditioned: event → + spatial (GBM)",
+        ("A_logreg", "abl_A+target_geometry_logreg"): "Action-cond.: + teammate geometry",
+        ("A_logreg", "abl_A+defender_only_logreg"): "Action-cond.: + defender-only",
         ("B_gbm", "C_gbm"): "Spatial → + interaction (GBM)",
-        ("A_logreg", "physics_platt"): "Event → physics (Platt) instead",
+        ("option_logreg", "option_v2_logreg"): "Option model v1 → v2 (lead pass)",
     }
     rows = [
         (names[(c["a"], c["b"])], c["log_loss"])
@@ -136,16 +139,13 @@ def ablation(path: Path) -> None:
 
 
 def folds(path: Path) -> None:
-    r = _load("pass_outcome_v2_3match")
+    r = _load(EXPERIMENT)
     matches = r["config"]["matches"]
     models = [
-        ("A_logreg", "Event-only (A)"),
-        ("B_logreg", "Spatial (B)"),
-        ("option_logreg", "Option model"),
+        ("Adt_logreg", "Decision-time event"),
+        ("Bdt_logreg", "Decision-time spatial"),
+        ("B_logreg", "Action-conditioned spatial"),
     ]
-    models = [m for m in models if m[0] in r["fold_metrics"]]
-    if len(models) < 3:  # the option model is not part of v2; fall back to B_gbm
-        models.append(("B_gbm", "Spatial (B, GBM)"))
     fig, ax = plt.subplots(figsize=(6.4, 3.6), dpi=200, facecolor=SURFACE)
     _style(ax)
     ax.grid(False, axis="x")
@@ -159,9 +159,9 @@ def folds(path: Path) -> None:
     ax.set_xticks(range(len(matches)))
     ax.set_xticklabels(["Game 1", "Game 2", "Game 3 (EPTS, transfer)"], fontsize=8, color=INK)
     ax.set_ylabel("Held-out log loss (lower = better)", color=INK, fontsize=9)
-    ax.set_ylim(0, max(r["fold_metrics"]["A_logreg"][m]["log_loss"] for m in matches) * 1.18)
+    ax.set_ylim(0, max(r["fold_metrics"][models[0][0]][m]["log_loss"] for m in matches) * 1.2)
     ax.set_title(
-        "Leave-one-match-out: every held-out match improves", color=INK, fontsize=10, loc="left"
+        "Leave-one-match-out log loss by held-out match", color=INK, fontsize=10, loc="left"
     )
     ax.legend(frameon=False, fontsize=8, ncols=3, loc="upper right", labelcolor=INK)
     fig.tight_layout()
@@ -171,9 +171,9 @@ def folds(path: Path) -> None:
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    reliability(OUT / "calibration_v2.png")
-    ablation(OUT / "ablation_v2.png")
-    folds(OUT / "folds_v2.png")
+    reliability(OUT / "calibration_v3.png")
+    ablation(OUT / "ablation_v3.png")
+    folds(OUT / "folds_v3.png")
     print(sorted(p.name for p in OUT.glob("*.png")))
 
 

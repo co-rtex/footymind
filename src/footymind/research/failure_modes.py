@@ -22,7 +22,7 @@ from footymind.paths import EXPERIMENTS_DIR
 from footymind.research.pass_dataset import DatasetConfig, build
 
 EPS = 1e-4
-NAME = "pass_outcome_v2_3match"
+NAME = "pass_outcome_v3"
 
 
 def _ll(y: np.ndarray, p: np.ndarray) -> np.ndarray:
@@ -48,8 +48,8 @@ def contexts(df: pl.DataFrame) -> dict[str, pl.Expr]:
     }
 
 
-def main(n_boot: int = 2000, seed: int = 0) -> None:
-    res_dir = EXPERIMENTS_DIR / "results" / NAME
+def main(name: str = NAME, n_boot: int = 2000, seed: int = 0) -> None:
+    res_dir = EXPERIMENTS_DIR / "results" / name
     cfg = json.loads((res_dir / "results.json").read_text())
     oof = pl.read_parquet(res_dir / "oof_predictions.parquet")
     ds = build(cfg["config"]["matches"], DatasetConfig(**cfg["config"].get("dataset", {})))
@@ -89,8 +89,8 @@ def main(n_boot: int = 2000, seed: int = 0) -> None:
             }
         )
     result = {
-        "name": "failure_modes_v2",
-        "source_experiment": NAME,
+        "name": f"failure_modes_{name}",
+        "source_experiment": name,
         "source_code_revision": cfg["code_revision"],
         "code_revision": git_revision(),
         "contexts": out,
@@ -105,4 +105,6 @@ def main(n_boot: int = 2000, seed: int = 0) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    main(sys.argv[1] if len(sys.argv) > 1 else NAME)

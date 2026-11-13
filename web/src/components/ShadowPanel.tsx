@@ -72,13 +72,13 @@ export function ShadowPanel({ playing, status, shadow, unavailable, error, onRet
                   <li key={d.player_id} className={`shadow-row shadow-row--${standing}`} data-testid="shadow-row">
                     <span className="shadow-swatch" aria-hidden="true" />
                     <span className="shadow-who">{playerLabel(d.player_id, players)}</span>
-                    <span className="shadow-val tabular" title="shadow_sum: mean summed option value at reachable alternatives minus observed (+ = this position suppresses more)">
+                    <span className="shadow-val tabular" title="shadow_sum: mean summed option value at alternative positions (3.5 m ring) minus observed (+ = this position suppresses more)">
                       {fmtSigned(d.shadow_sum)}
                     </span>
                     <span className="shadow-detail small">
                       {standing === "suppressive" ? (
                         rec ? (
-                          <span title="most_suppressed_delta: how much this receiver's option value would rise, on average, if the defender stood at its reachable alternatives">
+                          <span title="most_suppressed_delta: how much this receiver's option value would rise, on average, if the defender stood at its alternative positions (3.5 m ring)">
                             suppresses {playerLabel(rec, players)} most ({`+${d.most_suppressed_delta.toFixed(2)}`})
                           </span>
                         ) : (
@@ -94,7 +94,7 @@ export function ShadowPanel({ playing, status, shadow, unavailable, error, onRet
             </ol>
           )}
           <p className="small muted">
-            Value is shadow_sum: the summed option-model pass value at the defender&apos;s reachable alternative positions
+            Value is shadow_sum: the summed option-model pass value at the defender&apos;s alternative positions (3.5 m ring)
             minus the observed value. Positive means this position suppresses more.
           </p>
           <details className="model-note">

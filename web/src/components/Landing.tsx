@@ -59,10 +59,10 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
             One pressing position, one risky pass
           </h2>
           <p className="muted">
-            Away build up from deep under a high press. Home #9 is the only defender whose position measurably suppresses
-            passing value here (Defensive Shadow above the noise floor). Moving him 3.5 m, within the region he could
+            Away build up from deep under a high press. Home #9&apos;s position suppresses by far the most passing value
+            here (Defensive Shadow 0.27; no other defender above 0.03). Moving him 3.5 m, within the region he could
             have reached, raises the option model&apos;s estimate for the pass that was actually played (#17 → #18) from
-            about 0.48 to 0.77. All 24 ensemble members agree on the direction.
+            about 0.45 to 0.76. All 24 ensemble members agree on the direction.
           </p>
           <p className="small muted">
             A model-based what-if under stated assumptions, not a claim about what would have happened in the match.
