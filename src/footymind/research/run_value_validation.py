@@ -40,10 +40,11 @@ def _z(d: dict[str, float]) -> dict[str, float]:
     return {k: (x - v.mean()) / s for k, x in d.items()}
 
 
-def main(n_per_match: int = 150, seed: int = 0) -> None:
+def main(provider: str = "metrica", n_per_match: int = 150, seed: int = 0) -> None:
+    """Run per provider (never pooled). Metrica writes ``run_value_validation_v1``."""
     t0 = time.time()
     rows = []
-    for mid in available_matches():
+    for mid in [m for m in available_matches() if m.startswith(provider + "-")]:
         ev = load_match(mid).events.filter(
             (pl.col("type") == "PASS") & pl.col("to_player_id").is_not_null()
         )
@@ -99,18 +100,22 @@ def main(n_per_match: int = 150, seed: int = 0) -> None:
         summary[c] = {"rate": float(v.mean()), "ci95": boot(v)}
     d2 = (df["availability_plus_run_top1"] - df["availability_top1"]).to_numpy().astype(float)
     summary["combo_minus_availability_top1"] = {"delta": float(d2.mean()), "ci95": boot(d2)}
+    name = "run_value_validation_v1" + ("" if provider == "metrica" else f"_{provider}")
     result = {
-        "name": "run_value_validation_v1",
+        "name": name,
+        "provider": provider,
         "code_revision": git_revision(),
         "runtime_s": round(time.time() - t0, 1),
         "summary": summary,
         "passes": rows,
     }
-    out = EXPERIMENTS_DIR / "results" / "run_value_validation_v1"
+    out = EXPERIMENTS_DIR / "results" / name
     out.mkdir(parents=True, exist_ok=True)
     (out / "results.json").write_text(json.dumps(result, indent=2))
     print(json.dumps(summary, indent=2))
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    main(sys.argv[1] if len(sys.argv) > 1 else "metrica")
