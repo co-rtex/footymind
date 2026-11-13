@@ -11,7 +11,8 @@ uv run footymind ingest                   # build data/processed/<match>/ bundle
 uv run pytest -q                          # all tests; real-data tests skip if data is absent
 scripts/check.sh                          # every CI gate locally (Python + web); run before committing
 uv run footymind serve                    # API on :8000 (serves web/dist at / if built)
-uv run footymind experiment experiments/configs/pass_outcome_v1.json
+uv run footymind experiment experiments/configs/pass_outcome_v3.json
+scripts/reproduce.sh --dry-run            # every committed research artefact, in dependency order
 cd web && npm ci && npm run dev           # frontend on :5173 (proxies /api to the API)
 ```
 
@@ -28,6 +29,8 @@ cd web && npm ci && npm run dev           # frontend on :5173 (proxies /api to t
 - Do not commit raw or processed data (`/data` is ignored). Do not commit model pickles.
 - Counterfactual outputs are model-based comparisons, never causal claims.
 - Bump `data.store.PIPELINE_VERSION` when the processed representation changes meaning.
+- Never pool providers (Metrica vs SkillCorner) in a model or evaluation; scope research loops
+  with `startswith(provider + "-")` and keep per-provider option models.
 
 ## Git
 - Work on feature branches. Never push to `main`. Commits are authored as the repository

@@ -68,10 +68,11 @@ def _rank_hits(scores: dict[str, float], target: str) -> tuple[int, int]:
     return int(order[:1] == [target]), int(target in order[:3])
 
 
-def main(seed: int = 0) -> None:
+def main(provider: str = "metrica", seed: int = 0) -> None:
+    """Per provider, never pooled. Metrica writes ``shadow_validation_v1``."""
     t0 = time.time()
     rows = []
-    for mid in available_matches():
+    for mid in [m for m in available_matches() if m.startswith(provider + "-")]:
         for r in intercepted_passes(mid).iter_rows(named=True):
             st = frame_state(mid, r["frame"])
             if st.attacking_team != r["team"] or np.isnan(st.ball).any():
@@ -123,18 +124,22 @@ def main(seed: int = 0) -> None:
         "delta": float(d2.mean()),
         "ci95": [float(np.percentile(bd2, 2.5)), float(np.percentile(bd2, 97.5))],
     }
+    name = "shadow_validation_v1" + ("" if provider == "metrica" else f"_{provider}")
     result = {
-        "name": "shadow_validation_v1",
+        "name": name,
+        "provider": provider,
         "code_revision": git_revision(),
         "runtime_s": round(time.time() - t0, 1),
         "summary": summary,
         "events": rows,
     }
-    out = EXPERIMENTS_DIR / "results" / "shadow_validation_v1"
+    out = EXPERIMENTS_DIR / "results" / name
     out.mkdir(parents=True, exist_ok=True)
     (out / "results.json").write_text(json.dumps(result, indent=2))
     print(json.dumps(summary, indent=2))
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    main(sys.argv[1] if len(sys.argv) > 1 else "metrica")
