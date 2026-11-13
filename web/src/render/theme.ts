@@ -18,6 +18,7 @@ export interface CanvasTheme {
   positive: string;
   negative: string;
   warning: string;
+  shadow: string;
   ball: string;
   text: string;
   textMuted: string;
@@ -35,6 +36,7 @@ export const DEFAULT_THEME: CanvasTheme = {
   positive: "#5ad19d",
   negative: "#f2787a",
   warning: "#e9c46a",
+  shadow: "#b8e35a",
   ball: "#f7f7f2",
   text: "#e8ebef",
   textMuted: "#a3adbb",
@@ -52,6 +54,7 @@ const VARS: Record<keyof CanvasTheme, string> = {
   positive: "--c-positive",
   negative: "--c-negative",
   warning: "--c-warning",
+  shadow: "--c-shadow",
   ball: "--c-ball",
   text: "--c-text",
   textMuted: "--c-text-muted",

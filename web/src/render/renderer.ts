@@ -5,11 +5,19 @@
  * into the scene and calls drawNow(). Everything else (analysis, scenario,
  * toggles) arrives through setScene(), which coalesces into one rAF draw.
  */
-import type { FrameAnalysisOut, PassOptionOut, ProvenanceLabel, ScenarioResponse, Team } from "../api/types";
+import type {
+  DefensiveShadowOut,
+  FrameAnalysisOut,
+  PassOptionOut,
+  ProvenanceLabel,
+  ScenarioResponse,
+  Team,
+} from "../api/types";
 import type { ReplayData } from "../api/parse";
 import { fitPitch, metresToPx, toCanvasX, toCanvasY, toPitch, type PitchTransform } from "../lib/coords";
 import { sampleXY, type Vec2 } from "../lib/interp";
 import { primaryP } from "../lib/models";
+import { shadowHalo, suppressedReceiver } from "../lib/shadow";
 import { drawPitch } from "./pitch";
 import { controlDelta, controlRaster, deltaRaster } from "./heatmap";
 import { DEFAULT_THEME, rgba, type CanvasTheme } from "./theme";
@@ -34,6 +42,8 @@ export interface Layers {
   passes: boolean;
   pressure: boolean;
   trails: boolean;
+  /** experimental defensive shadow; off by default */
+  shadow: boolean;
 }
 
 export interface Scene {
@@ -51,6 +61,8 @@ export interface Scene {
   pending: ReadonlyMap<string, { x: number; y: number }>;
   selectedId: string | null;
   highlightReceiver: string | null;
+  /** defensive shadow for the paused frame (experimental) */
+  shadow: DefensiveShadowOut | null;
 }
 
 export interface DrawnPlayer {
@@ -72,12 +84,13 @@ export function defaultScene(): Scene {
     analysis: null,
     scenario: null,
     view: "observed",
-    layers: { control: true, passes: true, pressure: true, trails: true },
+    layers: { control: true, passes: true, pressure: true, trails: true, shadow: false },
     editMode: false,
     drag: null,
     pending: EMPTY_PENDING,
     selectedId: null,
     highlightReceiver: null,
+    shadow: null,
   };
 }
 
@@ -212,6 +225,8 @@ export class PitchRenderer {
     if (s.layers.trails && !hypView && !showScenarioLayer) this.drawTrails(ctx, tf);
     if (active && s.layers.passes && !s.drag) this.drawPassOptions(ctx, tf, active);
     if (active && s.layers.pressure && !s.drag) this.drawPressure(ctx, tf, active);
+    const shadow = this.activeShadow();
+    if (shadow) this.drawShadow(ctx, tf, shadow);
     if (showScenarioLayer || hypView) this.drawGhosts(ctx, tf);
     if (s.drag) this.drawReach(ctx, tf, s.drag);
     this.drawPlayers(ctx, tf, active);
@@ -316,6 +331,60 @@ export class PitchRenderer {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(c, left, top, g.nx * g.dx * tf.scale, g.ny * g.dy * tf.scale);
+    ctx.restore();
+  }
+
+  /** The defensive shadow applies only to the paused, unedited frame it was computed for. */
+  activeShadow(): DefensiveShadowOut | null {
+    const s = this.scene;
+    if (!s.layers.shadow || !s.shadow || s.playing || s.editMode || s.scenario || !s.replay) return null;
+    const idx = Math.round(s.t);
+    if (Math.abs(s.t - idx) > 1e-6 || s.replay.frame[idx] !== s.shadow.frame) return null;
+    return s.shadow;
+  }
+
+  private drawShadow(ctx: CanvasRenderingContext2D, tf: PitchTransform, sh: DefensiveShadowOut): void {
+    const colour = this.theme.shadow;
+    ctx.save();
+    for (const d of sh.defenders) {
+      const halo = shadowHalo(d);
+      if (!halo) continue; // below the noise floor or not suppressive: no ring
+      const x = toCanvasX(tf, d.x);
+      const y = toCanvasY(tf, d.y);
+      const r = Math.max(this.radiusPx() + 6, metresToPx(tf, halo.radiusM));
+      const g = ctx.createRadialGradient(x, y, this.radiusPx() * 0.6, x, y, r);
+      g.addColorStop(0, rgba(colour, halo.alpha * 0.55));
+      g.addColorStop(0.7, rgba(colour, halo.alpha * 0.22));
+      g.addColorStop(1, rgba(colour, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = rgba(colour, Math.min(1, halo.alpha + 0.15));
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.stroke();
+      const rid = suppressedReceiver(d);
+      const rec = this.drawnById(rid);
+      if (rec) {
+        const rx = toCanvasX(tf, rec.x);
+        const ry = toCanvasY(tf, rec.y);
+        const len = Math.hypot(rx - x, ry - y);
+        if (len > this.radiusPx() * 2) {
+          const ux = (rx - x) / len;
+          const uy = (ry - y) / len;
+          ctx.setLineDash([3, 4]);
+          ctx.lineWidth = 1.25;
+          ctx.strokeStyle = rgba(colour, 0.85);
+          ctx.beginPath();
+          ctx.moveTo(x + ux * (this.radiusPx() + 2), y + uy * (this.radiusPx() + 2));
+          ctx.lineTo(rx - ux * (this.radiusPx() + 3), ry - uy * (this.radiusPx() + 3));
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+    }
     ctx.restore();
   }
 
