@@ -3,7 +3,60 @@
 Living record of research questions, experiment designs, results (including negative
 ones) and prior art. Quotable numbers must also appear in `CLAIMS_LEDGER.md`.
 
-## RQ1: Does tracking-derived spatial context improve attempted-pass outcome prediction over event-only information?
+## RQ1 headline (v3, after independent review): two different questions
+
+An independent methodology review (2026-11-13) found **no hard label leakage**. It did find
+that the v1/v2 "spatial" models are **action-conditioned**: their strongest feature, the
+alignment of the *executed* release direction with a teammate, uses information from the
+kick itself. Both questions are legitimate, but they must not be conflated:
+
+* **Decision-time:** before the pass is played, does spatial context improve the prediction
+  of whether the possessor's next pass is completed? Nothing derived from the kick is used.
+* **Action-conditioned:** given the executed release direction and speed, does spatial
+  context improve the prediction?
+
+`experiments/results/pass_outcome_v3` (rules v2, 3 matches, 3,593 attempted passes, LOMO,
+code 2131084):
+
+| question | baseline → spatial (LR) | Δ log loss [95% CI] | AUC |
+|---|---|---|---|
+| decision-time | 0.482 → 0.456 | **−0.026 [−0.034, −0.018]** | 0.648 → 0.721 |
+| decision-time (GBM) | 0.476 → 0.454 | −0.022 [−0.031, −0.014] | 0.683 → 0.728 |
+| action-conditioned | 0.423 → 0.352 | **−0.071 [−0.084, −0.057]** | 0.785 → 0.869 |
+| action-conditioned (GBM) | 0.400 → 0.351 | −0.049 [−0.062, −0.036] | 0.814 → 0.866 |
+| the kick itself (decision-time event → action-conditioned event) | 0.482 → 0.423 | −0.059 [−0.070, −0.047] | 0.648 → 0.785 |
+| interaction features (B GBM → C GBM) | 0.351 → 0.351 | −0.000 [−0.005, +0.004] | — |
+| action-cond.: + defender-only | 0.423 → 0.408 | −0.015 [−0.022, −0.009] | — |
+
+Per held-out match (decision-time LR): 0.536 → 0.513, 0.439 → 0.415, 0.478 → 0.449. The gain
+holds in every fold.
+
+**Reading.** Spatial context measurably improves prediction even before the kick. The effect
+is about a third of the action-conditioned gain. Most of the action-conditioned gain comes
+from combining *where the ball was actually played* with *where teammates are*, which is
+partly execution quality. Defender-only information adds a small but consistent signal.
+Interaction features add nothing.
+
+**Rules v2 (review fixes; v1 configs are pinned and still reproduce exactly):**
+* symmetric subtype allow-list for successes and failures (no clearances or offsides on either side);
+* history from strictly earlier frames, with the restart flag taken from the last set piece;
+* attempts resolved in under 2 frames are dropped, because the release window would touch the outcome (16 rows);
+* release speeds above 40 m/s are dropped as tracking artefacts.
+
+![Calibration on held-out matches](figures/calibration_v3.png)
+![Ablation forest plot](figures/ablation_v3.png)
+![Per-fold log loss](figures/folds_v3.png)
+
+**Failure modes (v3, action-conditioned A vs B LR,
+`experiments/results/pass_outcome_v3/failure_modes.json`).** The largest gain is on releases
+more than 20° from any teammate: −0.189 [−0.250, −0.131], n = 588. Gains are also robust in
+the final third (−0.110), under pressure (−0.087) and on forward passes (−0.086). Headers
+show no reliable gain (−0.027 [−0.142, +0.093], n = 144).
+
+## RQ1 v1/v2 history: Does tracking-derived spatial context improve attempted-pass outcome prediction over event-only information?
+
+_The sections below are kept for traceability. Their "spatial" models are
+**action-conditioned** (see the v3 headline above)._
 
 ### Design (fixed before results; ADR-0005)
 * **Data:** Metrica Sample Games 1–2 (anonymised; 25 Hz optical tracking + synchronised
@@ -107,9 +160,7 @@ features add nothing measurable, and the raw physics estimate stays miscalibrate
 
 ### Figures and failure modes (RQ1 v2)
 
-![Calibration on held-out matches](figures/calibration_v2.png)
-![Ablation forest plot](figures/ablation_v2.png)
-![Per-fold log loss](figures/folds_v2.png)
+(Figures for v2 were superseded by the v3 figures below.)
 
 Figures are generated from the committed `results.json` by
 `uv run --group research python -m footymind.research.figures`.
@@ -188,10 +239,22 @@ the target's nearest-defender distance, pass forwardness and receiver movement a
 Training uses the inferred candidate receiver. The features come from the same function used in
 serving (`spatial/option_features.py`), and a test asserts equality on real frames.
 
+**v2 adoption (lead-pass features).** This was pre-specified as v2 = v1 + PPCF, lane
+clearance and marking distance at the receiver's *anticipated* position (current position +
+causal velocity × ball travel time), adopted only if the paired LOMO CI excluded 0. Under
+rules v1 (`option_model_v2_lead`): Δ log loss −0.0045 [−0.0081, −0.0010]. Under rules v2
+(`pass_outcome_v3`): −0.0042 [−0.0076, −0.0007], with AUC +0.006. **Adopted.** The serving
+model `option_model_v2.json` (rules v2, 3,593 passes) has held-out log loss 0.414, AUC 0.796
+and ECE 0.019. It carries 32 possession-clustered coefficient-bootstrap members. In
+scenarios these represent estimation uncertainty at default physics inputs. The serving
+model is trained on decision-time option features, so it does not use the executed release.
+
 **Iteration log (honest).** v0 had 15 features: LOMO log loss 0.428, AUC 0.780, ECE 0.019.
 After that evaluation, 3 domain-motivated features were added once (marking distance at the
 target, forwardness, receiver movement along the pass). v1: **LOMO log loss 0.422, AUC 0.789,
-ECE 0.017** (3 matches, 3,633 passes). No further iterations were made.
+ECE 0.017** (3 matches, 3,633 passes). The v0 → v1 feature additions were chosen after
+seeing v0's LOMO results on the same folds, so the v0-vs-v1 comparison reuses test data. The
+v1 → v2 change was pre-specified.
 
 **Interpretation.** The option model is well calibrated, and it is better than the physics
 estimate, raw (0.772) or recalibrated (0.456). Its discrimination is similar to the
@@ -282,17 +345,18 @@ used either, because the shadow is direction-agnostic.
 | nearest defender to the ball | 0.218 [0.176, 0.259] | **0.503 [0.453, 0.552]** |
 | lane presence (summed interception p) | 0.041 [0.023, 0.062] | 0.189 [0.153, 0.228] |
 
-Paired top-3 differences: shadow − lane presence **+0.194 [+0.132, +0.254]**; shadow −
-nearest defender **−0.119 [−0.181, −0.060]**.
+Paired top-3 difference: shadow − nearest defender **−0.119 [−0.181, −0.060]** (shadow is
+worse). Against lane presence the difference is +0.194, but lane presence is worse than chance.
 
-**Conclusion (partly negative).** The shadow carries genuine outcome-related signal: it
-finds the interceptor at twice the chance rate and far better than lane presence. It does
-**not** beat the trivial proximity baseline at identifying who intercepts. It must therefore
-not be presented as identifying the defender who stops passes. It remains an
-*explanatory sensitivity* quantity: it says how much passing value a position removes
-under the model. The parameters are deliberately left unchanged to avoid tuning on this
-evaluation. Next: evaluate on held-out data with direction-aware variants, and test
-team-level shadow as a pass-failure predictor beyond Model B.
+**Conclusion (partly negative).** The shadow carries outcome-related signal: it finds the
+interceptor at about twice the chance rate (top-1 0.215 vs 0.100). It does **not** beat the
+trivial proximity baseline at identifying who intercepts. The lane-presence comparator is
+itself *worse than chance* (top-1 0.041), so beating it is not evidence of quality. Other
+caveats: the event bootstrap is not clustered by possession (most possessions contribute
+one event), and the alternative-position ring is centred on the current position and is
+not checked for reachability. The shadow must not be presented as identifying the defender
+who stops passes. It remains an *explanatory sensitivity* quantity under the model. Its
+parameters are deliberately left unchanged so they are not tuned on this evaluation.
 
 ## Featured Possession Multiverse example (verified 2026-11-13)
 
@@ -338,6 +402,7 @@ it is not evidence of what would have happened.
   (displacement sensitivity of option value per defender); off-ball valuation (Ghost Value).
 
 ## Log
+* **2026-11-13**: Independent review (no hard leakage; headline reframed into decision-time vs action-conditioned; rules v2; scenario feasibility and ensemble fixes). RQ1 v3: decision-time Δ −0.026 [−0.034, −0.018], action-conditioned Δ −0.071. Option model v2 adopted.
 * **2026-11-13**: Defensive Shadow outcome validation: 2× chance at identifying interceptors, but not better than the nearest-defender baseline (top-3 0.38 vs 0.50). Added failure-mode analysis and figures.
 * **2026-11-13**: Physics calibration: fitted parameters improve log loss (0.772 → 0.487) but cut AUC (0.751 → 0.725) and converge to implausible bounds, so the model is structurally misspecified. Literature parameters kept for geometry, and the option model is used for probabilities.
 * **2026-11-13**: Option model v1 trained (LOMO log loss 0.422, AUC 0.789, ECE 0.017). It is now the default value model in scenarios.

@@ -25,26 +25,33 @@ observed state, and reported with its sensitivity to the model's assumptions.
 | Real tracking ingestion | Metrica Sports sample games 1–3 (CSV and EPTS formats): 25 Hz positions for 22 players + ball, synchronised events. Checksum-pinned downloads, data-quality gates, versioned bundles | ✅ |
 | Spatial analytics | Pitch control (Spearman 2018 time-to-intercept model), passing-lane geometry and interception heuristic, pressure on the ball carrier | ✅ (uncalibrated estimates, labelled as such) |
 | Possession Multiverse | Relocate players at a real frame → reachability check → recompute options → compare with observed → parameter-sensitivity ensemble → explicit assumptions | ✅ |
-| Calibrated option model | Logistic model over per-option features, evaluated leave-one-match-out (log loss 0.422, AUC 0.789, ECE 0.017), served as plain-JSON coefficients | ✅ |
+| Calibrated option model | Logistic model over per-option features incl. lead-pass targets, evaluated leave-one-match-out (v2: log loss 0.414, AUC 0.796, ECE 0.019), served as plain-JSON coefficients with bootstrap uncertainty | ✅ |
 | Interactive lab (web) | Canvas replay at 60 fps, overlays, drag-to-edit scenarios, observed/hypothetical/difference views, evidence panel | ✅ |
 | Research: does spatial context matter? | Leakage-audited attempted-pass outcome study with event-only, spatial and interaction model families, ablations and sensitivity analyses | ✅ v1 |
-| Ghost Value: Defensive Shadow | Per-defender suppression of passing value against reachable alternative positions | 🧪 experimental (API only, not yet validated) |
+| Ghost Value: Defensive Shadow | Per-defender suppression of passing value against nearby alternative positions | 🧪 experimental (API + UI layer; partly validated, see findings) |
 
-## Key research finding (v1)
+## Key research findings
 
-On held-out matches (leave-one-match-out, 3,633 attempted passes, Metrica Games 1–3):
+On held-out matches (leave-one-match-out, 3,593 attempted passes, Metrica Games 1–3), two
+questions are kept separate after an independent methodology review:
 
-* Adding tracking-derived spatial context to event-level information reduced log loss from
-  **0.429 to 0.358** (Δ −0.071, 95% CI [−0.085, −0.057]) and raised AUC from **0.78 to 0.87**.
-  The gain holds in every held-out match, including one with a different annotation scheme.
-* Most of that gain comes from **teammate geometry relative to the pass direction**.
-  **Defender-only** information adds a smaller but consistent improvement (Δ −0.014 [−0.021, −0.008]).
-* **Negative results:** richer interaction features did not help beyond the spatial model.
-  The literature-parameter physics estimate is **poorly calibrated** on observed passes
-  (ECE 0.18). This is why every model estimate in the product is labelled "uncalibrated".
+* **Before the pass is played** (decision-time, nothing from the kick): adding tracking-derived
+  spatial context reduces log loss from **0.482 to 0.456** (Δ −0.026, 95% CI [−0.034, −0.018];
+  AUC 0.65 → 0.72), and the gain holds in every held-out match.
+* **Given the executed kick** (action-conditioned: release direction and speed known): from
+  **0.423 to 0.352** (Δ −0.071 [−0.084, −0.057]; AUC 0.79 → 0.87). Most of this comes from
+  where the ball was actually played relative to teammates, which is partly execution quality.
+* **Defender-only** information adds a small but consistent improvement (Δ −0.015).
+  **Interaction features add nothing.**
+* **Negative results:** the literature physics model is poorly calibrated (ECE 0.17), and
+  fitting its parameters drives them to implausible bounds, so it is structurally
+  misspecified. The experimental *Defensive Shadow* metric is robust to tracking noise and
+  finds interceptors at 2× chance, but it is **not** better than "nearest defender".
 
-These results replicate established findings (Power et al. 2017; Anzer & Bauer 2022) on
-open data, with an explicit leakage audit. They are not a new discovery. Three matches from
+![Which information improves pass-outcome prediction](docs/figures/ablation_v3.png)
+
+These results are consistent with established findings (Power et al. 2017; Anzer & Bauer 2022)
+on open data, with an explicit leakage audit. They are not a new discovery. Three matches from
 one provider cannot support generalisation claims. See [`docs/RESEARCH.md`](docs/RESEARCH.md)
 and the [claims ledger](docs/CLAIMS_LEDGER.md).
 
