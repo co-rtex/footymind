@@ -1,10 +1,39 @@
-.venv/
+# Python
 __pycache__/
+*.py[cod]
+.venv/
+venv/
 .pytest_cache/
-.streamlit/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# OS / editor
 .DS_Store
-models/
-data/processed/
-plots/
-.venv/
-.venv/
+.idea/
+.vscode/
+
+# Data: raw provider downloads and derived caches are never committed.
+# Small attributed test fixtures live in tests/fixtures/ and are tracked.
+/data/
+!/data/README.md
+/artifacts/
+experiments/runs/
+
+# Legacy generated outputs
+legacy/match_outcome_predictor/data/processed/
+legacy/match_outcome_predictor/models/
+legacy/match_outcome_predictor/plots/
+.streamlit/
+
+# Frontend
+web/node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+web/.vite/
+*.tsbuildinfo
