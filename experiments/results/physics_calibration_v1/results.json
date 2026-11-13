@@ -1,0 +1,120 @@
+{
+  "name": "physics_calibration_v1",
+  "code_revision": "094296b6120b6531547288e39fd8781a11c37250",
+  "matches": [
+    "metrica-sample-1",
+    "metrica-sample-2",
+    "metrica-sample-3"
+  ],
+  "n": 3633,
+  "runtime_s": 591.6,
+  "pooled": {
+    "literature": {
+      "log_loss": 0.7716089117706766,
+      "ece": 0.1738608678145891,
+      "auc": 0.7507296963376062
+    },
+    "fitted": {
+      "log_loss": 0.4865449919751425,
+      "ece": 0.0723078251801815,
+      "auc": 0.7246340692640294
+    }
+  },
+  "folds": {
+    "metrica-sample-1": {
+      "n_test": 1056,
+      "fitted_params": {
+        "reaction_time": 0.9445,
+        "tti_sigma": 0.6542,
+        "max_player_speed": 3.4003,
+        "average_ball_speed": 25.0,
+        "lambda_att": 1.0004,
+        "kappa_def": 0.5
+      },
+      "fit_info": {
+        "n_evals": 160,
+        "subsample_logloss": 0.48809070337881516
+      },
+      "literature": {
+        "log_loss": 0.8228019155255197,
+        "ece": 0.17796497913915874
+      },
+      "fitted": {
+        "log_loss": 0.5310422821509417,
+        "ece": 0.06893494963212966
+      }
+    },
+    "metrica-sample-2": {
+      "n_test": 1180,
+      "fitted_params": {
+        "reaction_time": 0.935,
+        "tti_sigma": 0.6877,
+        "max_player_speed": 3.6962,
+        "average_ball_speed": 24.9954,
+        "lambda_att": 1.1439,
+        "kappa_def": 0.5009
+      },
+      "fit_info": {
+        "n_evals": 160,
+        "subsample_logloss": 0.5064869862116655
+      },
+      "literature": {
+        "log_loss": 0.7489065636295459,
+        "ece": 0.19016475717341286
+      },
+      "fitted": {
+        "log_loss": 0.47437889932124333,
+        "ece": 0.1035018965077309
+      }
+    },
+    "metrica-sample-3": {
+      "n_test": 1397,
+      "fitted_params": {
+        "reaction_time": 0.9064,
+        "tti_sigma": 0.606,
+        "max_player_speed": 3.4943,
+        "average_ball_speed": 25.0,
+        "lambda_att": 1.0002,
+        "kappa_def": 0.5
+      },
+      "fit_info": {
+        "n_evals": 160,
+        "subsample_logloss": 0.4912742109088454
+      },
+      "literature": {
+        "log_loss": 0.7520877656299603,
+        "ece": 0.15698718778441165
+      },
+      "fitted": {
+        "log_loss": 0.4631855438047468,
+        "ece": 0.0583534197217259
+      }
+    }
+  },
+  "bounds": {
+    "reaction_time": [
+      0.2,
+      1.2
+    ],
+    "tti_sigma": [
+      0.15,
+      1.0
+    ],
+    "max_player_speed": [
+      3.0,
+      8.0
+    ],
+    "average_ball_speed": [
+      8.0,
+      25.0
+    ],
+    "lambda_att": [
+      1.0,
+      10.0
+    ],
+    "kappa_def": [
+      0.5,
+      2.5
+    ]
+  }
+}

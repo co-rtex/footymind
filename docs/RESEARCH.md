@@ -166,6 +166,41 @@ the executed release direction. It is the best *option-agnostic* estimate curren
 and the API reports it next to the physics heuristic with its held-out metrics and the
 selection-bias caveat.
 
+## Physics calibration (`experiments/results/physics_calibration_v1`)
+
+**Question.** Is the literature PPCF × lane estimate poor because of its *parameters*
+or its *structure*?
+
+**Procedure** (`footymind.research.calibrate_physics`, fixed in advance). Fit 6
+parameters (reaction time, σ, max speed, ball speed, λ, κ_def) within bounds by minimising
+log loss on an 800-pass subsample of the training matches: 40 random starts, then
+Nelder–Mead with at most 120 evaluations. Evaluate on the held-out match with 3 LOMO
+folds (3,633 passes). The run took 592 s. The code is identical to 79e96d1 (recorded HEAD
+094296b differs only in web/docs).
+
+| | log loss | ECE | AUC |
+|---|---|---|---|
+| literature parameters | 0.772 | 0.174 | 0.751 |
+| fitted parameters (held out) | 0.487 | 0.072 | 0.725 |
+| for reference: physics, Platt-recalibrated | 0.456 | 0.048 | 0.748 |
+| for reference: option model v1 | 0.422 | 0.017 | 0.789 |
+
+In every fold the fitted parameters converge to **bounds** and are physically
+implausible: ball speed is at the 25 m/s maximum, λ at its 1.0 minimum, κ_def at its 0.5
+minimum, max player speed is about 3.5 m/s and reaction time about 0.93 s. The optimiser
+"softens" the model toward the base rate, which improves log loss and calibration but
+**reduces discrimination**.
+
+**Conclusion (negative result).** The miscalibration is structural, not a matter of
+parameters. The main candidates are the static receiver target, the inferred receiver,
+the absence of lead passes and ball height, and independent lane interceptions. Fitting
+cannot fix it, and the fitted values are not physically meaningful. Therefore (i) the
+engine keeps the literature parameters for its *geometric* quantities (pitch control,
+lane margins), labelled uncalibrated; (ii) *probabilities* shown to users come from the
+option model, which is better calibrated and more discriminative; (iii) the more
+promising physics improvements are structural (lead-pass targets, ball-flight models),
+not parameter fitting.
+
 ## Prior art and references
 * Spearman, W., Basye, A., Dick, G., Hotovy, R., Pop, P. (2017). *Physics-Based Modeling of Pass Probabilities in Soccer.* MIT Sloan Sports Analytics Conference.
 * Spearman, W. (2018). *Beyond Expected Goals.* MIT Sloan SAC. (Pitch control; off-ball scoring opportunity.)
@@ -188,6 +223,7 @@ selection-bias caveat.
   (displacement sensitivity of option value per defender); off-ball valuation (Ghost Value).
 
 ## Log
+* **2026-11-13**: Physics calibration: fitted parameters improve log loss (0.772 → 0.487) but cut AUC (0.751 → 0.725) and converge to implausible bounds, so the model is structurally misspecified. Literature parameters kept for geometry, and the option model is used for probabilities.
 * **2026-11-13**: Option model v1 trained (LOMO log loss 0.422, AUC 0.789, ECE 0.017). It is now the default value model in scenarios.
 * **2026-11-13**: Added the Metrica Game 3 EPTS adapter (direction cross-checked against the
   provider metadata). RQ1 v2 with 3 folds confirms v1 in every fold.
