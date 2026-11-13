@@ -65,6 +65,25 @@ def option_feature_rows(
             "press_def_within_5m": float((dd < 5).sum()),
             "press_def_within_10m": float((dd < 10).sum()),
         }
+    # Lead-pass targets: where the receiver will be when the ball arrives if they keep their
+    # (causal) velocity. Computed with the same physics, clipped to the pitch. Unknown
+    # velocity means the current position is used.
+    lead_targets = np.empty_like(targets)
+    for k, ti in enumerate(target_indices):
+        v = np.nan_to_num(state.vel[ti])
+        t_ball = float(np.linalg.norm(targets[k] - ball)) / params.average_ball_speed
+        lead_targets[k] = np.clip(targets[k] + v * t_ball, [-52.5, -34.0], [52.5, 34.0])
+    ppcf_lead, _, _ = pitch_control(
+        lead_targets,
+        ball,
+        state.xy[att_idx],
+        state.vel[att_idx],
+        dxy,
+        dvel,
+        state.is_gk[att_idx],
+        state.is_gk[def_idx],
+        params,
+    )
     rows = []
     for k, ti in enumerate(target_indices):
         t = state.xy[ti]
@@ -90,6 +109,13 @@ def option_feature_rows(
                 else np.nan,
                 "pass_forward_cos": float((t[0] - ball[0]) * sign / dist) if dist > 0 else 0.0,
                 "target_speed_along_pass": float(tv @ unit) if not np.isnan(tv).any() else np.nan,
+                "lead_ppcf": float(ppcf_lead[k]),
+                "lead_p_lane_clear": lane(ball, lead_targets[k], dxy, dvel, params).p_lane_clear,
+                "lead_marker_dist_m": float(
+                    np.linalg.norm(dxy - lead_targets[k][None, :], axis=1).min()
+                )
+                if def_idx.size
+                else np.nan,
             }
         )
     return rows

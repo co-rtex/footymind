@@ -334,7 +334,15 @@ def _features_for(
         **{
             k: v
             for k, v in option_feature_rows(s, team, ball, [int(mates[c])], passer)[0].items()
-            if k in ("target_marker_dist_m", "pass_forward_cos", "target_speed_along_pass")
+            if k
+            in (
+                "target_marker_dist_m",
+                "pass_forward_cos",
+                "target_speed_along_pass",
+                "lead_ppcf",
+                "lead_p_lane_clear",
+                "lead_marker_dist_m",
+            )
         },
         cand_distance_m=float(dist[c]),
         cand_angle_dev=float(dev[c]),

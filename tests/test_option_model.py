@@ -7,7 +7,12 @@ import pytest
 from footymind.data.store import available_matches, load_match
 from footymind.research.pass_dataset import build
 from footymind.spatial.option_features import option_feature_rows
-from footymind.spatial.option_model import OPTION_FEATURES, OptionModel, load_default
+from footymind.spatial.option_model import (
+    OPTION_FEATURES,
+    OPTION_FEATURES_V2,
+    OptionModel,
+    load_default,
+)
 from footymind.spatial.state import frame_state
 
 needs_data = pytest.mark.skipif(
@@ -48,7 +53,7 @@ def test_dataset_features_equal_serving_features() -> None:
         cand = s.index(r["inferred_receiver_id"])
         passer = td.player_index(r["passer_id"])
         serve = option_feature_rows(s, r["team"], ball, [cand], passer)[0]
-        for f in OPTION_FEATURES:
+        for f in OPTION_FEATURES_V2:
             a, b = r[f], serve[f]
             if a is None or (isinstance(a, float) and np.isnan(a)):
                 assert np.isnan(b), f

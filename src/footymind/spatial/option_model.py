@@ -47,6 +47,10 @@ OPTION_FEATURES = [
     "target_speed_along_pass",
 ]
 
+# Pre-specified v2 candidate: adds features evaluated at the receiver's anticipated
+# (lead-pass) position. Adopted only if it beats v1 in LOMO (docs/RESEARCH.md).
+OPTION_FEATURES_V2 = [*OPTION_FEATURES, "lead_ppcf", "lead_p_lane_clear", "lead_marker_dist_m"]
+
 MODEL_RESOURCE = "option_model_v1.json"
 
 
