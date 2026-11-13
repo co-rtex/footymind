@@ -1,0 +1,197 @@
+import { useMemo, useState } from "react";
+import { api } from "../api/client";
+import type { MatchSummary, PossessionSummary, Team } from "../api/types";
+import { fmtClock, matchClockSeconds, teamLabel, titleCase } from "../lib/format";
+import { routeHash, useAsync } from "../lib/hooks";
+import { Segmented } from "./Segmented";
+import { StatusBlock } from "./StatusBlock";
+
+interface Props {
+  matches: MatchSummary[];
+  match: MatchSummary | null;
+  onSelectMatch: (id: string) => void;
+  onOpenPossession: (pid: string) => void;
+}
+
+type TeamFilter = "all" | Team;
+
+export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Props) {
+  return (
+    <div className="landing">
+      <section className="hero" aria-labelledby="hero-title">
+        <p className="eyebrow">Tracking analytics lab</p>
+        <h1 id="hero-title">Quantify the invisible game.</h1>
+        <p className="lede">
+          Space, passing options and defensive influence from real tracking data. Replay a possession, pause to see what
+          the spatial model estimates, then move a player to test a constrained what-if.
+        </p>
+        <ol className="steps" aria-label="How to start">
+          <li>
+            <span className="step-n">1</span>Choose a match
+          </li>
+          <li>
+            <span className="step-n">2</span>Open a possession
+          </li>
+          <li>
+            <span className="step-n">3</span>Pause to analyse, then edit a scenario
+          </li>
+        </ol>
+      </section>
+
+      <section className="panel" aria-labelledby="match-title">
+        <div className="panel-head">
+          <h2 id="match-title" className="h-section">
+            Match
+          </h2>
+        </div>
+        <div className="match-cards" role="radiogroup" aria-label="Match">
+          {matches.map((m) => {
+            const selected = m.match_id === match?.match_id;
+            return (
+              <button
+                key={m.match_id}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                className={`match-card${selected ? " is-selected" : ""}`}
+                onClick={() => onSelectMatch(m.match_id)}
+              >
+                <span className="match-card-name">{m.source.name}</span>
+                <span className="match-card-meta">
+                  {m.fps} Hz tracking · {m.periods.length} periods · {m.n_possessions} possessions · {m.n_events} events
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {match ? <PossessionList key={match.match_id} match={match} onOpen={onOpenPossession} /> : null}
+    </div>
+  );
+}
+
+function PossessionList({ match, onOpen }: { match: MatchSummary; onOpen: (pid: string) => void }) {
+  const [team, setTeam] = useState<TeamFilter>("all");
+  const [shotsOnly, setShotsOnly] = useState(false);
+  const poss = useAsync<PossessionSummary[]>(`poss:${match.match_id}`, (signal) =>
+    api.possessions(match.match_id, 3, signal),
+  );
+
+  const rows = useMemo(
+    () =>
+      (poss.data ?? []).filter((p) => (team === "all" || p.team === team) && (!shotsOnly || p.has_shot)),
+    [poss.data, team, shotsOnly],
+  );
+
+  return (
+    <section className="panel" aria-labelledby="poss-title">
+      <div className="panel-head panel-head--wrap">
+        <div>
+          <h2 id="poss-title" className="h-section">
+            Possessions
+          </h2>
+          <p className="muted small">
+            Open-play sequences with at least three passes.{" "}
+            {poss.data ? (
+              <span aria-live="polite">
+                Showing {rows.length} of {poss.data.length}.
+              </span>
+            ) : null}
+          </p>
+        </div>
+        <div className="filters">
+          <Segmented<TeamFilter>
+            label="Team"
+            value={team}
+            onChange={setTeam}
+            options={[
+              { value: "all", label: "All" },
+              { value: "home", label: "Home" },
+              { value: "away", label: "Away" },
+            ]}
+          />
+          <label className="check">
+            <input type="checkbox" checked={shotsOnly} onChange={(e) => setShotsOnly(e.target.checked)} />
+            <span>Ends in a shot</span>
+          </label>
+        </div>
+      </div>
+
+      {poss.status === "error" ? (
+        <StatusBlock kind="error" title="Could not load possessions" detail={poss.error.message} onRetry={poss.reload} />
+      ) : !poss.data ? (
+        <StatusBlock kind="loading" title="Loading possessions" />
+      ) : rows.length === 0 ? (
+        <StatusBlock kind="empty" title="No possessions match these filters" />
+      ) : (
+        <div className="table-wrap">
+          <table className="table possession-table" data-testid="possession-table">
+            <caption className="sr-only">Possessions in {match.source.name}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Team</th>
+                <th scope="col">Period</th>
+                <th scope="col" className="num">
+                  Clock
+                </th>
+                <th scope="col" className="num">
+                  Duration
+                </th>
+                <th scope="col" className="num">
+                  Passes
+                </th>
+                <th scope="col" className="col-seq">
+                  Sequence
+                </th>
+                <th scope="col">
+                  <span className="sr-only">Outcome</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((p) => (
+                <PossessionRow key={p.possession_id} p={p} match={match} onOpen={onOpen} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function PossessionRow({ p, match, onOpen }: { p: PossessionSummary; match: MatchSummary; onOpen: (pid: string) => void }) {
+  const clock = fmtClock(matchClockSeconds(p.start_time_s, p.period, match.periods, match.fps));
+  const first = titleCase(p.first_type);
+  const last = [titleCase(p.last_type), p.last_subtype ? `(${titleCase(p.last_subtype)})` : ""].filter(Boolean).join(" ");
+  const label = `${teamLabel(p.team)} possession, period ${p.period}, ${clock}, ${p.n_passes} passes${p.has_goal ? ", goal" : p.has_shot ? ", shot" : ""}`;
+  return (
+    <tr className="row-link" onClick={() => onOpen(p.possession_id)}>
+      <td>
+        <a
+          className="team-chip-link"
+          href={routeHash({ name: "lab", possessionId: p.possession_id })}
+          aria-label={`Open ${label}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className={`team-chip team-chip--${p.team}`}>{teamLabel(p.team)}</span>
+        </a>
+      </td>
+      <td>P{p.period}</td>
+      <td className="num">{clock}</td>
+      <td className="num">{p.duration_s.toFixed(1)} s</td>
+      <td className="num">{p.n_passes}</td>
+      <td className="col-seq">
+        <span className="seq">
+          {first || "Start"} <span aria-hidden="true">→</span>
+          <span className="sr-only">to</span> {last || "End"}
+        </span>
+      </td>
+      <td className="badges">
+        {p.has_goal ? <span className="badge badge--goal">Goal</span> : null}
+        {p.has_shot && !p.has_goal ? <span className="badge badge--shot">Shot</span> : null}
+      </td>
+    </tr>
+  );
+}

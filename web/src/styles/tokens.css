@@ -1,0 +1,71 @@
+/*
+ * Design tokens. The canvas renderer reads the --c-* colour tokens at startup
+ * (src/render/theme.ts), so the pitch and the DOM share one palette.
+ *
+ * Team colours: amber and sky are distinguishable under the common forms of
+ * colour-vision deficiency and are not pure red/blue. The accent (violet) is
+ * reserved for interaction: focus, selection, and the scenario layer.
+ */
+:root {
+  color-scheme: dark;
+
+  /* surfaces */
+  --c-bg: #0d1015;
+  --c-surface: #141920;
+  --c-surface-2: #1a2029;
+  --c-surface-3: #212833;
+  --c-border: #2a323e;
+  --c-border-strong: #3a4452;
+
+  /* text (contrast on --c-surface: text 14.8:1, muted 7.3:1, subtle 4.7:1) */
+  --c-text: #e8ebef;
+  --c-text-muted: #a3adbb;
+  --c-text-subtle: #7f8a99;
+
+  /* semantic */
+  --c-accent: #b7a3ff;
+  --c-accent-strong: #9d84ff;
+  --c-accent-soft: rgba(183, 163, 255, 0.14);
+  --c-home: #f0a24e;
+  --c-away: #5ec6e4;
+  --c-on-team: #11161c;
+  --c-positive: #5ad19d;
+  --c-negative: #f2787a;
+  --c-warning: #e9c46a;
+
+  /* pitch */
+  --c-pitch: #17241f;
+  --c-pitch-stripe: #1a2923;
+  --c-pitch-line: rgba(226, 238, 232, 0.5);
+  --c-pitch-surround: #10171a;
+  --c-ball: #f7f7f2;
+
+  /* type scale (1.2 minor third, 14px base) */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --fs-xs: 11.5px;
+  --fs-sm: 12.5px;
+  --fs-md: 14px;
+  --fs-lg: 16.8px;
+  --fs-xl: 20px;
+  --fs-2xl: 28px;
+  --fs-3xl: 40px;
+
+  /* spacing (4px grid) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.25);
+  --focus-ring: 0 0 0 2px var(--c-bg), 0 0 0 4px var(--c-accent);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
