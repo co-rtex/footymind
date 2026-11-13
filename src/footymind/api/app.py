@@ -34,6 +34,7 @@ from footymind.spatial.analysis import FrameAnalysis, analyze
 from footymind.spatial.option_model import load_default
 from footymind.spatial.pitch_control import DEFAULT_GRID, DEFAULT_PARAMS
 from footymind.spatial.state import frame_state
+from footymind.tracking.model import TrackingData
 
 MAX_REPLAY_FRAMES = 4000
 
@@ -206,6 +207,16 @@ def _events_out(ev: pl.DataFrame) -> list[S.EventOut]:
     return out
 
 
+def _period_time(td: TrackingData, rows: np.ndarray) -> np.ndarray:
+    """Seconds since each frame's period started (first tracked frame of that period).
+
+    Provider clocks differ: Metrica time is cumulative across periods, and SkillCorner time
+    is video time that does not start at kick-off. This gives clients one basis.
+    """
+    starts = {int(p): float(td.time_s[np.argmax(td.period == p)]) for p in np.unique(td.period)}
+    return np.array([td.time_s[r] - starts[int(td.period[r])] for r in rows], dtype=np.float64)
+
+
 def _flat(a: np.ndarray, nd: int = 2) -> list[float | None]:
     r = np.round(a.astype(np.float64).ravel(), nd)
     return [None if math.isnan(v) else float(v) for v in r.tolist()]
@@ -251,6 +262,7 @@ def replay(
         ],
         frame=td.frame[rows].tolist(),
         time_s=np.round(td.time_s[rows], 2).tolist(),
+        period_time_s=np.round(_period_time(td, rows), 2).tolist(),
         period=td.period[rows].astype(int).tolist(),
         players_xy=_flat(td.xy[rows]),
         players_detected=None
@@ -353,6 +365,7 @@ def _analysis_out(a: FrameAnalysis, horizon_s: float = 1.5) -> S.FrameAnalysisOu
         frame=st.frame,
         period=st.period,
         time_s=round(st.time_s, 2),
+        period_time_s=round(float(_period_time(td, np.array([row]))[0]), 2),
         attacking_team=st.attacking_team,
         attack_sign=st.attack_sign,
         possession_id=st.possession_id,

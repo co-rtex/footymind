@@ -109,6 +109,10 @@ class Replay(BaseModel):
     players: list[PlayerOut]
     frame: list[int]
     time_s: list[float]
+    period_time_s: list[float] = Field(
+        default_factory=list,
+        description="seconds since the first tracked frame of the period (match clock basis)",
+    )
     period: list[int]
     players_xy: list[float | None]
     players_detected: list[bool] | None = Field(
@@ -203,6 +207,7 @@ class FrameAnalysisOut(BaseModel):
     frame: int
     period: int
     time_s: float
+    period_time_s: float = Field(0.0, description="seconds since the period's first tracked frame")
     attacking_team: Team | None
     attack_sign: int
     possession_id: str | None
