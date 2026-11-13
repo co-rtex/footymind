@@ -201,6 +201,42 @@ option model, which is better calibrated and more discriminative; (iii) the more
 promising physics improvements are structural (lead-pass targets, ball-flight models),
 not parameter fitting.
 
+## Defensive Shadow: robustness study (`experiments/results/shadow_stability_v1`, rev 39ce3a4)
+
+Defensive Shadow (`ghost/defensive_shadow.py`) is an **experimental, model-based
+sensitivity metric**. Per defender, it compares the attacking team's summed option-model
+value with the defender at their observed position against 8 reachable alternatives
+(ring radius 3.5 m). It is not a causal contribution and has not been validated against
+outcomes.
+
+Property tests (`tests/test_defensive_shadow.py`, constructed geometry) pass: a lane
+blocker suppresses exactly the blocked option, an isolated defender scores about 0, a
+blocker outranks a bystander, the goalkeeper is excluded, and alternatives stay on the pitch.
+
+Study on 30 real pass-start frames (Games 1 and 3), Spearman ρ across a frame's
+defenders, averaged over frames:
+
+| check | mean ρ | median ρ | mean abs change |
+|---|---|---|---|
+| position noise σ = 0.1 m (3 draws) | 0.95 | 0.97 | 0.011 |
+| position noise σ = 0.3 m (3 draws) | 0.84 | 0.88 | 0.025 |
+| ring radius 0.3× vs 0.5× | 0.85 | 0.88 | — |
+| ring radius 0.7× vs 0.5× | 0.90 | 0.93 | — |
+| vs "lane presence" (summed interception p) | 0.26 | 0.30 | — |
+
+The mean |shadow_sum| per defender is 0.078.
+
+**Interpretation.** Rankings are stable under realistic tracking noise and moderately
+sensitive to the alternative-position radius, which is disclosed. The metric is not a
+re-expression of simple lane blocking (ρ 0.26). It also reflects control at targets and
+receiver-specific effects. Low correlation is not evidence of validity. **Noise floor:**
+|shadow_sum| < 0.025 is not distinguishable from tracking noise. The API flags this per
+defender (`distinguishable_from_noise`).
+
+**Not yet done:** outcome validation, for example whether team-level shadow before a pass
+predicts its failure beyond Model B. That is the next research step before any
+"defender rating" claim.
+
 ## Prior art and references
 * Spearman, W., Basye, A., Dick, G., Hotovy, R., Pop, P. (2017). *Physics-Based Modeling of Pass Probabilities in Soccer.* MIT Sloan Sports Analytics Conference.
 * Spearman, W. (2018). *Beyond Expected Goals.* MIT Sloan SAC. (Pitch control; off-ball scoring opportunity.)

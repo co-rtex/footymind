@@ -38,6 +38,9 @@ from footymind.spatial.pitch_control import DEFAULT_PARAMS, PitchControlParams
 from footymind.spatial.state import FrameState, frame_state
 
 REACH_SPEED_MPS = 7.0
+# |shadow_sum| below this is not distinguishable from tracking noise: the mean absolute
+# change under sigma = 0.3 m position noise was 0.025 (experiments/results/shadow_stability_v1).
+NOISE_FLOOR = 0.025
 ValueModel = Literal["option_model", "physics"]
 
 

@@ -100,3 +100,4 @@ def test_shadow_endpoint() -> None:
     assert j["defenders"] and all(d["provenance"] == "estimated" for d in j["defenders"])
     assert len(j["defenders"][0]["alternatives"]) == 8
     assert "experimental" in j["status"]
+    assert all(isinstance(d["distinguishable_from_noise"], bool) for d in j["defenders"])

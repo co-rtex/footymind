@@ -295,6 +295,9 @@ class DefenderShadowOut(BaseModel):
     alternatives: list[tuple[float, float]]
     most_suppressed_receiver: str | None
     most_suppressed_delta: float
+    distinguishable_from_noise: bool = Field(
+        description="|shadow_sum| above the tracking-noise floor (shadow_stability_v1)"
+    )
     provenance: ProvenanceLabel = "estimated"
 
 

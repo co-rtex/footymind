@@ -19,6 +19,7 @@ from footymind import __version__
 from footymind.api import schemas as S
 from footymind.counterfactual.scenario import REACH_SPEED_MPS, Intervention, run_scenario
 from footymind.data.store import MatchBundle, StaleBundleError, available_matches, load_match
+from footymind.ghost.defensive_shadow import NOISE_FLOOR as SHADOW_NOISE_FLOOR
 from footymind.ghost.defensive_shadow import defensive_shadow
 from footymind.paths import REPO_ROOT
 from footymind.spatial.analysis import FrameAnalysis, analyze
@@ -431,6 +432,7 @@ def frame_defensive_shadow(
                 alternatives=d.alternatives,
                 most_suppressed_receiver=d.most_suppressed_receiver,
                 most_suppressed_delta=round(d.most_suppressed_delta, 4) + 0.0,
+                distinguishable_from_noise=abs(d.shadow_sum) >= SHADOW_NOISE_FLOOR,
             )
             for d in r.defenders
         ],
