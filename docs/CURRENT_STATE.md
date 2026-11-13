@@ -1,61 +1,65 @@
 # Current state and session handoff
 
-_Last updated: 2026-11-13 ~22:45 UTC (session 2, which started 21:34 UTC). Keep this file
+_Last updated: 2026-11-13 23:20 UTC, end of session 2 (21:34–23:2x UTC). Keep this file
 factual and update it at every checkpoint._
 
 ## Branch and repository
-* Working branch: `claude/loving-wright-i0shmp` (pushed to `origin`). `main` is untouched,
-  and no PR has been opened (the owner has not asked for one).
+* Working branch: `claude/loving-wright-i0shmp` (all commits pushed to `origin`). `main` is
+  untouched, and no PR has been opened (the owner has not asked for one).
 * Commits are authored as Christian Cortez with no assistant trailers (see CLAUDE.md).
-* Worktrees (ignored or outside the repo): `.claude/worktrees/agent-*` (frontend
-  specialist, fully merged) and `/home/user/fm-backend` (branch `session2-backend-fixes`,
-  fully merged). Both can be removed with `git worktree remove`.
+* Only the main worktree remains; the merged specialist and backend worktrees were removed.
+  The merged branches `worktree-agent-aa624ab4aa7fb497b` and `session2-backend-fixes` still
+  exist locally and can be deleted.
+* No background processes are left running (dockerd, uvicorn and vite were all stopped).
 * **Stop-hook note.** The cloud environment runs a *managed* Stop hook
-  (`~/.claude/stop-hook-git-check.sh`, registered in the environment's launcher settings, not
-  in this repo, and protected from edits). It asks for commits to be re-authored as "Claude"
-  so GitHub shows them as verified. That conflicts with the owner's authorship rule and is
-  deliberately not done. "Unverified" only means the commits are unsigned. The owner can
-  change the environment's hook settings or set up commit signing. Do not rewrite history.
-* A background `dockerd` was started for the image build test. Stop it with `pkill dockerd`
-  if it is still running.
+  (`~/.claude/stop-hook-git-check.sh`, from the environment's launcher settings, not this repo,
+  and protected from edits). It asks for commits to be re-authored as "Claude". That conflicts
+  with the owner's authorship rule and is deliberately not done. "Unverified" only means the
+  commits are unsigned. Options for the owner: change the environment hook, or enable commit
+  signing. Do not rewrite history.
 
-## What works (verified)
-| Area | Evidence / command |
+## Data (local, not committed)
+`data/raw` holds Metrica (about 180 MB) and SkillCorner (about 1.8 GB). `data/processed` holds
+23 bundles at **pipeline version 2**. To rebuild from scratch:
+```bash
+uv run footymind download && uv run footymind ingest   # all registered sources (~2 GB)
+uv run footymind download metrica-sample-1 metrica-sample-2 metrica-sample-3   # Metrica only
+```
+
+## Verification (last run in this session)
+| Gate | Result |
 |---|---|
-| Ingestion: Metrica Games 1–3 (CSV + EPTS) and **20 SkillCorner A-League matches** (broadcast, 10 fps), with checksum-pinned sources, quality gates and attacking direction cross-checked with provider metadata | `uv run footymind download [ids]`, `uv run footymind ingest [ids]`; tests `test_real_metrica.py`, `test_metrica_epts.py`, `test_skillcorner_adapter.py` (synthetic, runs in CI), `test_real_skillcorner.py` |
-| Provenance for broadcast data: extrapolated (off-camera) positions are `estimated` in the API and drawn hollow and dashed in the UI; absent players are never "estimated" | `test_real_skillcorner.py`; e2e `broadcast tracking ...` |
-| Spatial analytics, **provider-specific option models** (JSON with 32 bootstrap members; never pooled across providers), scenario engine (final-state feasibility, checked simulated moves), Defensive Shadow, run value | `tests/test_option_model.py`, `test_api_and_scenario.py`, `test_defensive_shadow.py`, `test_run_value.py` |
-| Web lab: replay, analysis, scenarios, deep links, featured scenario, Defensive Shadow layer, 23-match landing grouped by provider | `cd web && npm test` (73), e2e `npx playwright test e2e/flow.spec.ts` (5/5 against the real API and the FastAPI-served build) |
-| Docker image (API + web; data downloaded to a volume on first start, `FOOTYMIND_SOURCES`) | built locally (1.03 GB); e2e passed against the container; CI `docker` job |
-| All CI gates locally | `scripts/check.sh` (exit code!): Python ruff, format, mypy, 72+ pytest; web typecheck, lint, 73 vitest, build |
-| GitHub CI | green on 89c1d08 (run 14), including the Docker job; data job pinned to Metrica |
-| API latency | `/api/matches` 15 ms (was 2.5 s); frame analysis about 0.09 s warm; scenario about 0.3–0.7 s; shadow about 0.4–0.7 s |
+| `scripts/check.sh` (exit code 0) | Python: ruff, format, mypy, **76 pytest**; web: typecheck, lint, **73 vitest**, build |
+| `cd web && npx playwright test e2e/flow.spec.ts` | **6/6** against the real API (Metrica + SkillCorner, featured scenarios, shadow layer, broadcast provenance) |
+| Docker | image built locally, e2e passed against the container; CI `docker` job green |
+| GitHub CI | green through 75ebdba (run 20); later runs were queued or in progress at handoff |
 
-## Research status (all numbers in CLAIMS_LEDGER.md)
-* **Main, replicated result (C20, C23):** decision-time spatial context improves held-out
-  pass-outcome prediction. Metrica Δ log loss −0.026 [−0.034, −0.018]; SkillCorner −0.024
-  [−0.027, −0.020], better in 20/20 held-out matches. The drivers are defensive structure
-  relative to the ball and attacking width.
-* Action-conditioned gain: −0.071 (Metrica) and −0.044 (SkillCorner). This is
-  provider-dependent and is partly execution quality.
-* Interaction features: null on 3 matches, small and significant (−0.004) on 20 matches.
-* Physics: literature parameters are miscalibrated, and fitting them hits implausible bounds
-  (structural misspecification). The option model serves probabilities.
-* Defensive Shadow: robust to noise. It finds the eventual interceptor at 2× chance but is not
-  better than nearest-defender. Experimental.
-* Run value: small positive association with being chosen. Weak as a ranking. Experimental.
-  A SkillCorner replication was running at handoff (`run_value_validation_v1_skillcorner`).
-* An independent methodology review (2026-11-13) found no hard leakage. Its fixes are
-  rules v2, decision-time framing and scenario fixes. Rules v1 still reproduce the old results.
+## Research status (numbers live in CLAIMS_LEDGER.md)
+* **Main, replicated result:** decision-time spatial context improves held-out pass-outcome
+  prediction. Metrica −0.026 [−0.034, −0.018] (C20). SkillCorner −0.021 [−0.025, −0.018],
+  better in 20/20 held-out matches (C28; adapter v2 after the second independent review).
+  The drivers are defenders goal-side of the ball and attacking width (C26).
+* Action-conditioned gain: −0.071 / −0.046. This is provider-dependent and partly execution quality.
+* Interaction features: null on 3 matches, −0.004 on 20 matches. This is not a case for GNNs yet.
+* Physics: literature parameters are miscalibrated, and fitted parameters hit implausible bounds,
+  so the model is structurally misspecified (C7, C15). Per-provider option models serve
+  probabilities (C21, C24).
+* Defensive Shadow: robust to noise, 2× chance at the interceptor, but **not better than
+  nearest-defender** (C16, C17). Run value: tiny association and at-chance ranking on both
+  providers (C22, C25). Both are experimental.
+* Two independent reviews were done this session. Their findings are fixed: rules v2,
+  decision-time framing, scenario feasibility and ensemble semantics, Shadow framing, and
+  the SkillCorner adapter v2.
 
 ## Next executable actions
-1. Record the SkillCorner run-value replication (if not already committed).
-2. Research: a learned defender-response policy (ghosting) is required before off-ball
-   valuation can be credible; test team-level shadow as a pass-failure predictor beyond
-   Model B on SkillCorner.
-3. Product: a provider-aware match clock in the API (`period_time_s`), and SkillCorner event
-   positions (scaled) for event markers.
-4. Hygiene: remove merged worktrees; consider a Vitest 5 upgrade (dev-only audit findings).
+1. Confirm that CI is green for the adapter-v2 commits (`mcp__github__actions_list`).
+2. Research: simulated defender responses (learned ghosting) before any off-ball valuation
+   claim. Add time-on-ball / one-touch context to both providers' baselines and re-run C20/C28
+   (the second review estimated −0.018 for SkillCorner with it).
+3. Product: possession deep links are keyed by possession id, which can change with the
+   pipeline version (p0152 → p0181 happened). Consider frame-based deep links that resolve the
+   possession server-side.
+4. Hygiene: delete merged local branches; Vitest 5 upgrade (dev-only audit findings).
 
 ## Decisions needing the owner
 * Whether to host a public demo serving provider-derived positions (Metrica has no licence
