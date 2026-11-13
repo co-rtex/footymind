@@ -59,6 +59,10 @@ RELEASE_WINDOW_FRAMES = 3  # 0.12 s at 25 Hz
 # OFFSIDE, END HALF, REFEREE HIT, WOODWORK, ...) excludes the event.
 FAILED_PASS_LOST_TOKENS = frozenset({"INTERCEPTION", "HEAD", "CROSS", "GOAL KICK", "DEEP BALL"})
 FAILED_PASS_OUT_TOKENS = frozenset({"HEAD", "CROSS", "GOAL KICK"})
+# v2: one allow-list of pass-attempt subtype tokens for successes and failures alike.
+PASS_TOKENS_V2 = frozenset({"HEAD", "CROSS", "GOAL KICK", "DEEP BALL", "THROUGH BALL"})
+FAILED_PASS_LOST_TOKENS_V2 = PASS_TOKENS_V2 | {"INTERCEPTION"}
+FAILED_PASS_OUT_TOKENS_V2 = PASS_TOKENS_V2
 # Event types excluded from event-history features. CARRY exists only in the EPTS/JSON
 # format (Game 3). Including it would shift "previous event" distributions between matches.
 HISTORY_EXCLUDED_TYPES = frozenset({"CARRY"})
@@ -101,6 +105,41 @@ SPATIAL_FEATURES = [
     "ray_def_in_cone",
     "passer_speed",
 ]
+# Strictly decision-time feature sets: nothing derived from the executed kick (no release
+# direction/speed, no direction-inferred candidate receiver, no release-ray features, no
+# body-part/cross annotations of the pass itself). They answer "before the pass is played,
+# how likely is the possessor's next pass to be completed?" (independent review, 2026-11-13).
+DECISION_EVENT_FEATURES = [
+    "ball_x_att",
+    "ball_y_abs",
+    "dist_to_goal",
+    "angle_to_goal",
+    "is_goal_kick",
+    "is_restart",
+    "prev_type_pass",
+    "prev_type_recovery",
+    "prev_type_challenge",
+    "possession_pass_index",
+    "time_in_possession_s",
+    "period",
+    "match_minute",
+]
+DECISION_SPATIAL_FEATURES = [
+    *DECISION_EVENT_FEATURES,
+    "press_nearest_def_m",
+    "press_closing_speed",
+    "press_def_within_5m",
+    "press_def_within_10m",
+    "passer_speed",
+    "best_option_p_success_physics",
+    "n_options_over_0_5",
+    "def_goal_side_of_ball",
+    "def_line_depth_m",
+    "def_compactness_m",
+    "att_width_m",
+    "att_depth_m",
+]
+
 # Feature groups for ablations. "Defender-only" groups use no teammate positions.
 GROUP_PRESSURE = [
     "press_nearest_def_m",
@@ -137,6 +176,17 @@ INTERACTION_FEATURES = [
 
 @dataclass(frozen=True)
 class DatasetConfig:
+    # Label/feature rule set. "v1" reproduces the committed v1/v2 experiments exactly.
+    # "v2" (default) applies the independent-review fixes (docs/RESEARCH.md, "Review"):
+    #   * PASS events and failures use the same subtype allow-list (no clearances or
+    #     offsides on either side; through balls on both sides);
+    #   * history features only use events in strictly earlier frames; the restart flag
+    #     comes from the possession's last set piece;
+    #   * attempts resolved in < 2 frames are dropped, because the release window would
+    #     touch the outcome frame;
+    #   * release speeds above max_release_speed are dropped as tracking artefacts.
+    rules: str = "v2"
+    max_release_speed: float = 40.0  # m/s, v2 only
     include_ball_out: bool = True
     min_release_speed: float = 1.0  # m/s; below this the release is not observable
     cone_half_angle_deg: float = 15.0
@@ -152,9 +202,16 @@ def label_events(ev: pl.DataFrame, cfg: DatasetConfig) -> pl.DataFrame:
             pl.col("subtype").is_null() | tokens.list.eval(pl.element().is_in(list(tok))).list.all()
         )
 
-    is_pass = pl.col("type") == "PASS"
-    is_lost = (pl.col("type") == "BALL LOST") & allowed(FAILED_PASS_LOST_TOKENS)
-    is_out = (pl.col("type") == "BALL OUT") & allowed(FAILED_PASS_OUT_TOKENS)
+    if cfg.rules == "v1":
+        is_pass = pl.col("type") == "PASS"
+        is_lost = (pl.col("type") == "BALL LOST") & allowed(FAILED_PASS_LOST_TOKENS)
+        is_out = (pl.col("type") == "BALL OUT") & allowed(FAILED_PASS_OUT_TOKENS)
+    elif cfg.rules == "v2":
+        is_pass = (pl.col("type") == "PASS") & allowed(PASS_TOKENS_V2)
+        is_lost = (pl.col("type") == "BALL LOST") & allowed(FAILED_PASS_LOST_TOKENS_V2)
+        is_out = (pl.col("type") == "BALL OUT") & allowed(FAILED_PASS_OUT_TOKENS_V2)
+    else:
+        raise ValueError(f"unknown rules {cfg.rules!r}")
     cond = is_pass | is_lost | (is_out if cfg.include_ball_out else pl.lit(False))
     return (
         ev.filter(cond & pl.col("from_player_id").is_not_null())
@@ -188,6 +245,27 @@ def _prev_event_features(ev: pl.DataFrame) -> pl.DataFrame:
         .alias("possession_pass_index"),
         pl.col("start_time_s").min().over("possession_id").alias("possession_start_s"),
     )
+    # v2 history: the last event in a strictly earlier frame of the same possession, and the
+    # frame of the possession's most recent set piece (same frame included: a restart is
+    # known before the pass is played).
+    frames = (
+        ev.group_by(["possession_id", "start_frame"], maintain_order=True)
+        .agg(pl.col("type").last().alias("_last_type"))
+        .sort(["possession_id", "start_frame"])
+        .with_columns(
+            pl.col("_last_type").shift(1).over("possession_id").alias("prev_type_strict"),
+            pl.col("start_frame").shift(1).over("possession_id").alias("prev_frame_strict"),
+        )
+        .drop("_last_type")
+    )
+    ev = ev.join(frames, on=["possession_id", "start_frame"], how="left").with_columns(
+        pl.when(pl.col("type") == "SET PIECE")
+        .then(pl.col("start_frame"))
+        .otherwise(None)
+        .forward_fill()
+        .over("possession_id")
+        .alias("last_set_piece_frame")
+    )
     return ev
 
 
@@ -219,6 +297,8 @@ def _features_for(
     f0 = int(r["start_frame"])
     i0 = td.index_of_frame(f0)
     k = RELEASE_WINDOW_FRAMES
+    if cfg.rules == "v2" and r["end_frame"] is not None and int(r["end_frame"]) - f0 < 2:
+        return None  # resolved before a pre-outcome release window exists
     if r["end_frame"] is not None:
         k = min(k, max(1, int(r["end_frame"]) - f0 - 1))
     if i0 + k >= td.n_frames or td.period[i0 + k] != td.period[i0]:
@@ -229,6 +309,8 @@ def _features_for(
     rel = (b1 - b0) / (k / td.fps)
     speed = float(np.linalg.norm(rel))
     if speed < cfg.min_release_speed:
+        return None
+    if cfg.rules == "v2" and speed > cfg.max_release_speed:
         return None
 
     s = frame_state(mid, f0)
@@ -246,11 +328,21 @@ def _features_for(
     a1 = np.arctan2(3.66 - by, 52.5 - bx)
     a2 = np.arctan2(-3.66 - by, 52.5 - bx)
     st = (r["subtype"] or "").upper()
-    prev = r["prev_type"]
+    restart_v2 = False
+    if cfg.rules == "v2":
+        prev = r["prev_type_strict"]
+        lsp = r["last_set_piece_frame"]
+        restart_v2 = lsp is not None and 0 <= f0 - int(lsp) <= 2
+    else:
+        prev = r["prev_type"]
     restart = (
-        prev == "SET PIECE"
-        and r["prev_start_frame"] is not None
-        and (f0 - int(r["prev_start_frame"]) <= 2)
+        restart_v2
+        if cfg.rules == "v2"
+        else (
+            prev == "SET PIECE"
+            and r["prev_start_frame"] is not None
+            and (f0 - int(r["prev_start_frame"]) <= 2)
+        )
     )
     row: dict[str, object] = {
         "match_id": mid,

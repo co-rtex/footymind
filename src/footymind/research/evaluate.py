@@ -28,6 +28,8 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from footymind.research.pass_dataset import (
+    DECISION_EVENT_FEATURES,
+    DECISION_SPATIAL_FEATURES,
     EVENT_FEATURES,
     GROUP_PRESSURE,
     GROUP_RAY_DEFENSE,
@@ -103,6 +105,34 @@ def model_specs() -> dict[str, ModelSpec]:
             OPTION_FEATURES_V2,
             lambda s: _logreg(),
             "option model + lead-pass target features (pre-specified v2 candidate)",
+        ),
+        ModelSpec(
+            "Adt_logreg",
+            "A-decision",
+            DECISION_EVENT_FEATURES,
+            lambda s: _logreg(),
+            "decision-time event context only (no release features), LR",
+        ),
+        ModelSpec(
+            "Adt_gbm",
+            "A-decision",
+            DECISION_EVENT_FEATURES,
+            _gbm,
+            "decision-time event context only, GBM",
+        ),
+        ModelSpec(
+            "Bdt_logreg",
+            "B-decision",
+            DECISION_SPATIAL_FEATURES,
+            lambda s: _logreg(),
+            "decision-time event + spatial context (no release features), LR",
+        ),
+        ModelSpec(
+            "Bdt_gbm",
+            "B-decision",
+            DECISION_SPATIAL_FEATURES,
+            _gbm,
+            "decision-time event + spatial context, GBM",
         ),
         ModelSpec("B_logreg", "B", b, lambda s: _logreg(), "event + spatial, logistic regression"),
         ModelSpec("B_gbm", "B", b, _gbm, "event + spatial, gradient boosting"),

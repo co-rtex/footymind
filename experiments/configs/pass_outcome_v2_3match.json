@@ -1,19 +1,62 @@
 {
   "name": "pass_outcome_v2_3match",
   "description": "RQ1 with three leave-one-match-out folds. Game 3 uses Metrica's newer EPTS/JSON annotation (adds CARRY events), so its fold is also a transfer test to a different annotation scheme; per-fold results are reported, not only pooled.",
-  "matches": ["metrica-sample-1", "metrica-sample-2", "metrica-sample-3"],
-  "seed": 0,
-  "dataset": {"include_ball_out": true},
-  "n_boot": 2000,
-  "models": ["base_rate", "A_logreg", "A_gbm", "physics_raw", "physics_platt", "B_logreg", "B_gbm", "C_logreg", "C_gbm", "abl_A+defender_only_logreg", "abl_A+target_geometry_logreg"],
-  "comparisons": [
-    ["A_logreg", "B_logreg"],
-    ["A_gbm", "B_gbm"],
-    ["B_gbm", "C_gbm"],
-    ["A_logreg", "abl_A+defender_only_logreg"],
-    ["A_logreg", "abl_A+target_geometry_logreg"],
-    ["A_logreg", "physics_platt"]
+  "matches": [
+    "metrica-sample-1",
+    "metrica-sample-2",
+    "metrica-sample-3"
   ],
-  "calibration": ["A_logreg", "B_logreg", "physics_raw"],
-  "importances": ["B_logreg"]
+  "seed": 0,
+  "dataset": {
+    "include_ball_out": true,
+    "rules": "v1"
+  },
+  "n_boot": 2000,
+  "models": [
+    "base_rate",
+    "A_logreg",
+    "A_gbm",
+    "physics_raw",
+    "physics_platt",
+    "B_logreg",
+    "B_gbm",
+    "C_logreg",
+    "C_gbm",
+    "abl_A+defender_only_logreg",
+    "abl_A+target_geometry_logreg"
+  ],
+  "comparisons": [
+    [
+      "A_logreg",
+      "B_logreg"
+    ],
+    [
+      "A_gbm",
+      "B_gbm"
+    ],
+    [
+      "B_gbm",
+      "C_gbm"
+    ],
+    [
+      "A_logreg",
+      "abl_A+defender_only_logreg"
+    ],
+    [
+      "A_logreg",
+      "abl_A+target_geometry_logreg"
+    ],
+    [
+      "A_logreg",
+      "physics_platt"
+    ]
+  ],
+  "calibration": [
+    "A_logreg",
+    "B_logreg",
+    "physics_raw"
+  ],
+  "importances": [
+    "B_logreg"
+  ]
 }
