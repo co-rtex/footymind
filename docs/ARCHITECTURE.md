@@ -4,19 +4,47 @@ FootyMind 2.0 is a **modular monolith**: one Python package (`footymind`) behind
 FastAPI process, plus a static TypeScript frontend (`web/`) that the same process can
 serve. There is no database server, cache, queue or microservice. ADR-0001 explains why.
 
-```
-                 ┌────────────────────────── footymind (Python) ───────────────────────────┐
- Metrica raw ──► │ data.sources ─► tracking.metrica ─► data.quality ─► data.store (bundles) │
- (pinned SHA256) │                    │ canonical model (tracking.model, coords, kinematics)│
-                 │                    ▼                                                     │
-                 │ spatial.state ─► spatial.pitch_control / lanes ─► spatial.analysis       │
-                 │                    │                                                     │
-                 │                    ├─► counterfactual.scenario (Possession Multiverse)   │
-                 │                    └─► research.pass_dataset ─► research.evaluate/runner │
-                 │ api.app (FastAPI, typed schemas) ◄────────────────────────────────────── │
-                 └──────────────────────────────────────┬──────────────────────────────────┘
-                                                        │ JSON (/api/*), static (/)
-                                                web/ (Vite + React + Canvas)
+```mermaid
+flowchart LR
+  subgraph Sources["Pinned sources (SHA-256)"]
+    M[Metrica CSV / EPTS<br/>25 Hz optical]
+    S[SkillCorner JSONL<br/>10 Hz broadcast]
+  end
+  subgraph Ingest["Ingestion"]
+    A1[tracking.metrica<br/>tracking.metrica_epts]
+    A2[tracking.skillcorner<br/>+ detected mask]
+    Q[data.quality<br/>sync + direction gates]
+    B[(data.store bundles<br/>npz + parquet + manifest)]
+  end
+  subgraph Engine["Analytics engine"]
+    FS[spatial.state<br/>FrameState + provenance]
+    PC[spatial.pitch_control<br/>spatial.lanes]
+    OM[spatial.option_model<br/>per-provider JSON + bootstrap]
+    AN[spatial.analysis]
+    SC[counterfactual.scenario<br/>feasibility + ensemble]
+    GV[ghost.defensive_shadow<br/>ghost.run_value]
+  end
+  subgraph Research["Research (offline)"]
+    DS[research.pass_dataset<br/>rules v1/v2]
+    EV[research.evaluate / runner<br/>LOMO + bootstrap]
+    R[(experiments/results<br/>committed JSON)]
+  end
+  API[api.app FastAPI<br/>typed schemas]
+  WEB[web/ Vite + React<br/>Canvas lab]
+  M --> A1 --> Q
+  S --> A2 --> Q
+  Q --> B --> FS
+  FS --> PC --> AN
+  OM --> AN
+  AN --> SC
+  AN --> GV
+  B --> DS --> EV --> R
+  DS -. trains .-> OM
+  AN --> API
+  SC --> API
+  GV --> API
+  B --> API
+  API --> WEB
 ```
 
 ## Modules
@@ -27,6 +55,7 @@ serve. There is no database server, cache, queue or microservice. ADR-0001 expla
 | `tracking.model` | `TrackingData`, `PlayerInfo`, `PitchSpec`, `Provenance` | done |
 | `tracking.coords` | Provider ↔ canonical transforms; attacking-frame rotation | done |
 | `tracking.metrica`, `tracking.metrica_epts` | Metrica CSV (games 1–2) and EPTS/JSON (game 3) adapters | done |
+| `tracking.skillcorner` | SkillCorner broadcast adapter (10 fps; `detected` mask; dynamic-event pass mapping) | done |
 | `tracking.kinematics` | causal / centred velocity; implausible-motion flags | done |
 | `tracking.possessions` | event-based possession segmentation | done (v1 rules) |
 | `data.quality` | quality report and ingestion gates (sync, ids, frames) | done |
@@ -34,12 +63,13 @@ serve. There is no database server, cache, queue or microservice. ADR-0001 expla
 | `spatial.state` | `FrameState` at a frame: velocities, GK, possession team, carrier | done |
 | `spatial.pitch_control` | PPCF time-to-intercept model (Spearman 2018) | done, uncalibrated |
 | `spatial.lanes` | lane geometry + heuristic interception | done, uncalibrated |
-| `spatial.option_features`, `spatial.option_model` | shared per-option features; JSON-serialised calibrated option model | done (v1) |
+| `spatial.option_features`, `spatial.option_model` | shared per-option features (incl. lead-pass targets); per-provider JSON option models with bootstrap members; never pooled | done (v2) |
 | `spatial.analysis` | frame analysis: control grid, pass options (physics + option model), pressure | done |
-| `counterfactual.scenario` | constrained interventions, response rule, parameter ensemble | done (v1) |
-| `research.*` | pass-outcome dataset, model families, LOMO evaluation, runner | done (v1) |
+| `counterfactual.scenario` | constrained interventions, final-state feasibility (user + simulated moves), response rule, uncertainty ensemble | done |
+| `ghost.defensive_shadow`, `ghost.run_value` | experimental model-based sensitivities (partly / negatively validated) | experimental |
+| `research.*` | pass-outcome dataset (rules v1/v2), decision-time and action-conditioned families, LOMO evaluation, physics calibration, shadow/run-value validation, figures, failure modes | done |
 | `api.app`, `api.schemas` | HTTP contract | done |
-| `web/` | replay + analysis + scenario UI | in progress (see CURRENT_STATE) |
+| `web/` | replay, analysis, scenario editing, deep links, Defensive Shadow layer, broadcast provenance styling | done |
 
 ## Coordinates
 
@@ -71,9 +101,9 @@ every analytical field in the API and must be shown in the UI.
 
 | Label | Meaning | Examples |
 |---|---|---|
-| observed | provider measurement after fixed unit conversion | positions, ball |
+| observed | provider measurement after fixed unit conversion | positions, ball (detected) |
 | derived | deterministic function of observations | causal velocity, lane distances, pressure |
-| estimated | model output with assumptions/parameters | pitch control, p_success |
+| estimated | model output with assumptions/parameters, **or a provider extrapolation** | pitch control, p_success, off-camera broadcast positions |
 | hypothetical | user-specified intervention | a relocated defender |
 | simulated | produced by a response policy | marker following a moved attacker |
 
