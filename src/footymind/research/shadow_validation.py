@@ -32,11 +32,18 @@ from footymind.research.pass_dataset import DatasetConfig, label_events
 from footymind.research.shadow_stability import lane_presence
 from footymind.spatial.state import frame_state
 
-MAX_RECOVERY_DELAY_FRAMES = 50  # 2 s at 25 Hz
+MAX_RECOVERY_DELAY_S = 2.0  # pre-specified on Metrica; a time, not a frame count
+
+
+def recovery_window_frames(fps: float) -> int:
+    """The recovery window in frames at this provider's frame rate (50 at 25 Hz, 20 at 10 fps)."""
+    return round(MAX_RECOVERY_DELAY_S * fps)
 
 
 def intercepted_passes(match_id: str) -> pl.DataFrame:
-    ev = load_match(match_id).events.sort(["start_frame", "event_id"])
+    bundle = load_match(match_id)
+    window = recovery_window_frames(bundle.tracking.fps)
+    ev = bundle.events.sort(["start_frame", "event_id"])
     att = label_events(ev, DatasetConfig()).filter(pl.col("type") == "BALL LOST")
     rec = ev.filter(pl.col("type") == "RECOVERY").select(
         pl.col("start_frame").alias("rec_frame"),
@@ -48,7 +55,7 @@ def intercepted_passes(match_id: str) -> pl.DataFrame:
         f = int(r["start_frame"])
         nxt = rec.filter(
             (pl.col("rec_frame") >= f)
-            & (pl.col("rec_frame") <= f + MAX_RECOVERY_DELAY_FRAMES)
+            & (pl.col("rec_frame") <= f + window)
             & (pl.col("rec_team") != r["team"])
         ).head(1)
         if nxt.height and nxt["interceptor"][0] is not None:

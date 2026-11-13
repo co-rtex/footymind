@@ -105,3 +105,11 @@ def test_shadow_endpoint() -> None:
         if d["most_suppressed_receiver"] is not None:
             assert d["most_suppressed_delta"] > 0
     assert all(isinstance(d["distinguishable_from_noise"], bool) for d in j["defenders"])
+
+
+def test_recovery_window_is_a_time_not_a_frame_count() -> None:
+    # Regression: a 50-frame window meant 2 s on Metrica (25 Hz) but 5 s on SkillCorner (10 fps).
+    from footymind.research.shadow_validation import recovery_window_frames
+
+    assert recovery_window_frames(25.0) == 50
+    assert recovery_window_frames(10.0) == 20
