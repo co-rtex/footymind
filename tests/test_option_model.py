@@ -65,6 +65,6 @@ def test_dataset_features_equal_serving_features() -> None:
 def test_packaged_model_loads_and_is_documented() -> None:
     m = load_default()
     assert m is not None
-    assert m.features == OPTION_FEATURES
+    assert m.features == OPTION_FEATURES_V2
     assert m.meta["n_train"] > 1000 and "lomo_pooled" in m.meta
     assert pl.Series(m.coef).is_finite().all()

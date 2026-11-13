@@ -51,7 +51,11 @@ OPTION_FEATURES = [
 # (lead-pass) position. Adopted only if it beats v1 in LOMO (docs/RESEARCH.md).
 OPTION_FEATURES_V2 = [*OPTION_FEATURES, "lead_ppcf", "lead_p_lane_clear", "lead_marker_dist_m"]
 
-MODEL_RESOURCE = "option_model_v1.json"
+# Serving model: v2 was adopted after the pre-specified LOMO comparison
+# (experiments/results/option_model_v2_lead and pass_outcome_v3). option_model_v1.json is
+# kept as a historical artefact.
+SERVING_FEATURES = OPTION_FEATURES_V2
+MODEL_RESOURCE = "option_model_v2.json"
 
 
 @dataclass(frozen=True)
