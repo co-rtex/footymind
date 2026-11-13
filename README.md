@@ -51,7 +51,8 @@ Metrica (3 matches, optical, 25 Hz) and SkillCorner (20 A-League matches, broadc
 * **Negative results:** the literature physics model is poorly calibrated (ECE 0.17), and
   fitting its parameters drives them to implausible bounds, so it is structurally
   misspecified. The experimental *Defensive Shadow* metric is robust to tracking noise and
-  finds interceptors at 2× chance, but it is **not** better than "nearest defender".
+  finds interceptors at 2× chance on Metrica, but it is **not** better than "nearest defender", and
+  the check does not replicate on SkillCorner, where even the nearest-defender baseline is at chance.
 
 ![Cross-provider replication of the main effects](docs/figures/replication_v1.png)
 

@@ -433,6 +433,25 @@ not checked for reachability. The shadow must not be presented as identifying th
 who stops passes. It remains an *explanatory sensitivity* quantity under the model. Its
 parameters are deliberately left unchanged so they are not tuned on this evaluation.
 
+**SkillCorner check (`experiments/results/shadow_validation_v1_skillcorner`, rev 8709f5e).**
+The same test on the first 8 SkillCorner matches (563 intercepted passes; the cap is
+recorded in the results) does **not** replicate the signal:
+
+| ranking | top-1 hit [95% CI] | top-3 hit [95% CI] |
+|---|---|---|
+| chance | 0.100 | 0.300 |
+| Defensive Shadow | 0.078 [0.057, 0.101] | 0.297 [0.259, 0.334] |
+| nearest defender to the ball | 0.066 [0.046, 0.089] | 0.290 [0.254, 0.329] |
+| lane presence | 0.060 [0.041, 0.080] | 0.211 [0.179, 0.247] |
+
+Even the proximity baseline is at chance, so on this provider the test does not discriminate
+between methods. That is a property of the evaluation, not evidence for or against the
+shadow. The cause has **not** been diagnosed. Candidates are the interceptor label (taken
+from the adapter-v2 RECOVERY event at the start of the next possession, which may not be the
+player who touched the ball first) and extrapolated off-camera positions at the release
+frame. Until the label is checked, the Metrica result (C17) is the only outcome evidence,
+and it is single-provider (C29).
+
 ## Ghost Value for attackers: run value (`ghost/run_value.py`, experimental)
 
 **Definition (pre-specified).** For each non-carrier attacker, the change in their
@@ -533,6 +552,7 @@ as for the Metrica example.
 
 ## Log
 * **2026-11-13**: Second independent review (SkillCorner): C23 held but its baseline lacked context. Adapter v2 / pipeline 2. Restated replication −0.021 [−0.025, −0.018], 20/20.
+* **2026-11-13**: Defensive Shadow outcome validation on SkillCorner (8 matches): shadow *and* the nearest-defender baseline are both at chance, so the test is uninformative on broadcast tracking (cause undiagnosed). The Metrica evidence stays single-provider.
 * **2026-11-13**: Run value replicated on SkillCorner: tiny positive association (+0.004) but at-chance ranking. The negative result is confirmed. Decision-time importance: defensive structure relative to the ball and attacking width.
 * **2026-11-13**: SkillCorner (20 A-League matches, broadcast) integrated. Cross-provider replication: the decision-time spatial gain replicates (−0.024 vs −0.026; 20/20 matches); interaction features show a small significant gain with 4× the data.
 * **2026-11-13**: Run value (off-ball Ghost Value v1): small positive association with being chosen (+0.012 [+0.005, +0.019]) but weak as a ranking (top-1 0.134 vs availability 0.249). Mostly negative result, recorded without tuning.
