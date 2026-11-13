@@ -70,6 +70,19 @@ test.describe("desktop", () => {
   });
 });
 
+test.describe("desktop, experimental layer", () => {
+  test.use({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: DPR });
+
+  test("defensive shadow at the featured frame", async ({ page }) => {
+    await page.goto("/#/lab/metrica-sample-1%3Ap0163?f=53708");
+    await expect(page.getByTestId("analysis-panel")).toHaveAttribute("data-frame", "53708");
+    await page.getByRole("checkbox", { name: "Defensive shadow (experimental)" }).check();
+    await expect(page.getByTestId("shadow-panel")).toHaveAttribute("data-frame", "53708", { timeout: 30_000 });
+    await page.mouse.move(0, 0);
+    await page.screenshot({ path: `${DIR}/defensive-shadow-desktop.png` });
+  });
+});
+
 test.describe("narrow", () => {
   test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: DPR, isMobile: false, hasTouch: false });
 
