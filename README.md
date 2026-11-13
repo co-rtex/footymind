@@ -10,8 +10,9 @@ lets you *move a player* to see how the model's picture of the play changes. The
 hypothetical is checked against physical reachability, shown side by side with the
 observed state, and reported with its sensitivity to the model's assumptions.
 
-> Status (2026-11-13): end-to-end flagship flow working on real data. That covers the replay,
-> pause-and-analyse, dragging a player, comparing with uncertainty, and resetting. See
+> Status (2026-11-13): end-to-end flagship flow working on real data from two providers (23
+> matches). That covers the replay, pause-and-analyse, dragging a player, comparing with
+> uncertainty, and resetting. The main research result is replicated across providers. See
 > [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md).
 
 ![Frame analysis: pitch control, ranked pass options with calibrated and physics estimates](web/screenshots/lab-analysis-desktop.png)
@@ -64,7 +65,10 @@ and the [claims ledger](docs/CLAIMS_LEDGER.md).
 * **Provenance on everything.** Each value is *observed*, *derived*, *estimated*,
   *hypothetical* or *simulated*, and the API and UI keep these distinct.
 * **No fabricated observations.** Unobserved positions are `null`. Tracking artefacts are
-  flagged, not smoothed away.
+  flagged, not smoothed away. Broadcast positions that the provider extrapolated off camera are
+  labelled *estimated* and drawn hollow, never presented as observed.
+* **Providers are never pooled.** Metrica and SkillCorner differ in frame rate, visibility and
+  labels, so each is evaluated separately and has its own option model.
 * **No leakage.** Decision-time features use causal velocities only. Failed-pass end
   locations, which are the *loss location* in Metrica, are excluded.
 * **Counterfactuals are not causal claims.** Scenarios are model-based comparisons with
