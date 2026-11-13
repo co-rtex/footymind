@@ -90,7 +90,9 @@ def analyze(
     state: FrameState,
     params: PitchControlParams = DEFAULT_PARAMS,
     grid: Grid | None = DEFAULT_GRID,
+    model_member: int | None = None,
 ) -> FrameAnalysis:
+    """``model_member`` selects an option-model bootstrap member (None = point estimate)."""
     warnings: list[str] = []
     if state.attacking_team is None:
         return FrameAnalysis(state, params, None, None, [], None, None, None, ["no possession"])
@@ -123,7 +125,7 @@ def analyze(
         third = centres[:, 0] * state.attack_sign > grid.length / 6
         area_ft = float(np.nansum(control[third]) * cell)
 
-    options = pass_options(state, params) if not np.isnan(state.ball).any() else []
+    options = pass_options(state, params, model_member) if not np.isnan(state.ball).any() else []
     if state.carrier is None and not np.isnan(state.ball).any():
         warnings.append(
             "no attacking player within 1.5 m of the ball (ball in flight or loose); "
@@ -143,7 +145,9 @@ def analyze(
 
 
 def pass_options(
-    state: FrameState, params: PitchControlParams = DEFAULT_PARAMS
+    state: FrameState,
+    params: PitchControlParams = DEFAULT_PARAMS,
+    model_member: int | None = None,
 ) -> list[PassOption]:
     att, dfn = _teams(state)
     on = state.on_pitch()
@@ -174,7 +178,7 @@ def pass_options(
             state.carrier,
             params,
         )
-        p_model = [float(v) for v in model.predict(rows)]
+        p_model = [float(v) for v in model.predict(rows, member=model_member)]
     out = []
     for k, i in enumerate(receivers):
         tgt = state.xy[i]
