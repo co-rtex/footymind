@@ -214,3 +214,14 @@ def test_simulated_moves_are_feasibility_checked(pass_frame: tuple[int, str, str
     sim_feas = [fz for fz in r.feasibility if fz.kind == "simulated"]
     assert len(sim_feas) == len(sim_moves)
     assert {fz.player_id for fz in sim_feas} == {m.player_id for m in sim_moves}
+
+
+def test_match_list_is_fast_and_does_not_load_tracking(client: TestClient) -> None:
+    """Regression: summaries used to load every tracking bundle (~2.5 s with 23 matches)."""
+    import time
+
+    client.get("/api/matches")  # warm manifest cache
+    t0 = time.perf_counter()
+    r = client.get("/api/matches")
+    assert r.status_code == 200 and len(r.json()) >= 1
+    assert time.perf_counter() - t0 < 0.5

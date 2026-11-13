@@ -110,6 +110,17 @@ def analyze(
         )
     if np.isnan(state.ball).any():
         warnings.append("ball position not observed at this frame; pass options unavailable")
+    n_est = sum(
+        1
+        for k, prov in enumerate(state.position_provenance)
+        if prov == Provenance.ESTIMATED and on[k]
+    )
+    if n_est:
+        warnings.append(
+            f"{n_est} of {int(on.sum())} player positions are provider extrapolations (off "
+            "camera, not observed); pitch control and pass-option estimates inherit that "
+            "uncertainty"
+        )
 
     ap, av = state.xy[att], state.vel[att]
     dp, dv = state.xy[dfn], state.vel[dfn]

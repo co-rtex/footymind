@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import math
 import os
 import time
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
@@ -18,10 +20,16 @@ from fastapi.staticfiles import StaticFiles
 from footymind import __version__
 from footymind.api import schemas as S
 from footymind.counterfactual.scenario import REACH_SPEED_MPS, Intervention, run_scenario
-from footymind.data.store import MatchBundle, StaleBundleError, available_matches, load_match
+from footymind.data.store import (
+    PIPELINE_VERSION,
+    MatchBundle,
+    StaleBundleError,
+    available_matches,
+    load_match,
+)
 from footymind.ghost.defensive_shadow import NOISE_FLOOR as SHADOW_NOISE_FLOOR
 from footymind.ghost.defensive_shadow import defensive_shadow
-from footymind.paths import REPO_ROOT
+from footymind.paths import PROCESSED_DIR, REPO_ROOT
 from footymind.spatial.analysis import FrameAnalysis, analyze
 from footymind.spatial.option_model import load_default
 from footymind.spatial.pitch_control import DEFAULT_GRID, DEFAULT_PARAMS
@@ -113,8 +121,12 @@ def list_matches() -> list[S.MatchSummary]:
 
 @app.get("/api/matches/{match_id}", response_model=S.MatchSummary)
 def match_summary(match_id: str) -> S.MatchSummary:
-    b = _bundle(match_id)
-    q = b.manifest["quality"]["tracking"]
+    # Built from the small manifest only: loading every tracking bundle here made
+    # /api/matches take ~2.5 s per call with 23 matches (bundle LRU cache thrashing).
+    if match_id not in available_matches():
+        raise HTTPException(404, f"unknown match {match_id!r}")
+    m = _manifest(match_id)
+    q = m["quality"]["tracking"]
     periods = [
         S.PeriodInfo(
             period=int(k),
@@ -125,16 +137,30 @@ def match_summary(match_id: str) -> S.MatchSummary:
         )
         for k, v in sorted(q["periods"].items())
     ]
+    p = m["provenance"]
     return S.MatchSummary(
         match_id=match_id,
-        source=_source(b),
-        fps=b.tracking.fps,
-        n_frames=b.tracking.n_frames,
+        source=S.SourceInfo(
+            provider=p["provider"],
+            name=p["source_name"],
+            url=p["source_url"],
+            license_note=p["license_note"],
+        ),
+        fps=float(m["fps"]),
+        n_frames=int(q["n_frames"]),
         periods=periods,
-        n_possessions=b.possessions.height,
-        n_events=b.events.height,
-        pitch=S.Pitch(length=b.tracking.pitch.length, width=b.tracking.pitch.width),
+        n_possessions=int(m["counts"]["possessions"]),
+        n_events=int(m["counts"]["events"]),
+        pitch=S.Pitch(length=float(m["pitch"]["length"]), width=float(m["pitch"]["width"])),
     )
+
+
+@lru_cache(maxsize=256)
+def _manifest(match_id: str) -> dict[str, Any]:
+    m: dict[str, Any] = json.loads((PROCESSED_DIR / match_id / "manifest.json").read_text())
+    if m["pipeline_version"] != PIPELINE_VERSION:
+        raise HTTPException(503, f"{match_id}: stale bundle; re-run `footymind ingest {match_id}`")
+    return m
 
 
 @app.get("/api/matches/{match_id}/possessions", response_model=list[S.PossessionSummary])

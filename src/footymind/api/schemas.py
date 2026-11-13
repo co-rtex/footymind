@@ -115,8 +115,10 @@ class Replay(BaseModel):
         None,
         description=(
             "length n_frames * n_players, row-major [frame][player]; false where the provider "
-            "extrapolated a position outside the camera view (provenance 'estimated'); null "
-            "when every non-null position is observed (optical tracking)"
+            "extrapolated a position outside the camera view (provenance 'estimated') and also "
+            "where the position is null (player absent); null when every non-null position is "
+            "observed (optical tracking). time_s is provider time: build a match clock from "
+            "MatchSummary.periods[].first_frame (SkillCorner periods do not start at 0)"
         ),
     )
     ball_xy: list[float | None]

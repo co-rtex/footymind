@@ -167,7 +167,14 @@ def frame_state(match_id: str, frame: int) -> FrameState:
         position_provenance=(
             [Provenance.OBSERVED] * len(td.players)
             if td.detected is None
-            else [Provenance.OBSERVED if bool(d) else Provenance.ESTIMATED for d in td.detected[i]]
+            else [
+                # Only a *present* but undetected position is an estimate. An absent player (NaN,
+                # e.g. not on the pitch) has no position, exactly as with optical tracking.
+                Provenance.ESTIMATED
+                if (not bool(d) and not np.isnan(xy[k, 0]))
+                else Provenance.OBSERVED
+                for k, d in enumerate(td.detected[i])
+            ]
         ),
         velocity_provenance=vprov,
     )
