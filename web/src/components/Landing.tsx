@@ -15,6 +15,20 @@ interface Props {
 
 type TeamFilter = "all" | Team;
 
+/**
+ * A curated, verified example (docs/RESEARCH.md, "Featured scenario"). Numbers quoted in the
+ * card are from option model v1 and are recomputed live when the link is opened.
+ */
+const FEATURED = {
+  matchId: "metrica-sample-1",
+  href: routeHash({
+    name: "lab",
+    possessionId: "metrica-sample-1:p0163",
+    frame: 53708,
+    moves: [{ player_id: "home_9", x: 50.7, y: -8.75 }],
+  }),
+};
+
 export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Props) {
   return (
     <div className="landing">
@@ -36,6 +50,27 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
             <span className="step-n">3</span>Pause to analyse, then edit a scenario
           </li>
         </ol>
+      </section>
+
+      <section className="panel featured" aria-labelledby="featured-title">
+        <div className="featured-body">
+          <p className="eyebrow">Featured scenario · Game 1 · P1 35:48</p>
+          <h2 id="featured-title" className="h-section">
+            One pressing position, one risky pass
+          </h2>
+          <p className="muted">
+            Away build up from deep under a high press. Home #9 is the only defender whose position measurably suppresses
+            passing value here (Defensive Shadow above the noise floor). Moving him 3.5 m, within the region he could
+            have reached, raises the option model&apos;s estimate for the pass that was actually played (#17 → #18) from
+            about 0.48 to 0.77. All 24 ensemble members agree on the direction.
+          </p>
+          <p className="small muted">
+            A model-based what-if under stated assumptions, not a claim about what would have happened in the match.
+          </p>
+        </div>
+        <a className="btn btn--primary featured-cta" href={FEATURED.href} data-testid="featured-link">
+          Open this scenario
+        </a>
       </section>
 
       <section className="panel" aria-labelledby="match-title">
@@ -165,7 +200,7 @@ function PossessionRow({ p, match, onOpen }: { p: PossessionSummary; match: Matc
   const clock = fmtClock(matchClockSeconds(p.start_time_s, p.period, match.periods, match.fps));
   const first = titleCase(p.first_type);
   const last = [titleCase(p.last_type), p.last_subtype ? `(${titleCase(p.last_subtype)})` : ""].filter(Boolean).join(" ");
-  const label = `${teamLabel(p.team)} possession, period ${p.period}, ${clock}, ${p.n_passes} passes${p.has_goal ? ", goal" : p.has_shot ? ", shot" : ""}`;
+  const label = `${teamLabel(p.team)} possession, period ${p.period}, ${clock}, ${p.n_passes} ${p.n_passes === 1 ? "pass" : "passes"}${p.has_goal ? ", goal" : p.has_shot ? ", shot" : ""}`;
   return (
     <tr className="row-link" onClick={() => onOpen(p.possession_id)}>
       <td>

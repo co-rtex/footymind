@@ -89,6 +89,23 @@ describe("routing", () => {
     expect(parseRoute("")).toEqual({ name: "home", matchId: null });
   });
 
+  it("parses and round-trips deep-linked frames and scenario moves", () => {
+    const r = {
+      name: "lab" as const,
+      possessionId: "metrica-sample-1:p0163",
+      frame: 53708,
+      moves: [{ player_id: "home_9", x: 50.7, y: -8.75 }],
+    };
+    const h = routeHash(r);
+    expect(h).toBe("#/lab/metrica-sample-1%3Ap0163?f=53708&move=home_9,50.7,-8.75");
+    expect(parseRoute(h)).toEqual(r);
+    // invalid optional parameters are dropped, not guessed
+    expect(parseRoute("#/lab/x%3Ap1?f=abc&move=home_9,999,0&move=home_2,1,nope")).toEqual({
+      name: "lab",
+      possessionId: "x:p1",
+    });
+  });
+
   it("finds replay indices by frame", () => {
     const frames = Int32Array.from([10, 12, 14, 16]);
     expect(indexOfFrame(frames, 5)).toBe(0);

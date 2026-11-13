@@ -56,7 +56,14 @@ export function App() {
             detail="Run the ingestion pipeline (footymind ingest) and restart the API."
           />
         ) : route.name === "lab" ? (
-          <Lab key={route.possessionId} possessionId={route.possessionId} match={match} onBack={goHome} />
+          <Lab
+            key={route.possessionId}
+            possessionId={route.possessionId}
+            match={match}
+            onBack={goHome}
+            initialFrame={route.frame}
+            initialMoves={route.moves}
+          />
         ) : (
           <Landing
             matches={matches.data}

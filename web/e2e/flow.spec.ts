@@ -103,3 +103,15 @@ test("possession list loads with attribution and filters", async ({ page }) => {
   expect(shots).toBeGreaterThan(0);
   await expect(rows.locator(".badge--shot, .badge--goal")).toHaveCount(shots);
 });
+
+test("featured deep link opens a paused, physically supported scenario", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("featured-link").click();
+  await expect(page).toHaveURL(/#\/lab\/metrica-sample-1%3Ap0163\?f=53708&move=home_9,50.7,-8.75/);
+  const deltas = page.getByTestId("option-deltas");
+  await expect(deltas).toBeVisible({ timeout: 30_000 });
+  // The pass actually played (#17 -> #18) is the largest change and it is robust.
+  await expect(deltas.locator("tbody tr").first()).toContainText("#18");
+  await expect(deltas.locator("tbody tr").first()).toContainText("robust");
+  await expect(page.getByText("Physically plausible edit")).toBeVisible();
+});

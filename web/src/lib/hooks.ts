@@ -58,19 +58,57 @@ export function useHash(): [string, (h: string) => void] {
   return [hash, go];
 }
 
-export type Route = { name: "home"; matchId: string | null } | { name: "lab"; possessionId: string };
+/** A deep-linkable scenario move: player relocated to canonical (x, y) metres. */
+export interface RouteMove {
+  player_id: string;
+  x: number;
+  y: number;
+}
 
+export type Route =
+  | { name: "home"; matchId: string | null }
+  | { name: "lab"; possessionId: string; frame?: number; moves?: RouteMove[] };
+
+/**
+ * Hash routes:
+ *   #/match/<matchId>
+ *   #/lab/<possessionId>[?f=<frame>][&move=<player_id>,<x>,<y>]...
+ * Invalid optional parameters are ignored, never guessed.
+ */
 export function parseRoute(hash: string): Route {
   const h = hash.replace(/^#\/?/, "");
-  const [head, ...rest] = h.split("/");
+  const [path = "", query = ""] = h.split("?", 2);
+  const [head, ...rest] = path.split("/");
   const arg = rest.join("/");
-  if (head === "lab" && arg) return { name: "lab", possessionId: decodeURIComponent(arg) };
+  if (head === "lab" && arg) {
+    const route: Route = { name: "lab", possessionId: decodeURIComponent(arg) };
+    const params = new URLSearchParams(query);
+    const f = Number(params.get("f"));
+    if (params.has("f") && Number.isInteger(f) && f > 0) route.frame = f;
+    const moves: RouteMove[] = [];
+    for (const m of params.getAll("move")) {
+      const [pid, xs, ys] = m.split(",");
+      const x = Number(xs);
+      const y = Number(ys);
+      if (pid && Number.isFinite(x) && Number.isFinite(y) && Math.abs(x) <= 60 && Math.abs(y) <= 40) {
+        moves.push({ player_id: pid, x, y });
+      }
+    }
+    if (moves.length) route.moves = moves.slice(0, 4);
+    return route;
+  }
   if (head === "match" && arg) return { name: "home", matchId: decodeURIComponent(arg) };
   return { name: "home", matchId: null };
 }
 
 export function routeHash(r: Route): string {
-  if (r.name === "lab") return `#/lab/${encodeURIComponent(r.possessionId)}`;
+  if (r.name === "lab") {
+    const params = new URLSearchParams();
+    if (r.frame !== undefined) params.set("f", String(r.frame));
+    for (const m of r.moves ?? []) params.append("move", `${m.player_id},${m.x},${m.y}`);
+    const q = params.toString();
+    return `#/lab/${encodeURIComponent(r.possessionId)}${q ? `?${q.replace(/%2C/g, ",")}` : ""}`;
+  }
   return r.matchId ? `#/match/${encodeURIComponent(r.matchId)}` : "#/";
 }
 

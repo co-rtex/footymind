@@ -294,6 +294,28 @@ under the model. The parameters are deliberately left unchanged to avoid tuning 
 evaluation. Next: evaluate on held-out data with direction-aware variants, and test
 team-level shadow as a pass-failure predictor beyond Model B.
 
+## Featured Possession Multiverse example (verified 2026-11-13)
+
+Selection procedure (`scratchpad` search, reproducible via the API): 140 randomly sampled
+pass starts in Game 1. For each, the defender with the largest Defensive Shadow was moved to
+each of their 8 reachable alternatives. Only physically supported scenarios with robust
+sign were kept. The example below has the largest delta *on the pass that was actually played*.
+
+* Game 1, P1 35:48 (frame 53708, possession `metrica-sample-1:p0163`). Away are building up
+  from deep near their own goal under a high press. away_17 plays to away_18, the pass is
+  completed, and away_18 then loses the ball.
+* Home #9 has Defensive Shadow 0.27. He is the only defender above the 0.025 noise floor.
+* Intervention: home_9 moves 3.5 m to (50.7, −8.75). It is reachable from his position 1.5 s
+  earlier, so the scenario is supported.
+* Option model v1: the pass to away_18 rises from 0.48 [p10–p90 0.42–0.53] to 0.77
+  [0.73–0.82]. 24/24 ensemble members (physics parameters × coefficient bootstrap) agree on
+  the sign.
+* Deep link: `#/lab/metrica-sample-1%3Ap0163?f=53708&move=home_9,50.7,-8.75`
+  (the landing page shows it as "Featured scenario").
+
+This is a model-based what-if. It is consistent with the press making that pass risky, but
+it is not evidence of what would have happened.
+
 ## Prior art and references
 * Spearman, W., Basye, A., Dick, G., Hotovy, R., Pop, P. (2017). *Physics-Based Modeling of Pass Probabilities in Soccer.* MIT Sloan Sports Analytics Conference.
 * Spearman, W. (2018). *Beyond Expected Goals.* MIT Sloan SAC. (Pitch control; off-ball scoring opportunity.)

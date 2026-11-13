@@ -30,9 +30,13 @@ interface Props {
   possessionId: string;
   match: MatchSummary | null;
   onBack: () => void;
+  /** Deep link: provider frame to open paused at (must lie inside the replay window). */
+  initialFrame?: number;
+  /** Deep link: scenario moves to apply on open (opens in edit mode, difference view). */
+  initialMoves?: InterventionIn[];
 }
 
-export function Lab({ possessionId, match, onBack }: Props) {
+export function Lab({ possessionId, match, onBack, initialFrame, initialMoves }: Props) {
   const replay = useAsync<ReplayData>(`replay:${possessionId}`, (signal) => api.possessionReplay(possessionId, signal));
   if (replay.status === "error") {
     return (
@@ -50,7 +54,15 @@ export function Lab({ possessionId, match, onBack }: Props) {
       </div>
     );
   }
-  return <LabView replay={replay.data} match={match} onBack={onBack} />;
+  return (
+    <LabView
+      replay={replay.data}
+      match={match}
+      onBack={onBack}
+      initialFrame={initialFrame}
+      initialMoves={initialMoves}
+    />
+  );
 }
 
 function BackButton({ onBack }: { onBack: () => void }) {
@@ -69,11 +81,32 @@ const HORIZON_S = 1.5;
 const ENSEMBLE = 24;
 const NO_PENDING: ReadonlyMap<string, { x: number; y: number }> = new Map();
 
-function LabView({ replay, match, onBack }: { replay: ReplayData; match: MatchSummary | null; onBack: () => void }) {
+function LabView({
+  replay,
+  match,
+  onBack,
+  initialFrame,
+  initialMoves,
+}: {
+  replay: ReplayData;
+  match: MatchSummary | null;
+  onBack: () => void;
+  initialFrame?: number;
+  initialMoves?: InterventionIn[];
+}) {
   const players = useMemo(() => new Map<string, PlayerOut>(replay.players.map((p) => [p.player_id, p])), [replay]);
-  const startIdx = useMemo(
-    () => (replay.possession ? indexOfFrame(replay.frame, replay.possession.start_frame) : 0),
-    [replay],
+  const startIdx = useMemo(() => {
+    const first = replay.frame[0];
+    const last = replay.frame[replay.frame.length - 1];
+    if (initialFrame !== undefined && first !== undefined && last !== undefined && initialFrame >= first && initialFrame <= last) {
+      return indexOfFrame(replay.frame, initialFrame);
+    }
+    return replay.possession ? indexOfFrame(replay.frame, replay.possession.start_frame) : 0;
+  }, [replay, initialFrame]);
+  // Deep-linked moves only apply to players present in this replay.
+  const linkedMoves = useMemo(
+    () => (initialMoves ?? []).filter((m) => replay.players.some((p) => p.player_id === m.player_id)),
+    [initialMoves, replay],
   );
   const playback = useMemo(() => {
     const pb = new Playback(replay.nFrames, replay.fps, replay.step);
@@ -87,12 +120,12 @@ function LabView({ replay, match, onBack }: { replay: ReplayData; match: MatchSu
   const [playing, setPlaying] = useState(false);
   const [index, setIndex] = useState(startIdx);
   const [speed, setSpeed] = useState(1);
-  const [mode, setMode] = useState<Mode>("analyse");
+  const [mode, setMode] = useState<Mode>(linkedMoves.length ? "edit" : "analyse");
   const [layers, setLayers] = useState<Layers>({ control: true, passes: true, pressure: true, trails: true });
-  const [view, setView] = useState<ScenarioView>("observed");
+  const [view, setView] = useState<ScenarioView>(linkedMoves.length ? "difference" : "observed");
   const [selected, setSelected] = useState<string | null>(null);
   const [highlight, setHighlight] = useState<string | null>(null);
-  const [interventions, setInterventions] = useState<InterventionIn[]>([]);
+  const [interventions, setInterventions] = useState<InterventionIn[]>(linkedMoves);
   const [policy, setPolicy] = useState<ResponsePolicy>("none");
   const [valueModel, setValueModel] = useState<ValueModel>("option_model");
   const [dragWarn, setDragWarn] = useState<{ outside: boolean | null; id: string } | null>(null);
@@ -436,7 +469,7 @@ function LabView({ replay, match, onBack }: { replay: ReplayData; match: MatchSu
           </h1>
           {poss ? (
             <p className="muted small">
-              {poss.duration_s.toFixed(1)} s · {poss.n_passes} passes · {titleCase(poss.first_type)} →{" "}
+              {poss.duration_s.toFixed(1)} s · {poss.n_passes} {poss.n_passes === 1 ? "pass" : "passes"} · {titleCase(poss.first_type)} →{" "}
               {titleCase(poss.last_type)}
               {poss.last_subtype ? ` (${titleCase(poss.last_subtype)})` : ""}
               {poss.has_goal ? <span className="badge badge--goal">Goal</span> : poss.has_shot ? <span className="badge badge--shot">Shot</span> : null}
