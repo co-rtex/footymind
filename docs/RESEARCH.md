@@ -109,7 +109,9 @@ pooled. The receiver inference reaches 72.4% top-1.
    evidence for a graph model.
 5. The literature physics estimate is again badly calibrated.
 
-**Which decision-time features carry the effect?** (`pass_outcome_skillcorner_v1_importance`,
+**Which decision-time features carry the effect?** (pipeline v2: `pass_outcome_skillcorner_v2_importance`
+gives defenders goal-side +0.020, attacking width +0.010, and the restored context features goal-kick
+restart +0.017 and prior recovery +0.008. The pipeline-v1 numbers below came from `pass_outcome_skillcorner_v1_importance`,
 held-out permutation importance, Δ log loss, 20 LOMO folds). Location dominates both
 the event and spatial models: distance to goal +0.414, ball x +0.304. Among the spatial
 additions, the largest are **defenders goal-side of the ball** (+0.018) and **attacking-team
@@ -457,8 +459,9 @@ candidate receiver is ranked, and the outcome is the actual receiver.
 The chosen receiver's run value exceeds the mean of the other candidates by **+0.012
 [+0.005, +0.019]**.
 
-**SkillCorner replication (`run_value_validation_v1_skillcorner`, code f25e9fa; 2,974
-completed passes from 20 matches).** Receiver minus other candidates: +0.004 [+0.002, +0.006].
+**SkillCorner replication (`run_value_validation_v1_skillcorner`; pipeline v2 re-run at
+bd074ec: 2,970 passes, +0.0044 [+0.0022, +0.0065], top-1 0.097 vs availability 0.174, the same
+conclusion. The original pipeline-v1 run at f25e9fa used 2,974 completed passes from 20 matches).** Receiver minus other candidates: +0.004 [+0.002, +0.006].
 Top-1: run value 0.092 (chance 0.100), availability 0.202, speed 0.231. Availability + run
 lowers top-1 by −0.052 [−0.071, −0.033]. On broadcast data many 1 s-earlier positions are
 extrapolations, which weakens the counterfactual further.
