@@ -931,6 +931,14 @@ real markers do in the observational check (C37), the modelled gain disappears. 
 model-based illustration of response-dependence, not evidence about this match (C39).
 `tests/test_featured_response_example.py` guards the direction of both changes.
 
+## Session 4: visibility-aware time-on-ball (full note: [`research/time_on_ball_censoring.md`](research/time_on_ball_censoring.md))
+
+The opt-in `censor_undetected_ball` flag treats provider-extrapolated ball frames as
+unobserved for time-on-ball. A new, pre-registered config re-runs the SkillCorner guard
+experiment with it. No existing config was changed. Unknown time-on-ball rises from 0.76% to
+4.75%. H-T1 is −0.0025 (was −0.0022), H-T2 −0.0091 (unchanged, 20/20), and C28 is identical
+(C50). The temporal findings were not driven by treating extrapolated balls as observed.
+
 ## Session 4: physical constraints and learnable responses (full write-up: [`research/simulation_session4.md`](research/simulation_session4.md))
 
 * **Kinematic envelope v2 (C55–C58).** The a-priori v1 envelope missed 27–39% of real 1 s
