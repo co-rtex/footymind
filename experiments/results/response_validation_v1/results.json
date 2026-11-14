@@ -1,0 +1,454 @@
+{
+  "name": "response_validation_v1",
+  "provider": "metrica",
+  "question": "observational: forecast where outfield defenders actually went over the next 0.5 s / 1.0 s from a pass-start frame; not a test of responses to hypothetical interventions (no ground truth exists)",
+  "matches": [
+    "metrica-sample-1",
+    "metrica-sample-2",
+    "metrica-sample-3"
+  ],
+  "code_revision": "61447dd08b07c262f52b5a0a9995f20fd79e22c9",
+  "runtime_s": 83.7,
+  "fps": 25.0,
+  "n_decision_frames": 3655,
+  "n": 36465,
+  "n_possessions": 1001,
+  "excluded_defender_rows": {
+    "velocity_unavailable": 28,
+    "tracking_artefact": 57,
+    "frames_ball_missing": 1
+  },
+  "ridge_alpha": 1.0,
+  "kinematic_limits": {
+    "reaction_s": 0.25,
+    "max_accel_mps2": 3.5,
+    "max_speed_mps": 7.5
+  },
+  "share_rows_speed_above_limit": 0.0017551076374605786,
+  "n_boot": 1000,
+  "bootstrap_unit": "possession (stratified by match)",
+  "summary": {
+    "0.5s": {
+      "horizon_frames": 13,
+      "horizon_s_actual": 0.52,
+      "ade": {
+        "stationary": {
+          "mean_m": 0.6432701286489888,
+          "ci95": [
+            0.6332883277240305,
+            0.6540823654889802
+          ],
+          "minus_const_velocity": {
+            "delta_m": 0.5371456926287848,
+            "ci95": [
+              0.527740510990584,
+              0.5475451095268918
+            ],
+            "better_in_matches": 0,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": 0.5489020517681227,
+              "metrica-sample-2": 0.5175623906828745,
+              "metrica-sample-3": 0.5447978599848864
+            }
+          }
+        },
+        "const_velocity": {
+          "mean_m": 0.10612443602020409,
+          "ci95": [
+            0.10455173209457441,
+            0.10776611155771298
+          ]
+        },
+        "const_velocity_clipped": {
+          "mean_m": 0.10605395401156732,
+          "ci95": [
+            0.10450057915766764,
+            0.107684137655953
+          ],
+          "minus_const_velocity": {
+            "delta_m": -7.048200863676857e-05,
+            "ci95": [
+              -0.00017007839004149378,
+              2.5399503211293312e-05
+            ],
+            "better_in_matches": 2,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": -0.00012952692734108373,
+              "metrica-sample-2": -0.00011641566137865489,
+              "metrica-sample-3": 1.2588721690826032e-05
+            }
+          }
+        },
+        "learned": {
+          "mean_m": 0.10282970214281913,
+          "ci95": [
+            0.1013210307285282,
+            0.10440789672866961
+          ],
+          "minus_const_velocity": {
+            "delta_m": -0.0032947338773849644,
+            "ci95": [
+              -0.003685001810062961,
+              -0.0028810422591426174
+            ],
+            "better_in_matches": 3,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": -0.0032998264361111668,
+              "metrica-sample-2": -0.003163743711141101,
+              "metrica-sample-3": -0.0034012097868183627
+            }
+          }
+        },
+        "learned_clipped": {
+          "mean_m": 0.10388552030818167,
+          "ci95": [
+            0.10239017785415401,
+            0.1054752175240138
+          ],
+          "minus_const_velocity": {
+            "delta_m": -0.0022389157120224212,
+            "ci95": [
+              -0.0024558105246256057,
+              -0.0020041570539868787
+            ],
+            "better_in_matches": 3,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": -0.002494202296658629,
+              "metrica-sample-2": -0.0021133292409115934,
+              "metrica-sample-3": -0.0021527419129003522
+            }
+          }
+        }
+      },
+      "fde": {
+        "stationary": {
+          "mean_m": 1.191424677419903,
+          "ci95": [
+            1.1735209850550496,
+            1.211154988789226
+          ],
+          "minus_const_velocity": {
+            "delta_m": 0.9444286508756472,
+            "ci95": [
+              0.9275585031207475,
+              0.9634054937146218
+            ],
+            "better_in_matches": 0,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": 0.9676847970868803,
+              "metrica-sample-2": 0.9098933744164427,
+              "metrica-sample-3": 0.9560259188666711
+            }
+          }
+        },
+        "const_velocity": {
+          "mean_m": 0.24699602654425595,
+          "ci95": [
+            0.24338463999575782,
+            0.2506366593891299
+          ]
+        },
+        "const_velocity_clipped": {
+          "mean_m": 0.24679752109317216,
+          "ci95": [
+            0.2432239527737658,
+            0.25049952894853444
+          ],
+          "minus_const_velocity": {
+            "delta_m": -0.0001985054510837969,
+            "ci95": [
+              -0.00040112708239227674,
+              -9.325376554965406e-06
+            ],
+            "better_in_matches": 2,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": -0.00037288156742931733,
+              "metrica-sample-2": -0.0002814595706845391,
+              "metrica-sample-3": 2.4471767074429884e-06
+            }
+          }
+        },
+        "learned": {
+          "mean_m": 0.23826291006578434,
+          "ci95": [
+            0.23473785576905346,
+            0.24178905270032602
+          ],
+          "minus_const_velocity": {
+            "delta_m": -0.008733116478471609,
+            "ci95": [
+              -0.009698495039357172,
+              -0.007727570135616844
+            ],
+            "better_in_matches": 3,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": -0.008663547338752103,
+              "metrica-sample-2": -0.008333615402375871,
+              "metrica-sample-3": -0.009121832510367578
+            }
+          }
+        },
+        "learned_clipped": {
+          "mean_m": 0.2387268468040362,
+          "ci95": [
+            0.23525256287928437,
+            0.2423072791230663
+          ],
+          "minus_const_velocity": {
+            "delta_m": -0.008269179740219762,
+            "ci95": [
+              -0.009151251098289594,
+              -0.007330360754766148
+            ],
+            "better_in_matches": 3,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": -0.00900082288911655,
+              "metrica-sample-2": -0.007755555564449124,
+              "metrica-sample-3": -0.00815163432493371
+            }
+          }
+        }
+      }
+    },
+    "1.0s": {
+      "horizon_frames": 25,
+      "horizon_s_actual": 1.0,
+      "ade": {
+        "stationary": {
+          "mean_m": 1.187551554023099,
+          "ci95": [
+            1.1699599047406262,
+            1.2069425095087365
+          ],
+          "minus_const_velocity": {
+            "delta_m": 0.89210326583522,
+            "ci95": [
+              0.8752711078466358,
+              0.9105569995518422
+            ],
+            "better_in_matches": 0,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": 0.9156627854421631,
+              "metrica-sample-2": 0.8589646694095181,
+              "metrica-sample-3": 0.9022963332531879
+            }
+          }
+        },
+        "const_velocity": {
+          "mean_m": 0.29544828818787894,
+          "ci95": [
+            0.2914115529383908,
+            0.29959189639582495
+          ]
+        },
+        "const_velocity_clipped": {
+          "mean_m": 0.29521729739261865,
+          "ci95": [
+            0.29110338444767064,
+            0.29939286456978964
+          ],
+          "minus_const_velocity": {
+            "delta_m": -0.00023099079526028854,
+            "ci95": [
+              -0.0004252651972425928,
+              -5.215574113378036e-05
+            ],
+            "better_in_matches": 3,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": -0.0004481619042694396,
+              "metrica-sample-2": -0.0002980850572509297,
+              "metrica-sample-3": -1.12196098451256e-05
+            }
+          }
+        },
+        "learned": {
+          "mean_m": 0.28277443167130195,
+          "ci95": [
+            0.278810339607779,
+            0.2868601307196126
+          ],
+          "minus_const_velocity": {
+            "delta_m": -0.012673856516576987,
+            "ci95": [
+              -0.013900425973547726,
+              -0.01142450883547446
+            ],
+            "better_in_matches": 3,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": -0.01257024118158423,
+              "metrica-sample-2": -0.012320306793264957,
+              "metrica-sample-3": -0.013049474107999559
+            }
+          }
+        },
+        "learned_clipped": {
+          "mean_m": 0.28317670462139327,
+          "ci95": [
+            0.2792246358851275,
+            0.28717260249505877
+          ],
+          "minus_const_velocity": {
+            "delta_m": -0.012271583566485667,
+            "ci95": [
+              -0.013405911597203399,
+              -0.011123177783045746
+            ],
+            "better_in_matches": 3,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": -0.012805619469085205,
+              "metrica-sample-2": -0.011812055765594076,
+              "metrica-sample-3": -0.012257048401627002
+            }
+          }
+        }
+      },
+      "fde": {
+        "stationary": {
+          "mean_m": 2.2689763895814923,
+          "ci95": [
+            2.235118863744278,
+            2.3049857212594045
+          ],
+          "minus_const_velocity": {
+            "delta_m": 1.5144855728098965,
+            "ci95": [
+              1.4819231459485738,
+              1.5479807459430597
+            ],
+            "better_in_matches": 0,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": 1.562052795878073,
+              "metrica-sample-2": 1.4570887661986074,
+              "metrica-sample-3": 1.5270567362795862
+            }
+          }
+        },
+        "const_velocity": {
+          "mean_m": 0.7544908167715959,
+          "ci95": [
+            0.7442179839291986,
+            0.7646887420918466
+          ]
+        },
+        "const_velocity_clipped": {
+          "mean_m": 0.7538838068941148,
+          "ci95": [
+            0.7436565226656865,
+            0.7641924781354089
+          ],
+          "minus_const_velocity": {
+            "delta_m": -0.0006070098774810795,
+            "ci95": [
+              -0.0009902923233645056,
+              -0.00026008954311397553
+            ],
+            "better_in_matches": 3,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": -0.0012185600490833837,
+              "metrica-sample-2": -0.000682226165917732,
+              "metrica-sample-3": -8.389960673371721e-05
+            }
+          }
+        },
+        "learned": {
+          "mean_m": 0.7151103732400864,
+          "ci95": [
+            0.7053664608238772,
+            0.7249255571042436
+          ],
+          "minus_const_velocity": {
+            "delta_m": -0.03938044353150949,
+            "ci95": [
+              -0.042847046587406686,
+              -0.035765619231137184
+            ],
+            "better_in_matches": 3,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": -0.039094840871356284,
+              "metrica-sample-2": -0.03850121020424835,
+              "metrica-sample-3": -0.040335550847137025
+            }
+          }
+        },
+        "learned_clipped": {
+          "mean_m": 0.7145404309824053,
+          "ci95": [
+            0.7045870258108078,
+            0.7242194493915
+          ],
+          "minus_const_velocity": {
+            "delta_m": -0.039950385789190634,
+            "ci95": [
+              -0.04336384434671371,
+              -0.0364339287091885
+            ],
+            "better_in_matches": 3,
+            "n_matches": 3,
+            "per_match": {
+              "metrica-sample-1": -0.0408524144726482,
+              "metrica-sample-2": -0.038779353071253686,
+              "metrica-sample-3": -0.040258334584132416
+            }
+          }
+        }
+      }
+    }
+  },
+  "envelope_coverage": {
+    "default": {
+      "0.5s": 0.3106266282736871,
+      "1.0s": 0.7253530782942548
+    },
+    "sensitivity": {
+      "reaction=0.0,accel=2.5": {
+        "0.5s": 0.751295763060469,
+        "1.0s": 0.8267379679144385
+      },
+      "reaction=0.0,accel=3.5": {
+        "0.5s": 0.881283422459893,
+        "1.0s": 0.9338543809132045
+      },
+      "reaction=0.0,accel=5.0": {
+        "0.5s": 0.9670643082407788,
+        "1.0s": 0.9885918003565063
+      },
+      "reaction=0.0,accel=7.0": {
+        "0.5s": 0.9939668174962293,
+        "1.0s": 0.9979158096805155
+      },
+      "reaction=0.25,accel=2.5": {
+        "0.5s": 0.19840943370355135,
+        "1.0s": 0.564952694364459
+      },
+      "reaction=0.25,accel=3.5": {
+        "0.5s": 0.3106266282736871,
+        "1.0s": 0.7253530782942548
+      },
+      "reaction=0.25,accel=5.0": {
+        "0.5s": 0.4622788975730152,
+        "1.0s": 0.8702317290552585
+      },
+      "reaction=0.25,accel=7.0": {
+        "0.5s": 0.6222130810366104,
+        "1.0s": 0.9587275469628411
+      }
+    }
+  },
+  "validation_rule": "learned policy validated iff the 95% CI of FDE(learned_clipped) - FDE(const_velocity) is below 0 at 0.5 s and at 1.0 s",
+  "learned_validated": true
+}
