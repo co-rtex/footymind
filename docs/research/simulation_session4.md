@@ -186,3 +186,118 @@ held-out test.
   per provider and served as a separate, versioned policy `learned_innovation`; `learned` is
   kept unchanged and re-described as a forecaster. A runtime pilot on one SkillCorner match
   was run with its output discarded unread.
+
+### Results (`experiments/results/response_diagnostics_v1[_skillcorner]/results.json`, rev 7343b23)
+
+**D1. The model is conditioned on intervention-relevant inputs, but they barely matter.** A
+5 m carrier relocation changes only the position-offset inputs: ball offset 0.16 / 0.25 SD,
+distance to the ball 0.25 / 0.31 SD, nearest-attacker offset 0.11 / 0.16 SD (Metrica /
+SkillCorner, x components; y similar). The velocity inputs, which carry the model, do not
+change. At 1.0 s the offset coefficients are at most 1.3 cm per metre (nearest attacker
+−0.6 / −1.3 cm/m), against 0.91 / 0.83 on own velocity. The largest defender move per
+relocation is 0.036 / 0.061 m on average (gain 0.007 / 0.012 m per m), reproducing C44.
+
+**D2. The target is dominated by own velocity, and the levels say little about the rest.**
+Constant velocity alone explains R² = 0.95 / 0.94 of the 0.5 s displacement and 0.87 / 0.82 at
+1.0 s (learned: 0.89 / 0.87). At 1.0 s the innovation (displacement beyond constant velocity) is
+0.97 / 1.11 m RMS against a velocity part of 2.8 / 2.7 m. The v1 inputs explain only 12% / 23%
+of the innovation variance at 1.0 s (8% / 18% at 0.5 s), and refit on the innovation they still
+put about 1 cm/m on every position offset: their signal is velocity damping (−0.09 / −0.17 on
+own velocity) and, on SkillCorner, ball velocity.
+
+**D3. Interventions are not out of distribution for v1, but 5 m is for any innovation model.**
+1.1% / 1.2% of the intervened v1 input vectors lie beyond the observed rows' 99th percentile of
+Mahalanobis distance (1% by construction), so inertness is not extrapolation. Real attacker
+innovations are small: at 1.0 s the median is 0.54 / 0.68 m, the 99th percentile 2.3 / 2.5 m,
+and only 0.08% / 0.007% exceed 5 m (the carrier: 0.16% / 0.007%). A 5 m relocation is therefore
+an extrapolation for the innovation model; a linear model extrapolates linearly, and the
+envelope bounds the result.
+
+**D4. The innovation design learns a non-trivial response and meets the pre-registered rule
+on both providers.** Rows with complete innovation inputs: Metrica 23,180 (0.5 s) / 22,952
+(1.0 s); SkillCorner 23,385 / 20,892 (attackers must be detected, so these are on-camera
+frames). FDE in metres, same rows:
+
+| Provider | Horizon | CV | learned (v1) | innovation model | placebo model | model − CV | model − placebo | matches better |
+|---|---|---|---|---|---|---|---|---|
+| Metrica | 0.5 s | 0.250 | 0.240 | 0.212 | 0.223 | −0.038 [−0.041, −0.036] | −0.0105 [−0.0115, −0.0094] | 3/3 |
+| Metrica | 1.0 s | 0.768 | 0.722 | 0.624 | 0.665 | −0.143 [−0.150, −0.135] | −0.040 [−0.044, −0.037] | 3/3 |
+| SkillCorner | 0.5 s | 0.271 | 0.246 | 0.218 | 0.229 | −0.053 [−0.056, −0.051] | −0.0104 [−0.0113, −0.0096] | 20/20 |
+| SkillCorner | 1.0 s | 0.906 | 0.798 | 0.711 | 0.752 | −0.195 [−0.203, −0.187] | −0.041 [−0.044, −0.038] | 20/20 |
+
+It explains 31% / 35% of the 1.0 s innovation variance (placebo 23% / 29%, v1 inputs 12% /
+23%). Gains at 1.0 s, metres of defender innovation per metre (x / y components):
+
+| Input | Metrica | SkillCorner | Placebo (Metrica / SkillCorner, x) |
+|---|---|---|---|
+| nearest attacker | 0.14 / 0.08 | 0.17 / 0.18 | 0.00 / 0.06 |
+| attackers within ~5 m | 0.12 / 0.08 | 0.06 / 0.10 | −0.02 / −0.07 |
+| attackers within ~15 m | 0.65 / 0.27 | 0.46 / 0.29 | 0.02 / 0.07 |
+| attacking team mean | 0.07 / 0.41 | 0.22 / 0.38 | 0.91 / 0.73 |
+| ball | 0.005 / 0.011 | 0.025 / 0.028 | 0.006 / 0.027 |
+
+**Interpretation.** The learned model is inert because of what the data can identify from a
+single instant, not because of a bug or extrapolation: positions relative to the ball and the
+attackers at `t` hardly predict how defenders will deviate from their own motion, so a
+model of levels learns damped constant velocity, and changing a level (a relocation) changes
+almost nothing. Reactions are identifiable only from co-movement: defenders deviate in the
+direction attackers deviate, mostly as a block (15 m kernel and team mean), with a smaller
+marker component. Most of the gain is team-wide co-movement that the placebo keeps (placebo −
+CV −0.103 / −0.155 m of the −0.143 / −0.195 m at 1.0 s); the part specific to the
+attacker–defender geometry is −0.040 / −0.041 m. This is an observational, concurrent,
+symmetric association: attackers react to defenders too, and both react to the ball and the
+pass. It is not a causal response to an intervention, and the served text says so.
+
+**Served policy.** The model is exported per provider
+(`counterfactual/response_model_innovation_v1[_skillcorner].json`, revs f9dfb9b / cc88ad9,
+`meta.validation.validated = true` with the scope above) and served as `learned_innovation`:
+a relocation is the relocated attacker's innovation (and the ball's, for the carrier), and
+each outfield defender moves by the predicted change, clipped differentially to its envelope.
+`learned` is unchanged and now described as "Forecaster, not an intervention model", with
+the reason it barely reacts.
+
+**Response sizes** (`response_sensitivity_v2[_skillcorner]`, rev 6b9308d, envelope v2, 300 pass
+starts, carrier moved 5 m in four directions, 1.5 s horizon; Metrica / SkillCorner):
+`learned_innovation` moves 9.6 defenders, largest move 1.28 / 1.45 m (p95 2.09 / 2.06 m), 4.9 /
+5.7 m in total; `learned` 0.036 / 0.060 m. The looser envelope also enlarges the clipped rules:
+`press_carrier` largest move 3.27 / 3.32 m (1.56 / 1.59 under v1), `lane_cover` 1.39 / 1.27 m
+(0.96 / 0.87); `zonal_shift` and `marker_follows` are unchanged.
+
+**Rule check under envelope v2** (`rule_response_check_v3[_skillcorner]`, rev 6b9308d;
+innovation design, Δ FDE in m, β): `lane_cover` still passes on both providers (Metrica −0.038
+[−0.051, −0.024], β 0.77; SkillCorner −0.049 [−0.058, −0.040], β 0.80; placebo +0.015 /
+−0.017). `press_carrier` no longer passes anywhere (Metrica −0.035 [−0.091, +0.022], β 0.57;
+SkillCorner +0.045 [+0.013, +0.079], β 0.30): with the tighter v1 envelope its moves happened
+to be the right size on Metrica. `zonal_shift` still overshoots (+0.085 / +0.088, β 0.21 /
+0.13); `marker_follows` is unclipped and unchanged. The served per-policy text follows v3.
+
+## What changed in defaults, and what did not
+
+* `kinematics.ENVELOPE_VERSION = 2`: response-policy clipping and `kinematic_reachable` use
+  envelope v2 with the provider's noise margin (`default_limits(provider)`); `ResponseContext`
+  defaults to v2 without a margin when no provider is known.
+* `supported` still uses the constant-speed disc (`scenario.SUPPORTED_REACHABILITY = "disc"`).
+* `learned` unchanged (coefficients, validation); served description updated.
+* New policy `learned_innovation` in `response.ALL_POLICY_NAMES`, accepted by `apply_response`
+  and `run_scenario`; **not** in the API-served `POLICY_NAMES` until the API schema lists it.
+* Committed session-3 results reproduce unchanged: `response_validation`,
+  `rule_response_check` v1/v2 and `response_sensitivity` v1 pin `DEFAULT_LIMITS`.
+* Tests: no existing test changed. New: `test_envelope_v2.py` (v1 bit-for-bit regression,
+  horizon monotonicity, nesting from rest, mirror invariance, NaN velocity as the speed disc,
+  convexity, margin, force–velocity solution, non-expansive projection),
+  `test_envelope_validation.py` (seconds-to-frames units, permutation partners, disc),
+  `test_response_innovation.py` (synthetic recovery of a known response; the v1 inputs cannot
+  represent it), `test_learned_innovation_policy.py`, `test_scenario_envelope_v2.py`.
+
+## Limitations
+
+* The envelope rows are pass-start frames; SkillCorner rows are on-camera defenders. v2 is
+  generous by design (99.9%+ coverage); at the scenario's 1.5 s default every physical bound
+  accepts most 5 m shifts.
+* Stationary jitter may understate broadcast tracking error while players move (provider
+  smoothing). The margin is small either way.
+* The innovation model's inputs are the attackers' *future* movement: it is a conditional
+  response model, evaluated with real innovations given, and applied to relocations far larger
+  than typical real innovations. Its evaluated rows are the ~60% (Metrica) and ~20%
+  (SkillCorner) of defender rows with complete attacker data. Three Metrica matches.
+
