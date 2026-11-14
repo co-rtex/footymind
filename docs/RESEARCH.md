@@ -673,6 +673,36 @@ the first Metrica run is discarded).** The review found:
    with `is_head`/`is_cross` on both sides (`Bdt_tob_hc → Bdt_tt_hc`) is added.
 4. Release strata used a model feature (`quick_release`). The descriptive strata are now
    restart vs open play.
+### RQ2 results: Metrica (3 matches, 3,593 passes; 3,592 under the guard; rev 379b98e)
+
+Δ log loss, possession-clustered 95% CI (negative = second model better).
+
+| comparison | release frame (`temporal_v1`) | 0.2 s guard (`temporal_guard_v1_02s`) |
+|---|---|---|
+| `Adt → Adt_te` (event timing) | +0.0011 [−0.0000, +0.0026] | (not run) |
+| `Adt → Adt_tob` (H-T1, time-on-ball) | **−0.0041** [−0.0078, −0.0006] | −0.0023 [−0.0051, +0.0005] |
+| `Bdt_tob → Bdt_tt` (H-T2, movement history, LR) | **−0.0159** [−0.0234, −0.0089] | **−0.0137** [−0.0206, −0.0067] |
+| `Bdt_tob → Bdt_tt` (GBM) | **−0.0130** [−0.0199, −0.0066] | **−0.0126** [−0.0194, −0.0060] |
+| `Bdt_tob_hc → Bdt_tt_hc` (header/cross control) | **−0.0131** [−0.0202, −0.0067] | (not run) |
+| `Adt_tob → Bdt_tob` (H-T3, spatial vs stronger baseline) | **−0.0224** [−0.0304, −0.0145] | **−0.0241** [−0.0322, −0.0161] |
+| `Adt → Bdt` (C20 re-test) | −0.0257 [−0.0342, −0.0177] | **−0.0258** [−0.0344, −0.0176] |
+
+Sensitivity at the release frame: a 0.5 s lookback is indistinguishable from 1.0 s (−0.0011
+[−0.0042, +0.0019]), and 2.0 s is worse (+0.0061 [+0.0024, +0.0101]). ECE barely moves (Bdt_tob
+0.017, Bdt_tt 0.017): the gain is mainly in **discrimination** (AUC 0.722 → 0.753), not
+calibration. Strata (`temporal_v1_strata`, descriptive): open play −0.016 [−0.024, −0.008]
+(n = 3,369); restarts −0.013 [−0.030, +0.005] (n = 224, too few to tell). All 3 matches improve.
+
+**Reading (Metrica).**
+* **H-T2 is supported and survives every control.** Movement over the last second adds about
+  −0.014 to −0.016 beyond static positions and time-on-ball. That is more than half the size of
+  the original spatial gain. It holds with the guard frame, with a nonlinear model and with
+  header/cross annotations on both sides.
+* **H-T1 is fragile.** Time-on-ball helps a little at the release frame, but the CI crosses
+  zero under the guard. Event timing alone does nothing.
+* **H-T3 is supported, and C20 is unchanged by the guard.** The decision-time spatial gain does
+  not depend on the release frame on optical tracking.
+
 ## Opponent response policies and kinematic envelopes (ADR-0006)
 
 **Why.** The Possession Multiverse used to relocate players on a frozen frame, with one toy
