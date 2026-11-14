@@ -8,8 +8,7 @@ Keep this file factual and update it at every checkpoint._
   no PR has been opened (the owner has not asked for one).
 * Commits are authored as Christian Cortez with no assistant trailers (see CLAUDE.md).
 * All specialist worktrees and branches from session 4 were merged and removed. A detached
-  scratch worktree in the session scratchpad (`wt4`) was used only to run experiments from a
-  clean revision; `git worktree prune` removes its record once the scratchpad is gone.
+  scratch worktree used to run experiments from a clean revision was removed as well.
 * **Stop-hook note.** The cloud environment runs a *managed* Stop hook
   (`~/.claude/stop-hook-git-check.sh`) that asks for commits to be re-authored as "Claude".
   That conflicts with the owner's authorship rule and is deliberately not done. Do not rewrite
@@ -65,7 +64,7 @@ indexes on start.
 ## Verification (end of session 4)
 | Gate | Result |
 |---|---|
-| `scripts/check.sh` (exit code 0, all 23 bundles at v3) | ruff, format, mypy, **340 pytest passed, 0 skipped**; web typecheck, lint, **213 vitest**, build |
+| `scripts/check.sh` (exit code 0, all 23 bundles at v3) | ruff, format, mypy, **343 pytest passed, 0 skipped**; web typecheck, lint, **213 vitest**, build |
 | `cd web && npx playwright test --trace off` | **27/27** against the real API on v3 data (flow, screenshots, broadcast tests) |
 | GitHub CI | every job green for 83d4830, including the container-runtime `docker` job; see the final report for the newest run |
 | `scripts/reproduce.sh --dry-run` | exit 0, every committed artefact in dependency order |
