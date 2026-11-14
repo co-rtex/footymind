@@ -77,9 +77,10 @@ On held-out matches (leave-one-match-out), two questions are kept separate after
 independent methodology review. The primary result is replicated across two providers:
 Metrica (3 matches, optical, 25 Hz) and SkillCorner (20 A-League matches, broadcast, 10 Hz).
 
-* **Before the pass is played** (decision-time, nothing from the kick): adding tracking-derived
+* **Before the pass is played** (decision-time: no release direction or speed): adding tracking-derived
   spatial context reduces log loss by **Δ −0.026 [−0.034, −0.018]** on Metrica (AUC 0.65 → 0.72)
-  and by **Δ −0.021 [−0.025, −0.018]** on SkillCorner (15,914 passes). The gain holds in every
+  and by **Δ −0.021 [−0.025, −0.018]** on SkillCorner (15,914 passes; with matches resampled too,
+  and every feature read 0.2 s before the kick: −0.021 [−0.026, −0.017], C35). The gain holds in every
   held-out match of both providers (3/3 and 20/20).
 * **Given the executed kick** (action-conditioned: release direction and speed known):
   Δ −0.071 on Metrica and −0.046 on SkillCorner. This is provider-dependent, because much of it
