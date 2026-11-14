@@ -58,6 +58,58 @@ app = FastAPI(
         "constrained counterfactual scenarios. All analytical outputs carry provenance labels."
     ),
 )
+MAX_BODY_BYTES = 1_000_000  # a scenario request is a few kB; larger bodies are refused
+
+
+class _BodyTooLarge(HTTPException):
+    def __init__(self) -> None:
+        super().__init__(413, f"request body larger than {MAX_BODY_BYTES} bytes")
+
+
+class BodySizeLimit:
+    """Refuse request bodies above ``max_bytes`` with a 413 (pure ASGI, so streaming works).
+
+    A declared ``Content-Length`` is checked before anything is read. A body without one
+    (chunked) is counted while it is read; FastAPI re-raises the HTTPException from the body
+    reader, so the client gets the same 413.
+    """
+
+    def __init__(self, app: Any, max_bytes: int = MAX_BODY_BYTES) -> None:
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        declared = dict(scope.get("headers") or []).get(b"content-length")
+        too_large = JSONResponse(
+            status_code=413, content={"detail": f"request body larger than {self.max_bytes} bytes"}
+        )
+        try:
+            if declared is not None and int(declared) > self.max_bytes:
+                await too_large(scope, receive, send)
+                return
+        except ValueError:
+            await JSONResponse(status_code=400, content={"detail": "invalid Content-Length"})(
+                scope, receive, send
+            )
+            return
+        seen = 0
+
+        async def counted() -> Any:
+            nonlocal seen
+            message = await receive()
+            if message.get("type") == "http.request":
+                seen += len(message.get("body", b""))
+                if seen > self.max_bytes:
+                    raise _BodyTooLarge()
+            return message
+
+        await self.app(scope, counted, send)
+
+
+app.add_middleware(BodySizeLimit)
 app.add_middleware(GZipMiddleware, minimum_size=2048)
 _origins = os.environ.get("FOOTYMIND_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
 app.add_middleware(
@@ -90,8 +142,11 @@ def _json_safe(x: Any) -> Any:
 @app.exception_handler(RequestValidationError)
 async def validation_error(_request: Request, exc: RequestValidationError) -> JSONResponse:
     # The default handler echoes the rejected input. A NaN or Infinity in the request body
-    # (accepted by Python's JSON parser) then made the 422 itself unserialisable: a 500.
-    detail = _json_safe(jsonable_encoder(exc.errors()))
+    # (accepted by Python's JSON parser) then made the 422 itself unserialisable: a 500, and
+    # echoing a whole (possibly large) body back is needless. Errors keep their location,
+    # message and type; the input is dropped.
+    errors = [{k: v for k, v in e.items() if k != "input"} for e in exc.errors()]
+    detail = _json_safe(jsonable_encoder(errors))
     return JSONResponse(status_code=422, content={"detail": detail})
 
 
@@ -475,12 +530,13 @@ def _analysis_out(a: FrameAnalysis, horizon_s: float = 1.5) -> S.FrameAnalysisOu
 def _provider_model(match_id: str) -> OptionModel | None:
     """The option model served for this match's provider, refusing another provider's model.
 
-    Providers are never pooled (CLAUDE.md): a model whose metadata names a different provider
-    is a packaging error, so the request fails instead of serving its probabilities.
+    Providers are never pooled (CLAUDE.md): a model whose metadata names a different provider,
+    or no provider at all, is a packaging error, so the request fails instead of serving its
+    probabilities. Every packaged model names its provider in ``meta.provider``.
     """
     m = load_default(match_id)
     provider = provider_of(match_id)
-    if m is not None and m.meta.get("provider") not in (None, provider):
+    if m is not None and m.meta.get("provider") != provider:
         raise HTTPException(
             503, f"option model for {provider!r} is labelled {m.meta.get('provider')!r}; refused"
         )
