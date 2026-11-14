@@ -113,8 +113,8 @@ export function parseAnalysis(raw: unknown): FrameAnalysisOut {
 }
 
 /**
- * One response-policy description. `validation_ref` may be absent (treated as null);
- * every other field is required when a policy object is present.
+ * One response-policy description. `validation_ref` and `status` may be absent (treated as
+ * null); every other field is required when a policy object is present.
  */
 export function parsePolicyInfo(raw: unknown, what = "policy"): PolicyInfo {
   needKeys(raw, ["name", "description", "assumptions", "validated"], what);
@@ -127,12 +127,16 @@ export function parsePolicyInfo(raw: unknown, what = "policy"): PolicyInfo {
   need(typeof raw.validated === "boolean", `${what}.validated is not a boolean`);
   const ref = raw.validation_ref;
   need(ref === undefined || ref === null || typeof ref === "string", `${what}.validation_ref is not a string or null`);
+  // The verdict text (newer backends). Absent or null on older backends: the badge falls back.
+  const status = raw.status;
+  need(status === undefined || status === null || typeof status === "string", `${what}.status is not a string or null`);
   return {
     name: raw.name,
     description: raw.description,
     assumptions: raw.assumptions as string[],
     validated: raw.validated,
     validation_ref: typeof ref === "string" ? ref : null,
+    status: typeof status === "string" && status.trim() ? status.trim() : null,
   };
 }
 

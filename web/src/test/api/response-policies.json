@@ -1,0 +1,106 @@
+[
+  {
+    "name": "none",
+    "description": "No opponent response: every player who was not moved keeps the observed position.",
+    "assumptions": [
+      "Defenders do not react to the intervention."
+    ],
+    "validated": false,
+    "validation_ref": null,
+    "status": "no response simulated"
+  },
+  {
+    "name": "marker_follows",
+    "description": "Rule (legacy): the defender nearest to a relocated attacker's observed position (within 10 m) shifts by follow_fraction of the attacker's displacement.",
+    "assumptions": [
+      "One marker per relocated attacker; no kinematic limit is applied (the move is still feasibility-checked like user moves).",
+      "This is not what the defender would have done; no ground truth exists for it.",
+      "Observational check (C37): with attackers' unexpected real movement as the intervention, this rule's moves match how real markers moved (about the right direction and size) on both providers, beyond a permuted placebo. Still a rule, not a prediction."
+    ],
+    "validated": false,
+    "validation_ref": null,
+    "status": "experimental: consistent with real defender reactions in an observational check on both providers (not a forecast, not an intervention validation)"
+  },
+  {
+    "name": "press_carrier",
+    "description": "Rule: when the carrier (with the ball) is relocated, the nearest outfield defender closes toward the new carrier position, stopping 1.5 m short, as far as the kinematic envelope allows.",
+    "assumptions": [
+      "Only one defender presses; teammates do not cover the space it leaves.",
+      "Differential response: a defender moves by the change in the policy's target position caused by the intervention, so an unchanged situation produces no move.",
+      "Each move is limited to the defender's kinematic envelope over the horizon (envelope v2: no reaction delay, <= 7.0 m/s^2 braking or turning, speeding up <= 7(1 - v/9) m/s^2, <= 9.0 m/s, 0.10 s velocity lag) from the observed position and causal velocity. A reachable move is not a tactically plausible one.",
+      "Only outfield defenders are moved; attackers, goalkeepers and user-moved players never are. Moves respect the pitch bounds and a 0.5 m separation (resolved by shortening the move, in player-id order).",
+      "This is not what the defender would have done; no ground truth exists for it.",
+      "Observational check (C37): not supported with the current envelope (v2): its moves are larger than real pressing reactions (real movement is 0.3-0.6 of them) and worse than constant velocity on SkillCorner. Under the tighter session-3 envelope it was consistent with real pressing on Metrica only. Treat its moves as an illustration of the assumption."
+    ],
+    "validated": false,
+    "validation_ref": null,
+    "status": "experimental: not supported by the observational check under the current kinematic envelope"
+  },
+  {
+    "name": "zonal_shift",
+    "description": "Rule: the outfield defenders shift 50% of the ball's lateral and 30% of its longitudinal displacement on top of their current motion, each clipped to its kinematic envelope.",
+    "assumptions": [
+      "The shift fractions are a priori assumptions, not fitted to data.",
+      "Triggered only when the ball moves (i.e. the carrier is relocated).",
+      "Differential response: a defender moves by the change in the policy's target position caused by the intervention, so an unchanged situation produces no move.",
+      "Each move is limited to the defender's kinematic envelope over the horizon (envelope v2: no reaction delay, <= 7.0 m/s^2 braking or turning, speeding up <= 7(1 - v/9) m/s^2, <= 9.0 m/s, 0.10 s velocity lag) from the observed position and causal velocity. A reachable move is not a tactically plausible one.",
+      "Only outfield defenders are moved; attackers, goalkeepers and user-moved players never are. Moves respect the pitch bounds and a 0.5 m separation (resolved by shortening the move, in player-id order).",
+      "This is not what the defender would have done; no ground truth exists for it.",
+      "Observational check (C37): real defensive blocks shift much less than this rule assumes (real movement is 0.13-0.22 of its simulated moves), on both providers. Treat its moves as an illustration of the assumption, not as a plausible response."
+    ],
+    "validated": false,
+    "validation_ref": null,
+    "status": "experimental: overshoots real defensive movement in the observational check"
+  },
+  {
+    "name": "lane_cover",
+    "description": "Rule: when a non-carrier attacker is relocated, the outfield defender who can get closest to the new carrier-to-attacker passing lane moves toward the nearest point of that lane, clipped to its kinematic envelope.",
+    "assumptions": [
+      "One defender per relocated attacker, chosen by reachability of the lane.",
+      "The lane is a straight segment to the attacker's position (no lead pass).",
+      "Differential response: a defender moves by the change in the policy's target position caused by the intervention, so an unchanged situation produces no move.",
+      "Each move is limited to the defender's kinematic envelope over the horizon (envelope v2: no reaction delay, <= 7.0 m/s^2 braking or turning, speeding up <= 7(1 - v/9) m/s^2, <= 9.0 m/s, 0.10 s velocity lag) from the observed position and causal velocity. A reachable move is not a tactically plausible one.",
+      "Only outfield defenders are moved; attackers, goalkeepers and user-moved players never are. Moves respect the pitch bounds and a 0.5 m separation (resolved by shortening the move, in player-id order).",
+      "This is not what the defender would have done; no ground truth exists for it.",
+      "Observational check (C37): with attackers' unexpected real movement as the intervention, this rule's moves match real defender movement in direction on both providers, beyond a permuted placebo; with the current envelope (v2) real defenders move about 0.8 of its simulated moves. Still a rule, not a prediction."
+    ],
+    "validated": false,
+    "validation_ref": null,
+    "status": "experimental: consistent with real defender reactions in an observational check on both providers (not a forecast, not an intervention validation)"
+  },
+  {
+    "name": "learned",
+    "description": "Forecaster, not an intervention model: a ridge model of short-horizon defender displacement fit on real tracking (per provider, leave-one-match-out evaluated), applied to every outfield defender as the difference between its forecast for the hypothetical and the observed state, clipped to the kinematic envelope.",
+    "assumptions": [
+      "The model forecasts how defenders moved in real play (observational). Its validation does not cover responses to hypothetical interventions.",
+      "Why it barely reacts: an intervention changes only its position-offset inputs, and in real play those offsets explain almost none of how defenders deviate from their own motion (about 1 cm per metre; session-4 diagnostics). The intervened inputs are not out of distribution: the model is accurate about the evolution of play and uninformative about reactions.",
+      "Forecast horizon is capped at the longest trained horizon (1.0 s).",
+      "The fitted model is dominated by the defender's own velocity (close to damped constant velocity), so its responses to interventions are very small (centimetres; docs/RESEARCH.md). Validated forecasting does not make it a strong response model.",
+      "Linear in causal features: own velocity, ball offset and velocity, nearest-attacker offset, own-goal offset.",
+      "Differential response: a defender moves by the change in the policy's target position caused by the intervention, so an unchanged situation produces no move.",
+      "Each move is limited to the defender's kinematic envelope over the horizon (envelope v2: no reaction delay, <= 7.0 m/s^2 braking or turning, speeding up <= 7(1 - v/9) m/s^2, <= 9.0 m/s, 0.10 s velocity lag) from the observed position and causal velocity. A reachable move is not a tactically plausible one.",
+      "Only outfield defenders are moved; attackers, goalkeepers and user-moved players never are. Moves respect the pitch bounds and a 0.5 m separation (resolved by shortening the move, in player-id order).",
+      "This is not what the defender would have done; no ground truth exists for it."
+    ],
+    "validated": true,
+    "validation_ref": "experiments/results/response_validation_v1/results.json",
+    "status": "validated: short-horizon forecasts of real play beat constant velocity"
+  },
+  {
+    "name": "learned_innovation",
+    "description": "Ridge model of how defenders deviate from their own constant velocity when attackers (and the ball) deviate from theirs, fit on real tracking per provider and leave-one-match-out evaluated. A relocation is treated as the relocated attacker's unexpected movement over the horizon (and the ball's, when the carrier moves); each outfield defender moves by the predicted change, clipped to its kinematic envelope.",
+    "assumptions": [
+      "Observational association, not a causal effect: attackers and defenders share drivers in real play. A permuted-innovation placebo isolates the part specific to the attacker-defender geometry; the served status says whether the pre-registered rule was met for this provider.",
+      "Response weights depend on distance at the analysed frame: nearest attacker, attackers within about 5 m and 15 m, and the attacking team as a whole.",
+      "Linear: a relocation larger than real unexpected movement (99% of attacker innovations are below about 2.5 m in 1 s) is an extrapolation.",
+      "Forecast horizon is capped at the longest trained horizon (1.0 s).",
+      "Differential response: a defender moves by the change in the policy's target position caused by the intervention, so an unchanged situation produces no move.",
+      "Each move is limited to the defender's kinematic envelope over the horizon (envelope v2: no reaction delay, <= 7.0 m/s^2 braking or turning, speeding up <= 7(1 - v/9) m/s^2, <= 9.0 m/s, 0.10 s velocity lag) from the observed position and causal velocity. A reachable move is not a tactically plausible one.",
+      "Only outfield defenders are moved; attackers, goalkeepers and user-moved players never are. Moves respect the pitch bounds and a 0.5 m separation (resolved by shortening the move, in player-id order).",
+      "This is not what the defender would have done; no ground truth exists for it."
+    ],
+    "validated": true,
+    "validation_ref": "experiments/results/response_diagnostics_v1/results.json",
+    "status": "validated (observational): given attackers' real unexpected movement, its defender forecasts beat constant velocity and a permuted placebo"
+  }
+]

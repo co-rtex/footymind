@@ -9,6 +9,8 @@ import {
   FALLBACK_POLICIES,
   isExperimental,
   orderPolicies,
+  policyBadge,
+  policyFitRange,
   policyLabel,
   sensitivityVerdict,
   verdictText,
@@ -49,6 +51,44 @@ describe("policy labels and flags", () => {
     expect(isExperimental({ name: "lane_cover", validated: false })).toBe(true);
     expect(isExperimental({ name: "learned", validated: true })).toBe(false);
     expect(isExperimental(null)).toBe(false);
+  });
+
+  it("derives the verdict badge from status and validated, with a safe fallback", () => {
+    const b = (name: string, validated: boolean, status?: string | null) => policyBadge({ name, validated, status });
+    // older backends send no status: experimental, except the static baseline
+    expect(b("marker_follows", false)).toBe("experimental");
+    expect(b("learned", true)).toBe("experimental");
+    expect(b("none", false)).toBeNull();
+    expect(b("none", false, null)).toBeNull();
+    // the name never decides: a "none" that claims a verdict is badged by it, and any name can say "no response"
+    expect(b("anything", false, "no response simulated")).toBeNull();
+    expect(b("none", false, "experimental: something new")).toBe("experimental");
+    // "validated" text needs the validated flag; a negative verdict always wins
+    expect(b("x", false, "validated: synthetic")).toBe("experimental");
+    expect(b("x", true, "validated: synthetic")).toBe("forecaster");
+    expect(b("x", true, "Validated (observational): synthetic")).toBe("observational");
+    expect(b("x", true, "validated: but fails a synthetic placebo")).toBe("not supported");
+    expect(b("x", false, "experimental: consistent with real defender reactions in an observational check")).toBe(
+      "observational",
+    );
+    // "consistent with" alone, without an observational check, is not enough
+    expect(b("x", false, "experimental: consistent with a synthetic intuition")).toBe("experimental");
+    expect(b("x", false, "experimental: unsupported by the synthetic check")).toBe("not supported");
+    expect(b("x", false, "experimental: undershoots real movement")).toBe("not supported");
+    expect(b("x", false, "")).toBe("experimental");
+    expect(policyBadge(null)).toBeNull();
+  });
+
+  it("reads a fitted range only from an extrapolation statement in the assumptions", () => {
+    const fit = (assumptions: string[]) => policyFitRange({ assumptions });
+    expect(fit(["Linear: 95% of synthetic innovations are below about 3.1 m in 0.5 s, so beyond is an extrapolation."])).toEqual({
+      sharePct: 95,
+      limitM: 3.1,
+      horizonS: 0.5,
+    });
+    expect(fit(["95% of synthetic innovations are below about 3.1 m in 0.5 s."])).toBeNull();
+    expect(fit(["An extrapolation, with no numbers."])).toBeNull();
+    expect(policyFitRange(null)).toBeNull();
   });
 
   it("puts the static baseline first and falls back to the two original policies", () => {

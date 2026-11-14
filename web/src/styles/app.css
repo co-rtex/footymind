@@ -1758,9 +1758,47 @@ kbd {
   border: 1px dashed rgba(233, 196, 106, 0.6);
   background: rgba(233, 196, 106, 0.08);
 }
+/* Response-policy verdicts (src/lib/policies.ts policyBadge): one vocabulary everywhere. */
+.badge--policy {
+  margin-left: 0;
+  white-space: nowrap;
+  cursor: help;
+}
+.badge--policy-observational {
+  color: var(--c-positive);
+  border: 1px solid rgba(90, 209, 157, 0.45);
+  background: rgba(90, 209, 157, 0.08);
+}
+.badge--policy-forecaster {
+  color: var(--c-text-muted);
+  border: 1px solid var(--c-border-strong);
+  background: var(--c-surface-2);
+}
+.badge--policy-not-supported {
+  color: var(--c-negative);
+  border: 1px dashed rgba(242, 120, 122, 0.6);
+  background: rgba(242, 120, 122, 0.08);
+}
+.badge--policy-experimental {
+  color: var(--c-warning);
+  border: 1px dashed rgba(233, 196, 106, 0.6);
+  background: rgba(233, 196, 106, 0.08);
+}
 .policy-picker {
   display: grid;
   gap: var(--sp-1);
+}
+.policy-note {
+  display: grid;
+  gap: var(--sp-1);
+}
+.policy-note p {
+  margin: 0;
+}
+.policy-fit {
+  color: var(--c-warning);
+  border-left: 2px solid rgba(233, 196, 106, 0.6);
+  padding-left: var(--sp-2);
 }
 .policy-picker-row {
   display: flex;

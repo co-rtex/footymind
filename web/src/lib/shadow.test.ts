@@ -6,6 +6,8 @@ import {
   HALO_MAX_RADIUS_M,
   HALO_MIN_RADIUS_M,
   rankShadow,
+  ringText,
+  shadowCaveat,
   shadowDrawn,
   shadowHalo,
   shadowStanding,
@@ -85,6 +87,18 @@ describe("parseDefensiveShadow (synthetic fixture)", () => {
     expect(err).toBeInstanceOf(ApiError);
     expect((err as ApiError).status).toBe(422);
     expect((err as ApiError).detail).toBe("ball not observed at this frame");
+  });
+});
+
+describe("shadow ring wording follows the API's alt_radius_m", () => {
+  it("names the radius the API sent and never invents one", () => {
+    expect(ringText(2.75)).toBe("a 2.75 m ring");
+    expect(ringText(null)).toBe("a ring");
+    expect(ringText(undefined)).toBe("a ring");
+    expect(ringText(Number.NaN)).toBe("a ring");
+    expect(shadowCaveat(4)).toContain("nearby positions on a 4 m ring around the defender");
+    expect(shadowCaveat(null)).toContain("nearby positions on a ring around the defender");
+    expect(shadowCaveat(null)).not.toMatch(/\d m ring/);
   });
 });
 

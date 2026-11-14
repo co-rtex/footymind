@@ -106,6 +106,8 @@ export interface Replay {
   players: PlayerOut[];
   frame: number[];
   time_s: number[];
+  /** seconds since the first tracked frame of each frame's period (match clock basis); absent on older backends */
+  period_time_s?: number[];
   period: number[];
   /** length n_frames * n_players * 2, row-major [frame][player][x|y], null = not observed */
   players_xy: (number | null)[];
@@ -195,9 +197,10 @@ export interface ModelInfo {
   reference: string;
   status: string;
   params: Record<string, number>;
-  /** provider the served model belongs to (never another provider's model) */
-  provider?: string;
-  resource?: string;
+  /** provider the served model belongs to (never another provider's model); null for the physics model */
+  provider?: string | null;
+  /** packaged model file; null for the physics model */
+  resource?: string | null;
 }
 
 export interface FrameAnalysisOut {
@@ -205,6 +208,8 @@ export interface FrameAnalysisOut {
   frame: number;
   period: number;
   time_s: number;
+  /** seconds since the period's first tracked frame (absent on older backends) */
+  period_time_s?: number;
   attacking_team: Team | null;
   attack_sign: number;
   possession_id: string | null;
@@ -323,6 +328,12 @@ export interface PolicyInfo {
   validated: boolean;
   /** where the validation lives (ledger claim, results file), or null */
   validation_ref: string | null;
+  /**
+   * The backend's verdict in words: "validated: ...", "validated (observational): ...",
+   * "experimental: ..." or "no response simulated". Shown verbatim; the lab derives its badge
+   * from it (src/lib/policies.ts policyBadge). Absent on older backends.
+   */
+  status?: string | null;
 }
 export type VelocityMode = "keep" | "zero";
 export type ValueModel = "option_model" | "physics";
@@ -354,6 +365,12 @@ export interface FeasibilityOut {
   supported: boolean;
   notes: string[];
   kind: "user" | "simulated";
+  /**
+   * Inside the kinematic envelope (reaction delay, acceleration and speed limits) from the observed
+   * position and velocity horizon_s earlier; null when that origin is unobserved. Diagnostic only:
+   * it does not change `supported`. Absent on older backends.
+   */
+  kinematic_reachable?: boolean | null;
 }
 
 export interface MovementOut {

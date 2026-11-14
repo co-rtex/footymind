@@ -38,11 +38,22 @@ function scenario(extra: Record<string, unknown> = {}) {
 
 describe("parsePolicyInfo / parseResponsePolicies", () => {
   it("accepts a full policy and treats a missing validation_ref as null", () => {
-    expect(parsePolicyInfo(POLICY)).toEqual(POLICY);
+    expect(parsePolicyInfo(POLICY)).toEqual({ ...POLICY, status: null });
     const noRef: Record<string, unknown> = { ...POLICY };
     delete noRef.validation_ref;
     expect(parsePolicyInfo(noRef).validation_ref).toBeNull();
     expect(parsePolicyInfo({ ...POLICY, validated: true, validation_ref: "C30" }).validation_ref).toBe("C30");
+  });
+
+  it("keeps the backend's status verdict, and tolerates it missing, null or blank (older backends)", () => {
+    const verdict = "experimental: synthetic verdict (not a result)";
+    expect(parsePolicyInfo({ ...POLICY, status: verdict }).status).toBe(verdict);
+    expect(parsePolicyInfo({ ...POLICY, status: `  ${verdict} ` }).status).toBe(verdict);
+    expect(parsePolicyInfo({ ...POLICY, status: null }).status).toBeNull();
+    expect(parsePolicyInfo({ ...POLICY, status: "   " }).status).toBeNull();
+    expect(parsePolicyInfo(POLICY).status).toBeNull();
+    expect(() => parsePolicyInfo({ ...POLICY, status: 3 })).toThrow(/status/);
+    expect(parseResponsePolicies([{ ...POLICY, status: verdict }])[0]?.status).toBe(verdict);
   });
 
   it("rejects malformed policies", () => {
@@ -72,7 +83,9 @@ describe("parseScenario with and without a policy", () => {
 
   it("accepts a null policy and a well-formed policy", () => {
     expect(parseScenario(scenario({ policy: null })).policy).toBeNull();
-    expect(parseScenario(scenario({ policy: POLICY })).policy).toEqual(POLICY);
+    expect(parseScenario(scenario({ policy: POLICY })).policy).toEqual({ ...POLICY, status: null });
+    const withStatus = { ...POLICY, status: "experimental: synthetic verdict" };
+    expect(parseScenario(scenario({ policy: withStatus })).policy?.status).toBe("experimental: synthetic verdict");
   });
 
   it("rejects a malformed policy or movement", () => {

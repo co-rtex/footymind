@@ -8,8 +8,15 @@
  */
 import type { DefenderShadowOut } from "../api/types";
 
-export const SHADOW_CAVEAT =
-  "Experimental model-based sensitivity: how much passing value (option model) this position removes compared with nearby positions on a 3.5 m ring around the defender (not checked for reachability). Validated only partly: on Metrica data it ranks the eventual interceptor first about 2× more often than chance, but not better than simply 'nearest defender to the ball'; on SkillCorner broadcast data it does no better than chance. Not a defender rating.";
+/** "a 3.5 m ring" when the API has sent the radius (alt_radius_m), else "a ring". Never a constant of the app. */
+export function ringText(altRadiusM: number | null | undefined): string {
+  return typeof altRadiusM === "number" && Number.isFinite(altRadiusM) && altRadiusM > 0 ? `a ${altRadiusM} m ring` : "a ring";
+}
+
+/** The panel's caveat, with the ring radius the API sent (DefensiveShadowOut.alt_radius_m) once it has arrived. */
+export function shadowCaveat(altRadiusM: number | null | undefined): string {
+  return `Experimental model-based sensitivity: how much passing value (option model) this position removes compared with nearby positions on ${ringText(altRadiusM)} around the defender (not checked for reachability). Validated only partly: on Metrica data it ranks the eventual interceptor first about 2× more often than chance, but not better than simply 'nearest defender to the ball'; on SkillCorner broadcast data it does no better than chance. Not a defender rating.`;
+}
 
 /** shadow_sum at which the halo reaches full size and opacity (summed option value). */
 export const SHADOW_FULL_SCALE = 0.3;

@@ -113,6 +113,19 @@ export const FEATURED: readonly FeaturedScenario[] = [
   },
 ];
 
+/**
+ * The featured situations whose match this server has (GET /api/matches), in curated order. A
+ * Metrica-only setup (the README quick start, the Docker default) has no SkillCorner bundles, so
+ * the broadcast situation is left out instead of shown as a broken card.
+ */
+export function availableFeatured(
+  matchIds: Iterable<string>,
+  list: readonly FeaturedScenario[] = FEATURED,
+): FeaturedScenario[] {
+  const ids = new Set(matchIds);
+  return list.filter((f) => ids.has(f.matchId));
+}
+
 export function featuredById(id: string | null | undefined): FeaturedScenario | null {
   return FEATURED.find((f) => f.id === id) ?? null;
 }

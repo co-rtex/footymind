@@ -14,7 +14,7 @@ import type {
   ValueModel,
 } from "../api/types";
 import { MAX_INTERVENTIONS } from "../api/types";
-import { fmtSigned, playerLabel, speedOf, titleCase } from "../lib/format";
+import { fmtMetres, fmtSigned, playerLabel, speedOf, titleCase } from "../lib/format";
 import { matchTeams, matchTitle, labelledPlayers, teamName, type TeamNames } from "../lib/teams";
 import { matchOfPossession, useAsync } from "../lib/hooks";
 import { finiteDiffSpeed, valueAt } from "../lib/interp";
@@ -257,7 +257,7 @@ function LabView({
   // A linked response only makes sense with linked moves; the backend validates the name.
   const [policy, setPolicy] = useState<ResponsePolicy>(linkedMoves.length && initialResponse ? initialResponse : STATIC_POLICY);
   const [valueModel, setValueModel] = useState<ValueModel>("option_model");
-  const [dragWarn, setDragWarn] = useState<{ outside: boolean | null; id: string } | null>(null);
+  const [dragWarn, setDragWarn] = useState<{ outside: boolean | null; id: string; radius: number | null } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   // ---- playback -> renderer (imperative, per animation frame) ----
@@ -316,7 +316,7 @@ function LabView({
   const analysis = an.data && an.data.frame === frame ? an.data : null;
 
   // ---- defensive shadow (experimental): lazy, paused + analyse mode only, debounced, cached ----
-  // Each frame costs about 0.4 s on the backend, so it is never fetched during playback.
+  // Each frame costs up to about a second on the backend, so it is never fetched during playback.
   const shadowAvailable = mode === "analyse" && !playing;
   const shadowWanted = layers.shadow && shadowAvailable;
   const shadowCache = useRef(new Map<number, { data: DefensiveShadowOut } | { unavailable: string }>());
@@ -599,9 +599,14 @@ function LabView({
     [analysis, applyMove, players],
   );
 
-  const onDragOutsideChange = useCallback((outside: boolean | null, id: string | null) => {
-    setDragWarn(id ? { outside, id } : null);
-  }, []);
+  const onDragOutsideChange = useCallback(
+    (outside: boolean | null, id: string | null) => {
+      // the reach radius is the API's (PlayerState.reach_radius_m), never a constant of the app
+      const radius = id ? (analysis?.players.find((q) => q.player_id === id)?.reach_radius_m ?? null) : null;
+      setDragWarn(id ? { outside, id, radius } : null);
+    },
+    [analysis],
+  );
 
   const retryAnalysis = useCallback(() => setAnNonce((n) => n + 1), []);
   const retryShadow = useCallback(() => setShNonce((n) => n + 1), []);
@@ -829,7 +834,7 @@ function LabView({
                 className={`chip-toggle chip-toggle--experimental${shadowAvailable ? "" : " is-disabled"}`}
                 title={
                   shadowAvailable
-                    ? "Experimental: estimated passing value each defender's position removes (about 0.4 s per frame)"
+                    ? "Experimental: estimated passing value each defender's position removes (slow: under a second per frame)"
                     : "Available when paused in Replay & analyse mode"
                 }
               >
@@ -909,10 +914,12 @@ function LabView({
                 data-testid="drag-warning"
               >
                 {dragWarn.outside === true
-                  ? "Outside the reachable region: not reachable at 7 m/s from the observed position 1.5 s earlier"
+                  ? dragWarn.radius !== null
+                    ? `Outside the reachable region: more than ${fmtMetres(dragWarn.radius)} from the observed position a moment earlier`
+                    : "Outside the reachable region"
                   : dragWarn.outside === false
                     ? "Within the reachable region"
-                    : "Reachability cannot be verified: no observed position 1.5 s earlier"}
+                    : "Reachability cannot be verified: no observed earlier position"}
               </span>
             ) : null}
           </div>

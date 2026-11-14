@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { syntheticAnalysis, syntheticReplay } from "../test/fixtures";
-import { ApiError, createApi, formatErrorDetail } from "./client";
+import { describeError } from "../lib/errors";
+import { ApiError, createApi, formatErrorDetail, REQUEST_TIMEOUT_MS } from "./client";
 import { ContractError, parseAnalysis, parsePossessions, parseReplay, parseScenario } from "./parse";
 
 describe("parseReplay (synthetic fixture)", () => {
@@ -120,5 +121,78 @@ describe("api client", () => {
     const abort = new DOMException("aborted", "AbortError");
     const api = createApi((() => Promise.reject(abort)) as unknown as typeof fetch);
     await expect(api.matches()).rejects.toBe(abort);
+  });
+
+  /** A fetch that never answers: it settles only when its signal aborts (like a hung API). */
+  function hangingFetch() {
+    const signals: AbortSignal[] = [];
+    const impl = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          const s = init?.signal;
+          if (!s) return;
+          signals.push(s);
+          if (s.aborted) return reject(new DOMException("aborted", "AbortError"));
+          s.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+        }),
+    );
+    return { impl, signals };
+  }
+
+  it("times out a hung API with a clear, retryable 'timed out' error", async () => {
+    vi.useFakeTimers();
+    try {
+      const { impl } = hangingFetch();
+      const api = createApi(impl as unknown as typeof fetch, 5_000);
+      const p = api.matches().catch((e: unknown) => e);
+      await vi.advanceTimersByTimeAsync(4_999);
+      expect(impl).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+      const err = (await p) as ApiError;
+      expect(err).toBeInstanceOf(ApiError);
+      expect(err.timedOut).toBe(true);
+      expect(err.unreachable).toBe(true);
+      expect(err.message).toMatch(/did not answer within 5 s \(timed out\)/);
+      const view = describeError(err);
+      expect(view.retryable).toBe(true);
+      expect(view.message).toMatch(/timed out/);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("uses a 30 s timeout by default and still honours the caller's abort", async () => {
+    expect(REQUEST_TIMEOUT_MS).toBe(30_000);
+    const { impl, signals } = hangingFetch();
+    const api = createApi(impl as unknown as typeof fetch);
+    const ac = new AbortController();
+    const p = api.matches(ac.signal).catch((e: unknown) => e);
+    await Promise.resolve();
+    expect(signals[0]?.aborted).toBe(false);
+    ac.abort();
+    const err = await p;
+    expect(err).toBeInstanceOf(DOMException);
+    expect((err as DOMException).name).toBe("AbortError");
+    expect(signals[0]?.aborted).toBe(true);
+  });
+
+  it("passes an already-aborted caller signal straight through", async () => {
+    const { impl, signals } = hangingFetch();
+    const api = createApi(impl as unknown as typeof fetch);
+    const ac = new AbortController();
+    ac.abort();
+    await expect(api.matches(ac.signal)).rejects.toMatchObject({ name: "AbortError" });
+    expect(signals[0]?.aborted).toBe(true);
+  });
+
+  it("does not time out a response that arrives in time", async () => {
+    vi.useFakeTimers();
+    try {
+      const api = createApi((() => json(200, [])) as unknown as typeof fetch, 1_000);
+      await expect(api.matches()).resolves.toEqual([]);
+      await vi.advanceTimersByTimeAsync(2_000);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
