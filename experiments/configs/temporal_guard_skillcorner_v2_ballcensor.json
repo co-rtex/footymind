@@ -1,0 +1,70 @@
+{
+  "name": "temporal_guard_skillcorner_v2_ballcensor",
+  "description": "Pre-registered re-run (session 4, written before any result was seen) of temporal_guard_skillcorner_v1_02s with one change: censor_undetected_ball = true, so time-on-ball (passer_control_s, quick_release) is NaN when the count reaches a frame where SkillCorner extrapolated the ball, instead of treating the extrapolated ball as observed. Matches, rules, both 0.2 s guards, models, comparisons, seed and bootstrap are unchanged. Expectations: H-T1 (Adt -> Adt_tob) may change, in either direction (more NaN, median-imputed, may weaken it; removing fabricated short or long runs may sharpen it). C28 (Adt -> Bdt) should reproduce the v1 guard run exactly: Adt and Bdt contain no time-on-ball features and the rows are the same. H-T2 (Bdt_tob -> Bdt_tt, LR and GBM) and H-T3 (Adt_tob -> Bdt_tob) should not change materially, because time-on-ball is on both sides of those contrasts. LR models median-impute the extra NaN; the GBM handles NaN natively. Any change to H-T2 beyond bootstrap noise would be reported as a finding about how time-on-ball interacts with movement history.",
+  "matches": [
+    "skillcorner-1874553",
+    "skillcorner-1886347",
+    "skillcorner-1899585",
+    "skillcorner-1925299",
+    "skillcorner-1927964",
+    "skillcorner-1953632",
+    "skillcorner-1959846",
+    "skillcorner-1986691",
+    "skillcorner-1996435",
+    "skillcorner-1996436",
+    "skillcorner-2006229",
+    "skillcorner-2006363",
+    "skillcorner-2007448",
+    "skillcorner-2007721",
+    "skillcorner-2010085",
+    "skillcorner-2011166",
+    "skillcorner-2013725",
+    "skillcorner-2015213",
+    "skillcorner-2016236",
+    "skillcorner-2017461"
+  ],
+  "seed": 0,
+  "dataset": {
+    "rules": "v2",
+    "include_ball_out": true,
+    "temporal_offset_s": 0.2,
+    "static_offset_s": 0.2,
+    "censor_undetected_ball": true
+  },
+  "n_boot": 1000,
+  "models": [
+    "base_rate",
+    "Adt_logreg",
+    "Adt_tob_logreg",
+    "Bdt_logreg",
+    "Bdt_tob_logreg",
+    "Bdt_tt_logreg",
+    "Bdt_tob_gbm",
+    "Bdt_tt_gbm"
+  ],
+  "comparisons": [
+    [
+      "Adt_logreg",
+      "Bdt_logreg"
+    ],
+    [
+      "Adt_logreg",
+      "Adt_tob_logreg"
+    ],
+    [
+      "Bdt_tob_logreg",
+      "Bdt_tt_logreg"
+    ],
+    [
+      "Bdt_tob_gbm",
+      "Bdt_tt_gbm"
+    ],
+    [
+      "Adt_tob_logreg",
+      "Bdt_tob_logreg"
+    ]
+  ],
+  "importances": [
+    "Bdt_tt_logreg"
+  ]
+}
