@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from importlib import resources
 from typing import Any
 
 import numpy as np
@@ -206,3 +207,20 @@ class InnovationResponseModel:
             a("coef_y"),
             dict(d["meta"]),
         )
+
+
+_CACHE: dict[str, InnovationResponseModel | None] = {}
+
+
+def load_innovation_model(provider: str) -> InnovationResponseModel | None:
+    """The packaged innovation model for ``provider``, or None if it has not been trained."""
+    resource = INNOVATION_RESOURCES.get(provider)
+    if resource is None:
+        return None
+    if resource not in _CACHE:
+        try:
+            text = resources.files("footymind.counterfactual").joinpath(resource).read_text()
+            _CACHE[resource] = InnovationResponseModel.from_json(text)
+        except FileNotFoundError:
+            _CACHE[resource] = None
+    return _CACHE[resource]

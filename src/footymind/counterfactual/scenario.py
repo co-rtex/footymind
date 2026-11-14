@@ -41,6 +41,7 @@ from footymind.counterfactual.response import (
     apply_response,
     policy_info,
 )
+from footymind.counterfactual.response_innovation import load_innovation_model
 from footymind.counterfactual.response_model import load_response_model
 from footymind.data.store import load_match
 from footymind.spatial.analysis import FrameAnalysis, PassOption, analyze, summary
@@ -291,6 +292,9 @@ def run_scenario(
         follow_fraction=follow_fraction,
         ball_velocity=ball_velocity(match_id, frame) if policy == "learned" else None,
         model=load_response_model(provider_of(match_id)) if policy == "learned" else None,
+        innovation_model=(
+            load_innovation_model(provider_of(match_id)) if policy == "learned_innovation" else None
+        ),
     )
     hyp_state, moves, policy_notes = _apply(
         observed_state, interventions, policy, follow_fraction, velocity_mode, ctx

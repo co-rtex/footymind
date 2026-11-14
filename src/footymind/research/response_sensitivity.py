@@ -26,6 +26,7 @@ import polars as pl
 
 from footymind.counterfactual.kinematics import DEFAULT_LIMITS, default_limits
 from footymind.counterfactual.response import Intervention, ResponseContext, apply_response
+from footymind.counterfactual.response_innovation import load_innovation_model
 from footymind.counterfactual.response_model import load_response_model
 from footymind.counterfactual.scenario import ball_velocity
 from footymind.data.store import available_matches, git_revision, load_match
@@ -47,6 +48,8 @@ def main(
     rng = np.random.default_rng(seed)
     mids = [m for m in available_matches() if m.startswith(provider + "-")]
     model = load_response_model(provider)
+    innovation = load_innovation_model(provider) if version >= 2 else None
+    policies = POLICIES if version == 1 else (*POLICIES, "learned_innovation")
     cands = []
     for mid in mids:
         ev = load_match(mid).events.filter(
@@ -56,7 +59,7 @@ def main(
         cands += [(mid, int(f), str(t)) for f, t in pairs]
     order = rng.permutation(len(cands))
     acc: dict[str, dict[str, list[tuple[int, float, float]]]] = {
-        p: {f"{d:g}m": [] for d in DISPLACEMENTS_M} for p in POLICIES
+        p: {f"{d:g}m": [] for d in DISPLACEMENTS_M} for p in policies
     }
     used = 0
     for k in order:
@@ -75,10 +78,13 @@ def main(
             horizon_s=HORIZON_S,
             ball_velocity=ball_velocity(mid, f),
             model=model,
+            innovation_model=innovation,
             limits=limits,
         )
-        for pol in POLICIES:
+        for pol in policies:
             if pol == "learned" and model is None:
+                continue
+            if pol == "learned_innovation" and innovation is None:
                 continue
             who = r if pol in ("marker_follows", "lane_cover") else s.carrier
             for d in DISPLACEMENTS_M:
@@ -117,6 +123,9 @@ def main(
         "matches": mids,
         "code_revision": git_revision(),
         "response_model_code_revision": model.meta.get("code_revision") if model else None,
+        "innovation_model_code_revision": (
+            innovation.meta.get("code_revision") if innovation else None
+        ),
         "runtime_s": round(time.time() - t0, 1),
         "n_frames": used,
         "horizon_s": HORIZON_S,
