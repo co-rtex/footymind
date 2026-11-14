@@ -83,8 +83,9 @@ ingested before `ac0629f` load the mask as None.
    the null.
 2. **Response envelope v2.** The a-priori envelope contains only 61–73% of real 1 s positions
    (C41, C43). Pre-register a v2 (shorter reaction delay) and re-validate.
-3. **Time-on-ball on broadcast.** Censor runs at *undetected* ball frames now that the mask exists.
-   Re-run `temporal_guard_skillcorner_v1_02s` (expect a small change to H-T1 only).
+3. **Time-on-ball on broadcast.** `DatasetConfig(censor_undetected_ball=True)` (opt-in, tested)
+   censors time-on-ball at extrapolated-ball frames. Pre-register a SkillCorner guard re-run with
+   it, about 48 min under load (expect a change to H-T1 only).
 4. **Similar moments.** Pre-register and validate the displayed k = 8 list (Brier score) or
    display k = 50.
 5. **Docker.** Build the image locally once with the new entrypoint (similarity index on first

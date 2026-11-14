@@ -147,3 +147,28 @@ def test_dataset_rows_match_direct_computation() -> None:
     assert (tob >= 0).all() and (tob <= MAX_CONTROL_S).all()
     ok = df.filter(pl.col("passer_control_s").is_not_nan())
     assert ((ok["passer_control_s"] < 1.0).cast(int) == ok["quick_release"].cast(int)).all()
+
+
+SC = [m for m in available_matches() if m.startswith("skillcorner-")]
+
+
+@pytest.mark.skipif(not SC, reason="SkillCorner data not ingested")
+def test_opt_in_censoring_of_extrapolated_ball() -> None:
+    """Default off (committed results unchanged); on, extrapolated balls censor time-on-ball."""
+    mid = SC[0]
+    td = load_match(mid).tracking
+    if td.ball_detected is None:
+        pytest.skip("bundle ingested before the ball_detected mask existed")
+    n_diff = n_nan_more = 0
+    for r in _some_passes(mid, 40):
+        i0 = td.index_of_frame(int(r["start_frame"]))
+        s = frame_state(mid, int(r["start_frame"]))
+        p = td.player_index(r["from_player_id"])
+        off = temporal_context(td, i0, r["team"], p, s.is_gk)["passer_control_s"]
+        on = temporal_context(td, i0, r["team"], p, s.is_gk, censor_undetected_ball=True)[
+            "passer_control_s"
+        ]
+        if not (off == on or (np.isnan(off) and np.isnan(on))):
+            n_diff += 1
+            n_nan_more += int(np.isnan(on) and not np.isnan(off))
+    assert n_diff == n_nan_more  # censoring only ever turns a value into "unknown"

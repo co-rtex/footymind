@@ -174,6 +174,7 @@ def temporal_context(
     passer: int,
     is_gk: npt.NDArray[np.bool_],
     lookbacks_s: tuple[float, ...] = (TEMPORAL_LOOKBACK_S,),
+    censor_undetected_ball: bool = False,
 ) -> dict[str, float]:
     """Temporal features at tracking index ``i0`` (the decision frame) for ``passer``.
 
@@ -192,8 +193,14 @@ def temporal_context(
         lo -= 1
     hist_xy = td.xy[lo : i0 + 1].astype(np.float64)
     hist_ball = td.ball_xy[lo : i0 + 1].astype(np.float64)
+    ball_for_control = hist_ball
+    if censor_undetected_ball and td.ball_detected is not None:
+        # Opt-in: treat provider-extrapolated ball positions as unobserved for time-on-ball,
+        # so a run reaching an extrapolated frame is censored (NaN), not counted.
+        ball_for_control = hist_ball.copy()
+        ball_for_control[~td.ball_detected[lo : i0 + 1]] = np.nan
     out: dict[str, float] = {
-        "passer_control_s": control_duration_s(hist_xy[:, passer], hist_ball, td.fps),
+        "passer_control_s": control_duration_s(hist_xy[:, passer], ball_for_control, td.fps),
     }
     tob = out["passer_control_s"]
     out["quick_release"] = float(tob < QUICK_RELEASE_S) if np.isfinite(tob) else np.nan

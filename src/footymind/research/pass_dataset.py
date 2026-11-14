@@ -225,6 +225,10 @@ class DatasetConfig:
     # 2026-11-14), so release-frame positions can carry the start of the kick. Release and
     # label features are unaffected.
     static_offset_s: float = 0.0
+    # Opt-in (default off so committed results reproduce): censor time-on-ball at frames where
+    # the provider extrapolated the ball (SkillCorner ``ball_detected``; needs re-ingested
+    # bundles). Planned for a pre-registered SkillCorner re-run (CURRENT_STATE, next actions).
+    censor_undetected_ball: bool = False
     ray_length_m: float = 40.0
 
 
@@ -428,10 +432,14 @@ def _features_for(
     i_t = i0 - round(cfg.temporal_offset_s * td.fps)
     lookbacks = (TEMPORAL_LOOKBACK_S, *LOOKBACK_SENSITIVITY_S)
     if i_t < 0 or td.period[i_t] != td.period[i0]:
-        row.update(temporal_context(td, i0, team, passer, s.is_gk, lookbacks))
+        row.update(
+            temporal_context(td, i0, team, passer, s.is_gk, lookbacks, cfg.censor_undetected_ball)
+        )
         row.update({k: np.nan for k in row if k in _TEMPORAL_COLS})
     else:
-        row.update(temporal_context(td, i_t, team, passer, s.is_gk, lookbacks))
+        row.update(
+            temporal_context(td, i_t, team, passer, s.is_gk, lookbacks, cfg.censor_undetected_ball)
+        )
     # tracking-quality metadata for stratified analysis (never a feature)
     row["history_detected_frac"] = history_detected_fraction(td, max(i_t, 0))
 
