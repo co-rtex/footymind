@@ -64,6 +64,8 @@ export interface Scene {
   highlightReceiver: string | null;
   /** players named by the focused "why this moment" statement, ringed on the pitch */
   tracePlayers: readonly string[];
+  /** team display names for the attack-direction labels */
+  teams: { home: string; away: string };
   /** defensive shadow for the paused frame (experimental) */
   shadow: DefensiveShadowOut | null;
 }
@@ -94,6 +96,7 @@ export function defaultScene(): Scene {
     selectedId: null,
     highlightReceiver: null,
     tracePlayers: [],
+    teams: { home: "Home", away: "Away" },
     shadow: null,
   };
 }
@@ -419,7 +422,7 @@ export class PitchRenderer {
       if (!sign) continue;
       // label sits in the team's own half and points towards the goal it attacks
       const x = toCanvasX(tf, (-sign * r.pitch.length) / 4);
-      const name = team === "home" ? "HOME" : "AWAY";
+      const name = (team === "home" ? this.scene.teams.home : this.scene.teams.away).toUpperCase();
       const label = sign > 0 ? `${name} attacks →` : `← ${name} attacks`;
       ctx.fillStyle = rgba(this.teamColour(team), 0.85);
       ctx.fillText(label, x, y);

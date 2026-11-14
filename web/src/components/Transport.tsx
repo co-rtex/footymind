@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, type KeyboardEvent } from "react";
 import type { ReplayData } from "../api/parse";
 import type { MatchSummary, PlayerOut } from "../api/types";
 import { playerLabel } from "../lib/format";
+import { labelledPlayers, matchTeams } from "../lib/teams";
 import type { Playback } from "../lib/playback";
 import { clockAt, eventKind, eventLabel, indexOfFrame, periodAt } from "../lib/replayIndex";
 import { Segmented } from "./Segmented";
@@ -24,7 +25,7 @@ export function Transport({ playback, replay, match, playing, speed, disabled, d
   const clockRef = useRef<HTMLSpanElement>(null);
   const periodRef = useRef<HTMLSpanElement>(null);
   const frameRef = useRef<HTMLSpanElement>(null);
-  const players = useMemo(() => new Map<string, PlayerOut>(replay.players.map((p) => [p.player_id, p])), [replay]);
+  const players: Map<string, PlayerOut> = useMemo(() => labelledPlayers(replay.players, matchTeams(match)), [replay, match]);
   const last = replay.nFrames - 1;
 
   // Imperative per-frame DOM updates: no React render while playing.

@@ -9,7 +9,15 @@ import { api, ApiError } from "../api/client";
 import { ContractError, parseAnalysis, parseSimilar } from "../api/parse";
 import type { PlayerOut, SimilarMomentsOut, StatementOut } from "../api/types";
 import { groupStatements } from "../lib/explain";
-import { ballZone, idLabel, isUnvalidated, matchShortLabel, similarEmptyState, similarHeadline } from "../lib/similar";
+import {
+  ballZone,
+  idLabel,
+  isUnvalidated,
+  matchShortLabel,
+  resetMatchIndex,
+  similarEmptyState,
+  similarHeadline,
+} from "../lib/similar";
 import { syntheticAnalysis } from "../test/fixtures";
 import { SimilarPanel } from "./SimilarPanel";
 import { WhyPanel } from "./WhyPanel";
@@ -155,11 +163,15 @@ describe("WhyPanel", () => {
 });
 
 describe("SimilarPanel", () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    resetMatchIndex();
+  });
 
   it("fetches only on request and shows the headline, unvalidated badge, disclaimer and links", async () => {
+    vi.spyOn(api, "matches").mockResolvedValue([]);
     const spy = vi.spyOn(api, "similar").mockResolvedValue(similar());
-    render(<SimilarPanel matchId="metrica-sample-1" frame={100} provider="Metrica Sports" />);
+    render(<SimilarPanel matchId="metrica-sample-1" frame={100} provider="Metrica Sports" players={players} />);
     expect(spy).not.toHaveBeenCalled();
     await userEvent.click(screen.getByTestId("similar-find"));
     expect(spy).toHaveBeenCalledWith("metrica-sample-1", 100, 8, expect.anything());
@@ -175,12 +187,56 @@ describe("SimilarPanel", () => {
     expect(within(first).getByRole("link")).toHaveAttribute("href", "#/at/metrica-sample-2?f=18521");
   });
 
-  it("shows no unvalidated badge when the held-out criterion is met", async () => {
-    vi.spyOn(api, "similar").mockResolvedValue(similar({ validation: { ref: "r.json", knn_beats_base_rate: true, log_loss: null } }));
-    render(<SimilarPanel matchId="metrica-sample-1" frame={100} provider="Metrica Sports" />);
+  it("shows the validated held-out state instead of the unvalidated badge", async () => {
+    vi.spyOn(api, "matches").mockResolvedValue([]);
+    vi.spyOn(api, "similar").mockResolvedValue(
+      similar({ validation: { ref: "experiments/results/synthetic/results.json", knn_beats_base_rate: true, log_loss: null } }),
+    );
+    render(<SimilarPanel matchId="metrica-sample-1" frame={100} provider="Metrica Sports" players={players} />);
     await userEvent.click(screen.getByTestId("similar-find"));
     await screen.findByTestId("similar-headline");
     expect(screen.queryByTestId("similar-unvalidated")).toBeNull();
+    expect(screen.getByTestId("similar-validated-pill")).toHaveTextContent("validated held-out");
+    const note = screen.getByTestId("similar-validated");
+    expect(note).toHaveTextContent("Validated on held-out matches");
+    expect(note).toHaveTextContent("experiments/results/synthetic/results.json");
+  });
+
+  it("names neighbour teams and shows their match clock from the match summaries", async () => {
+    vi.spyOn(api, "matches").mockResolvedValue([
+      {
+        match_id: "skillcorner-9",
+        source: { provider: "skillcorner", name: "Synthetic", url: "https://example.invalid", license_note: "synthetic" },
+        fps: 10,
+        n_frames: 1,
+        periods: [{ period: 1, first_frame: 10, last_frame: 30000, duration_s: 2999, home_attacks_positive_x: true }],
+        n_possessions: 1,
+        n_events: 1,
+        pitch: { length: 105, width: 68 },
+        home_label: "Synthetic Home FC",
+        away_label: "Synthetic Away United",
+        competition: "Synthetic League, Round 1",
+        date: "2024-01-01",
+      },
+    ]);
+    const base = similar();
+    vi.spyOn(api, "similar").mockResolvedValue(
+      similar({
+        neighbours: [
+          { ...base.neighbours[0]!, match_id: "skillcorner-9", frame: 10 + 21483, passer_id: "away_7", team: "away", period: 1, match_minute: 35.8 },
+          { ...base.neighbours[1]!, period: 2, match_minute: 61.4 },
+        ],
+      }),
+    );
+    render(<SimilarPanel matchId="metrica-sample-1" frame={100} provider="Metrica Sports" players={players} />);
+    await userEvent.click(screen.getByTestId("similar-find"));
+    const items = await screen.findAllByTestId("similar-item");
+    await within(items[0]!).findByText(/Synthetic Home FC vs Synthetic Away United/);
+    expect(items[0]).toHaveTextContent("#7 Synthetic Away United");
+    expect(within(items[0]!).getByTestId("similar-context")).toHaveTextContent("P1 35:48");
+    // no summary for this match: whole provider minute, anonymised labels
+    expect(within(items[1]!).getByTestId("similar-context")).toHaveTextContent("P2 61'");
+    expect(items[1]).toHaveTextContent("#5 Away · Metrica game 3");
   });
 
   it.each([
@@ -188,7 +244,7 @@ describe("SimilarPanel", () => {
     [503, "no-index", /not available for Metrica Sports data yet/],
   ])("renders %s as a quiet empty state, not an error", async (status, kind, text) => {
     vi.spyOn(api, "similar").mockRejectedValue(new ApiError(status, "synthetic"));
-    render(<SimilarPanel matchId="metrica-sample-1" frame={100} provider="Metrica Sports" />);
+    render(<SimilarPanel matchId="metrica-sample-1" frame={100} provider="Metrica Sports" players={players} />);
     await userEvent.click(screen.getByTestId("similar-find"));
     expect(await screen.findByTestId(`similar-empty-${kind}`)).toHaveTextContent(text);
     expect(screen.queryByRole("alert")).toBeNull();
@@ -196,11 +252,11 @@ describe("SimilarPanel", () => {
 
   it("reports a real failure as an error with retry, and is disabled while playing", async () => {
     vi.spyOn(api, "similar").mockRejectedValue(new ApiError(500, "boom"));
-    const { rerender } = render(<SimilarPanel matchId="metrica-sample-1" frame={100} provider="Metrica Sports" />);
+    const { rerender } = render(<SimilarPanel matchId="metrica-sample-1" frame={100} provider="Metrica Sports" players={players} />);
     await userEvent.click(screen.getByTestId("similar-find"));
     expect(await screen.findByRole("alert")).toHaveTextContent("server hit an error");
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
-    rerender(<SimilarPanel matchId="metrica-sample-1" frame={null} provider="Metrica Sports" />);
+    rerender(<SimilarPanel matchId="metrica-sample-1" frame={null} provider="Metrica Sports" players={players} />);
     expect(screen.getByTestId("similar-find")).toBeDisabled();
   });
 });

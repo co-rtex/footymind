@@ -1,16 +1,22 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
-import type { SimilarMomentsOut } from "../api/types";
+import type { MatchSummary, PlayerOut, SimilarMomentsOut } from "../api/types";
+import { playerLabel } from "../lib/format";
 import { routeHash } from "../lib/hooks";
 import {
   ballZone,
   idLabel,
   isUnvalidated,
-  matchShortLabel,
+  isValidated,
+  loadMatchIndex,
+  neighbourClock,
+  neighbourMatchLabel,
+  refHref,
   similarEmptyState,
   similarHeadline,
   type SimilarEmpty,
 } from "../lib/similar";
+import { matchTeams } from "../lib/teams";
 import { ProvBadge } from "./ProvBadge";
 import { StatusBlock } from "./StatusBlock";
 
@@ -19,6 +25,8 @@ interface Props {
   /** the paused replay frame (null while playing) */
   frame: number | null;
   provider: string;
+  /** this match's players, labelled with team names */
+  players: Map<string, PlayerOut>;
 }
 
 type Result =
@@ -39,11 +47,15 @@ function EmptyNote({ empty, provider }: { empty: SimilarEmpty; provider: string 
   );
 }
 
-function Neighbours({ data }: { data: SimilarMomentsOut }) {
+function Neighbours({ data, index }: { data: SimilarMomentsOut; index: Map<string, MatchSummary> }) {
   return (
     <ol className="similar-list" data-testid="similar-list">
       {data.neighbours.map((n) => {
+        const summary = index.get(n.match_id);
+        const where = neighbourMatchLabel(n.match_id, summary);
+        const clock = neighbourClock(n, summary);
         const context = [
+          clock,
           ballZone(n.ball_x_att),
           n.press_nearest_def_m !== null ? `nearest defender ${n.press_nearest_def_m.toFixed(1)} m` : null,
           n.passer_control_s !== null ? `on the ball ${n.passer_control_s.toFixed(1)} s` : null,
@@ -51,13 +63,15 @@ function Neighbours({ data }: { data: SimilarMomentsOut }) {
         return (
           <li key={`${n.match_id}@${n.frame}`} className="similar-item" data-testid="similar-item">
             <span className="similar-who">
-              <strong>{idLabel(n.passer_id)}</strong> <span className="muted">· {matchShortLabel(n.match_id)}</span>
+              <strong>{idLabel(n.passer_id, matchTeams(summary))}</strong> <span className="muted">· {where}</span>
             </span>
             <span className="similar-outcome">
               <span className={`pill ${n.completed ? "pill--ok" : "pill--bad"}`}>{n.completed ? "completed" : "not completed"}</span>
               <ProvBadge prov="observed" />
             </span>
-            <span className="small muted similar-context">{context.length > 0 ? context.join(" · ") : "\u00a0"}</span>
+            <span className="small muted similar-context" data-testid="similar-context">
+              {context.length > 0 ? context.join(" · ") : "\u00a0"}
+            </span>
             <span className="similar-actions">
               <span className="small muted tabular" title="Standardised feature distance: smaller is more similar">
                 distance {n.distance.toFixed(2)}
@@ -65,7 +79,7 @@ function Neighbours({ data }: { data: SimilarMomentsOut }) {
               <a
                 className="btn btn--ghost btn--xs"
                 href={routeHash({ name: "at", matchId: n.match_id, frame: n.frame })}
-                aria-label={`Open ${matchShortLabel(n.match_id)} at frame ${n.frame}`}
+                aria-label={`Open ${where}${clock ? ` at ${clock}` : ` at frame ${n.frame}`}`}
               >
                 Open
               </a>
@@ -77,13 +91,49 @@ function Neighbours({ data }: { data: SimilarMomentsOut }) {
   );
 }
 
+function ValidationNote({ data }: { data: SimilarMomentsOut }) {
+  if (!isValidated(data)) return null;
+  const ref = data.validation?.ref ?? null;
+  const href = refHref(ref);
+  return (
+    <p className="small muted similar-validation" data-testid="similar-validated">
+      Validated on held-out matches: these neighbours&apos; outcomes predicted pass completion better than the overall
+      completion rate.
+      {ref ? (
+        <>
+          {" "}
+          Results:{" "}
+          {href ? (
+            <a href={href} target="_blank" rel="noreferrer">
+              <code>{ref}</code>
+            </a>
+          ) : (
+            <code title="Results file in the FootyMind repository">{ref}</code>
+          )}
+          .
+        </>
+      ) : null}
+    </p>
+  );
+}
+
 /**
  * "Similar moments": past pass decisions from other matches of the same provider whose
  * decision-time situation was closest, with their observed outcomes. Fetched on demand only
  * (never per scrubbed frame), and kept per frame for the session.
  */
-export const SimilarPanel = memo(function SimilarPanel({ matchId, frame, provider }: Props) {
+export const SimilarPanel = memo(function SimilarPanel({ matchId, frame, provider, players }: Props) {
   const [res, setRes] = useState<Result | null>(null);
+  const [index, setIndex] = useState<Map<string, MatchSummary>>(() => new Map());
+  const wantIndex = res?.status === "success";
+  useEffect(() => {
+    if (!wantIndex) return;
+    let live = true;
+    void loadMatchIndex().then((m) => live && setIndex(m));
+    return () => {
+      live = false;
+    };
+  }, [wantIndex]);
   const cache = useRef(new Map<number, Result>());
   const ac = useRef<AbortController | null>(null);
   useEffect(() => () => ac.current?.abort(), []);
@@ -136,9 +186,9 @@ export const SimilarPanel = memo(function SimilarPanel({ matchId, frame, provide
           >
             unvalidated
           </span>
-        ) : res?.status === "success" && res.data.validation?.ref ? (
-          <span className="pill pill--ok" title={res.data.validation.ref}>
-            validated
+        ) : res?.status === "success" && isValidated(res.data) ? (
+          <span className="pill pill--ok similar-validated-pill" data-testid="similar-validated-pill">
+            validated held-out
           </span>
         ) : null}
       </div>
@@ -179,15 +229,16 @@ export const SimilarPanel = memo(function SimilarPanel({ matchId, frame, provide
             {similarHeadline(res.data)} <ProvBadge prov="observed">observed outcomes</ProvBadge>
           </p>
           <p className="small muted">
-            Matched decision: pass by {idLabel(res.data.passer_id)} at frame {res.data.decision_frame}. Similarity uses{" "}
+            Matched decision: pass by {playerLabel(res.data.passer_id, players)} at frame {res.data.decision_frame}. Similarity uses{" "}
             {res.data.features.length || "several"} decision-time features (positions, pressure, recent movement).{" "}
             <ProvBadge prov="derived">similarity</ProvBadge>
           </p>
           {res.data.neighbours.length > 0 ? (
-            <Neighbours data={res.data} />
+            <Neighbours data={res.data} index={index} />
           ) : (
             <p className="small muted">No comparable passes were found in other matches.</p>
           )}
+          <ValidationNote data={res.data} />
           <p className="disclaimer" data-testid="similar-disclaimer">
             {res.data.disclaimer}
           </p>

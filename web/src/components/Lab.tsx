@@ -14,7 +14,8 @@ import type {
   ValueModel,
 } from "../api/types";
 import { MAX_INTERVENTIONS } from "../api/types";
-import { fmtSigned, playerLabel, speedOf, teamLabel, titleCase } from "../lib/format";
+import { fmtSigned, playerLabel, speedOf, titleCase } from "../lib/format";
+import { matchTeams, matchTitle, labelledPlayers, teamName } from "../lib/teams";
 import { matchOfPossession, useAsync } from "../lib/hooks";
 import { finiteDiffSpeed, valueAt } from "../lib/interp";
 import { isNegligible } from "../lib/agreement";
@@ -208,7 +209,9 @@ function LabView({
   initialFrame?: number;
   initialMoves?: InterventionIn[];
 }) {
-  const players = useMemo(() => new Map<string, PlayerOut>(replay.players.map((p) => [p.player_id, p])), [replay]);
+  // Team display names (real names for SkillCorner, Home/Away for anonymised Metrica).
+  const teams = useMemo(() => matchTeams(match), [match]);
+  const players: Map<string, PlayerOut> = useMemo(() => labelledPlayers(replay.players, teams), [replay, teams]);
   const startIdx = useMemo(() => {
     const first = replay.frame[0];
     const last = replay.frame[replay.frame.length - 1];
@@ -407,9 +410,10 @@ function LabView({
       selectedId: selected,
       highlightReceiver: highlight,
       tracePlayers: trace,
+      teams,
       shadow,
     });
-  }, [rendererReady, replay, playing, analysis, scenario, view, layers, mode, pending, selected, highlight, trace, shadow]);
+  }, [rendererReady, replay, playing, analysis, scenario, view, layers, mode, pending, selected, highlight, trace, teams, shadow]);
 
   // A traced statement belongs to one frame and one mode; drop the rings when either changes.
   useEffect(() => setTrace(NO_TRACE), [frame, mode, playing]);
@@ -617,7 +621,7 @@ function LabView({
     else if (shownAnalysis) {
       parts.push(
         shownAnalysis.attacking_team
-          ? `${teamLabel(shownAnalysis.attacking_team)} in possession${
+          ? `${teamName(shownAnalysis.attacking_team, teams)} in possession${
               shownAnalysis.carrier_id ? `, carrier ${playerLabel(shownAnalysis.carrier_id, players)}` : ""
             }.`
           : "No team in possession.",
@@ -636,7 +640,7 @@ function LabView({
     }
     if (scenario) parts.push(`Showing the ${view} view of an edited scenario.`);
     return parts.join(" ");
-  }, [period, clock, playing, shownAnalysis, players, scenario, view, replay, index]);
+  }, [period, clock, playing, shownAnalysis, players, teams, scenario, view, replay, index]);
 
   const pitchStatus =
     mode === "edit"
@@ -664,10 +668,15 @@ function LabView({
       <div className="lab-head">
         <BackButton onBack={onBack} />
         <div className="lab-title">
+          {match ? (
+            <p className="lab-match small" data-testid="match-title">
+              {matchTitle(match)}
+            </p>
+          ) : null}
           <h1 className="h-page">
             {poss ? (
               <>
-                <span className={`team-chip team-chip--${poss.team}`}>{teamLabel(poss.team)}</span> possession · P
+                <span className={`team-chip team-chip--${poss.team}`}>{teamName(poss.team, teams)}</span> possession · P
                 {poss.period} {clockAt(replay, indexOfFrame(replay.frame, poss.start_frame), match)}
               </>
             ) : (
@@ -748,12 +757,12 @@ function LabView({
               >
                 <option value="">{mode === "edit" ? "Choose a player to move" : "Choose a player"}</option>
                 {(["home", "away"] as const).map((team) => (
-                  <optgroup key={team} label={teamLabel(team)}>
+                  <optgroup key={team} label={teamName(team, teams)}>
                     {present
                       .filter((pl) => pl.team === team)
                       .map((pl) => (
                         <option key={pl.player_id} value={pl.player_id}>
-                          #{pl.jersey} {teamLabel(pl.team)}
+                          #{pl.jersey} {teamName(pl.team, teams)}
                         </option>
                       ))}
                   </optgroup>
@@ -838,6 +847,7 @@ function LabView({
             showShadow={layers.shadow && !!shadow && shadowAvailable}
             scenarioLayer={mode === "edit"}
             view={scenario ? view : "observed"}
+            teams={teams}
           />
         </section>
 
@@ -850,6 +860,7 @@ function LabView({
               onMove={(x, y) => selected && applyMove(selected, x, y)}
               onClose={closeInspector}
               focusMove={focusMove}
+              teams={teams}
             />
           ) : null}
 
@@ -898,6 +909,7 @@ function LabView({
                 onTrace={onTrace}
               />
               <AnalysisPanel
+                teams={teams}
                 playing={playing}
                 status={an.status}
                 analysis={an.data}
@@ -912,6 +924,7 @@ function LabView({
                 matchId={replay.matchId}
                 frame={playing ? null : frame}
                 provider={providerInfo(replay.source).label}
+                players={players}
               />
               <EventsCard replay={replay} match={match} players={players} onJump={jumpTo} />
             </>

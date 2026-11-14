@@ -37,7 +37,7 @@ polish.
 | F6 | **Error messages were technical or useless.** With the API stopped, the user saw "HTTP 500: Internal Server Error" (the dev proxy's empty 500). A bad or stale possession link showed "HTTP 404: unknown possession …" with a Retry button that cannot help. | medium | `before/desktop-14-api-down-landing.jpg`, `before/phone-14b-api-down-lab.jpg`, `before/desktop-13-bad-possession.jpg` | **Fixed.** Errors are written in plain language ("The FootyMind server is not responding…", "We could not find this possession. The link may be mistyped, or it may come from an older version of the processed data.") and keep the technical line in small monospace. Retry is shown only when retrying can help. Lab errors offer "Browse possessions". On a phone, the block wraps. See the matching `after/` images. |
 | F7 | **The phone delta table clipped the Agreement column** ("100% r…") with no sign that it scrolls. | medium | `before/phone-deltas-clipped.jpg` | **Fixed.** Below 480 px the interval-bar column is hidden; the observed and hypothetical values stay in their own columns. See `after/phone-deltas.jpg`. |
 | F8 | **On a phone, choosing a match changed nothing visible.** Twenty SkillCorner cards were stacked in one column (about 1,700 px) above the possession list. | medium | `before/phone-landing-matches.jpg` | **Fixed.** On phones, the broadcast matches use two compact columns, and choosing a match brings the possession list's heading into view (instantly, with no animation). The landing page is about 520 px shorter. See `after/phone-landing-matches.jpg`. |
-| F9 | **The match names mean nothing to a viewer** ("Match 1874553"). There are no team names or dates, and `home_label`/`away_label` are "Home"/"Away". | medium | `before/desktop-02-match-selected.jpg` | **Open: needs the backend** (see "Backend changes needed"). |
+| F9 | **The match names mean nothing to a viewer** ("Match 1874553"). There are no team names or dates, and `home_label`/`away_label` are "Home"/"Away". | medium | `before/desktop-02-match-selected.jpg` | **Fixed** (follow-up; the backend now serves the names). SkillCorner cards, chips, filters, legends, player labels ("#17 Adelaide United"), pitch attack labels and a lab match title ("Brisbane FC vs Adelaide United · A-League, Round 5 · 2024-11-23") use the team names. See `teams/desktop-31-match-cards.jpg` and `teams/desktop-33-lab-named.jpg`. Metrica stays "Home"/"Away". |
 | F10 | **At 1440×900, the legend is below the fold in the lab.** Without scrolling, the brown and teal pitch-control colours are unexplained. | medium | `before/desktop-03-lab-paused.jpg` | Open. The proposed fix is a compact colour key in the stage toolbar. It was deferred to avoid crowding the toolbar, which now holds the Player menu. |
 | F11 | **The player card shows the raw id (`away_17`) and centre-spot coordinates.** It gives no football description of where the player is. | low | `before/desktop-04-player-inspector.jpg` | Open. The proposal is a zone line ("in the opponent's box, left half-space"); this needs a product decision on the zone grid. |
 | F12 | **Pass-option headers (Phys., Lane, Ctrl, Fwd) are explained only by hover tooltips**, which touch screens never show. | low | `before/desktop-03-lab-paused.jpg` | Open. The caption carries the full text for screen readers. A visible "How to read this table" disclosure is proposed. |
@@ -162,19 +162,52 @@ Both panels sit in the lab's analysis column (Replay & analyse mode). Screenshot
   match, ball zone, nearest-defender distance, time on the ball, feature distance, and an
   "Open" link to `#/at/<match>?f=<frame>`.
 * An **unvalidated** badge appears unless `validation.knn_beats_base_rate` is exactly `true`.
-  Locally, `validation` is null because the validation results file is not present, so the
-  badge shows.
+  At the time of this follow-up, `validation` was null because the validation results file was not yet committed, so the
+  badge showed. It is now committed, and the validated state is described in the next section.
 * Empty states: 404 ("No pass starts within 2 seconds of this frame…") and 503 ("Similar
   moments are not available for SkillCorner data yet: the comparison index has not been built
   on this server.") appear as quiet `role="status"` notes, not alerts. Any other failure is a
   normal error with Retry.
 * axe reports no violations with both panels open.
 
+## Follow-up: team names, neighbour clocks, validated similarity
+
+Screenshots are in `docs/product/audit-session3/teams/` and were made with `tools/teams.cjs`.
+
+* **Team names.**
+  * SkillCorner summaries now carry `home_label`/`away_label`, `competition` and `date`.
+  * Where the UI used to say Home or Away for a team, it now uses the team name: match cards,
+    the possession-list title, team filter, chips and row labels, the lab's match title and
+    possession chip, the legend, the "#17 Adelaide United" player labels, the Player menu,
+    the player card, the analysis panel, the "Why this moment" text, timeline marker labels,
+    and the attack-direction labels on the pitch.
+  * The featured broadcast scenario on the landing page now names its teams.
+  * Team colours stay keyed to home and away (amber and sky).
+  * Missing parts are left out of the title. Metrica keeps "Home"/"Away" and is titled by its
+    source name ("Metrica Sports Sample Game 1"); nothing is invented for an anonymised match.
+    See `teams/desktop-35-lab-metrica-anon.jpg`.
+* **Neighbour clocks.**
+  * Each similar-moment row shows a clock such as "P2 72:36". It is computed from the
+    neighbour's frame and its match's period starts, exactly as the lab computes its own
+    clock. The e2e test opens a neighbour and checks that the lab clock matches the row.
+  * If the match summary is not available, the row falls back to the provider minute as a
+    whole minute ("P2 101'"). That field has 0.1-minute resolution, so seconds are not shown.
+  * Neighbour rows also name the passer's team and the match ("#15 Newcastle · Auckland FC vs
+    Newcastle").
+* **Validated similarity.** When `validation.knn_beats_base_rate` is `true`, the unvalidated
+  badge is replaced by a "validated held-out" pill, and a note reads: "Validated on held-out
+  matches: these neighbours' outcomes predicted pass completion better than the overall
+  completion rate. Results: `<ref>`."
+  * The ref is a repository path, so it is shown as code. It becomes a link only when it is an
+    absolute URL, or when the build sets `VITE_REPO_BLOB_URL` (for example a GitHub
+    `.../blob/<branch>` base). The app has no project-repository URL to link to.
+  * Long paths now wrap. Before this fix, one pushed the analysis column sideways (found on
+    SkillCorner).
+
 ## Backend changes needed (not made here; `src/` is owned by others)
 
-1. **Team names in `MatchSummary`** (F9). Populate `home_label` and `away_label` from the
-   SkillCorner match metadata, and add a date or round if one is available. Metrica is
-   anonymised, so "Home"/"Away" is correct there.
+1. **Done:** team names, competition and date in `MatchSummary` (F9). The backend now serves
+   them and the UI uses them (see the follow-up above). Metrica stays anonymised.
 2. **The response-policy contract** as agreed: `GET /api/response-policies?match_id=` and
    `ScenarioOut.policy`. The UI already handles both. Please keep `name` values stable,
    because they appear in deep-link state and tests.

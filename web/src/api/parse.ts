@@ -43,9 +43,16 @@ function needKeys(v: unknown, keys: string[], what: string): asserts v is Record
   for (const k of keys) need(k in v, `${what} is missing "${k}"`);
 }
 
+function isStrOrNull(v: unknown): boolean {
+  return v === undefined || v === null || typeof v === "string";
+}
+
 export function parseMatch(raw: unknown): MatchSummary {
   needKeys(raw, ["match_id", "source", "fps", "periods", "pitch"], "match");
   need(Array.isArray(raw.periods), "match.periods is not an array");
+  for (const k of ["home_label", "away_label", "competition", "date"]) {
+    need(isStrOrNull(raw[k]), `match.${k} is not a string or null`);
+  }
   return raw as unknown as MatchSummary;
 }
 
@@ -327,7 +334,8 @@ export function parseSimilar(raw: unknown): SimilarMomentsOut {
     need(typeof n.completed === "boolean", `${what}.completed is not a boolean`);
     need(typeof n.distance === "number" && Number.isFinite(n.distance), `${what}.distance is not a number`);
     need(Number.isInteger(n.frame), `${what}.frame is not an integer`);
-    for (const k of ["ball_x_att", "press_nearest_def_m", "passer_control_s"]) {
+    need(n.period === undefined || n.period === null || Number.isInteger(n.period), `${what}.period is not an integer`);
+    for (const k of ["ball_x_att", "press_nearest_def_m", "passer_control_s", "match_minute"]) {
       need(n[k] === undefined || isNumOrNull(n[k]), `${what}.${k} is not a number or null`);
     }
   });

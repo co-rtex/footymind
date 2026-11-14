@@ -44,8 +44,13 @@ export interface MatchSummary {
   n_possessions: number;
   n_events: number;
   pitch: Pitch;
+  /** team short name ("Brisbane FC"); "Home" for anonymised providers (Metrica) */
   home_label: string;
   away_label: string;
+  /** "A-League, Round 5" (provider metadata); null for anonymised providers, absent on older backends */
+  competition?: string | null;
+  /** kick-off date "2024-11-23"; null for anonymised providers, absent on older backends */
+  date?: string | null;
 }
 
 export interface PossessionSummary {
@@ -247,6 +252,10 @@ export interface SimilarMoment {
   ball_x_att: number | null;
   press_nearest_def_m: number | null;
   passer_control_s: number | null;
+  /** period of that pass (absent on older backends) */
+  period?: number | null;
+  /** provider match clock in minutes at the pass start, 0.1 min resolution (absent on older backends) */
+  match_minute?: number | null;
 }
 
 export interface SimilarValidation {

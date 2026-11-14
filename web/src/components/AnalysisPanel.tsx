@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { FrameAnalysisOut, PlayerOut } from "../api/types";
-import { fmtMetres, playerLabel, teamLabel } from "../lib/format";
+import { fmtMetres, playerLabel } from "../lib/format";
+import { DEFAULT_TEAMS, teamName, type TeamNames } from "../lib/teams";
 import { optionModelLabel, PHYSICS_LABEL } from "../lib/models";
 import { PassOptionsTable } from "./PassOptionsTable";
 import { ProvBadge } from "./ProvBadge";
@@ -17,6 +18,7 @@ interface Props {
   highlight: string | null;
   onHighlight: (id: string | null) => void;
   clock: string;
+  teams?: TeamNames;
 }
 
 export const PASS_TABLE_ID = "pass-options-table";
@@ -31,6 +33,7 @@ export const AnalysisPanel = memo(function AnalysisPanel({
   highlight,
   onHighlight,
   clock,
+  teams = DEFAULT_TEAMS,
 }: Props) {
   if (playing) {
     return (
@@ -82,7 +85,7 @@ export const AnalysisPanel = memo(function AnalysisPanel({
       <p className="possession-line">
         {a.attacking_team ? (
           <>
-            <span className={`team-chip team-chip--${a.attacking_team}`}>{teamLabel(a.attacking_team)}</span> in
+            <span className={`team-chip team-chip--${a.attacking_team}`}>{teamName(a.attacking_team, teams)}</span> in
             possession
             {a.carrier_id ? (
               <>
