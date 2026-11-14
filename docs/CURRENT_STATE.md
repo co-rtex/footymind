@@ -57,14 +57,16 @@ indexes on start.
   policy selector with verdict badges and the learned-innovation fitted-range warning,
   API-sourced reach and shadow parameters, 30 s request timeout, similar moments, phone layout.
 * API hardening: strict JSON (no NaN/Infinity), 422 bodies without the input echoed, 1 MB
-  request-body cap (413), cache freshness after re-ingest.
+  request-body cap (413), cache freshness after re-ingest, stale or unreadable bundles left out
+  of `/api/matches` (listed as `unavailable` in `/api/health`) with 503 on their own endpoints.
+* Docs and ledger consistency are tested (`tests/test_claims_ledger.py`).
 * Docker image verified at runtime (CI `docker` job: empty volume, Metrica 1–2 downloaded by
   the entrypoint, `smoke_api.py --require-similar`, `HEALTHCHECK`).
 
 ## Verification (end of session 4)
 | Gate | Result |
 |---|---|
-| `scripts/check.sh` (exit code 0, all 23 bundles at v3) | ruff, format, mypy, **343 pytest passed, 0 skipped**; web typecheck, lint, **213 vitest**, build |
+| `scripts/check.sh` (exit code 0, all 23 bundles at v3) | ruff, format, mypy, **345 pytest passed, 0 skipped**; web typecheck, lint, **213 vitest**, build |
 | `cd web && npx playwright test --trace off` | **27/27** against the real API on v3 data (flow, screenshots, broadcast tests) |
 | GitHub CI | every job green for 83d4830, including the container-runtime `docker` job; see the final report for the newest run |
 | `scripts/reproduce.sh --dry-run` | exit 0, every committed artefact in dependency order |
@@ -102,8 +104,10 @@ indexes on start.
   (`docs/research/offball_opportunity.md`).
 * **Similar moments (C36)**, **Defensive Shadow (C17, C29)**, **movement decomposition
   (C31, C32)** as before.
-* Session 4 ran one independent engineering review and one independent methodology review;
-  every blocker was fixed or reported (see the research report).
+* Session 4 ran independent reviews: an engineering review and a methodology review of the
+  release (every blocker fixed or reported), a numbers audit of the new ledger rows against
+  their results files (four errors corrected in 90f7bba), and a code review of the late
+  changes (six findings fixed in ac40a4f).
 
 ## Next executable actions (prioritised)
 1. **Multi-attacker responses.** The off-ball study moves one attacker at a time; real runs are
