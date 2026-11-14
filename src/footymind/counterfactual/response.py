@@ -297,6 +297,24 @@ class PolicyInfo:
     validated: bool
     validation_ref: str | None
     status: str
+    verdict: str = "unchecked"
+
+
+# Machine-readable verdicts (the ``status`` text says the same in words).
+VERDICTS = (
+    "no_response",  # the static baseline
+    "forecast_validated",  # beats constant velocity forecasting held-out real play
+    "observational_validated",  # as above, and beats a placebo, given attackers' real movement
+    "observational_supported",  # a rule consistent with real reactions (C70)
+    "not_supported",  # a rule the observational check does not support
+    "unchecked",  # no verdict
+)
+_RULE_VERDICT = {
+    "marker_follows": "observational_supported",
+    "lane_cover": "observational_supported",
+    "press_carrier": "not_supported",
+    "zonal_shift": "not_supported",
+}
 
 
 # Status of the rule policies after the observational check (C37, and C64 with envelope v2).
@@ -345,20 +363,26 @@ def policy_info(name: str, provider: str | None = None) -> PolicyInfo:
                 refs.append(str(v["ref"]))
         validated = bool(vals) and all(vals)
         ref = "; ".join(refs) or None
+    verdict = "unchecked"
     if name == "none":
-        status = "no response simulated"
+        status, verdict = "no response simulated", "no_response"
     elif validated and name == "learned_innovation":
+        verdict = "observational_validated"
         status = (
             "validated (observational): given attackers' real unexpected movement, its "
             "defender forecasts beat constant velocity and a permuted placebo"
         )
     elif validated:
+        verdict = "forecast_validated"
         status = "validated: short-horizon forecasts of real play beat constant velocity"
     elif name in _OBSERVATIONAL_STATUS:
+        verdict = _RULE_VERDICT[name]
         status = _OBSERVATIONAL_STATUS[name]
     else:
         status = "experimental: not validated against tracking"
-    return PolicyInfo(name, spec.description, list(spec.assumptions), validated, ref, status)
+    return PolicyInfo(
+        name, spec.description, list(spec.assumptions), validated, ref, status, verdict
+    )
 
 
 # ----------------------------------------------------------------------------------------

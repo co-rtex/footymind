@@ -38,7 +38,7 @@ function scenario(extra: Record<string, unknown> = {}) {
 
 describe("parsePolicyInfo / parseResponsePolicies", () => {
   it("accepts a full policy and treats a missing validation_ref as null", () => {
-    expect(parsePolicyInfo(POLICY)).toEqual({ ...POLICY, status: null });
+    expect(parsePolicyInfo(POLICY)).toEqual({ ...POLICY, status: null, verdict: null });
     const noRef: Record<string, unknown> = { ...POLICY };
     delete noRef.validation_ref;
     expect(parsePolicyInfo(noRef).validation_ref).toBeNull();
@@ -54,6 +54,15 @@ describe("parsePolicyInfo / parseResponsePolicies", () => {
     expect(parsePolicyInfo(POLICY).status).toBeNull();
     expect(() => parsePolicyInfo({ ...POLICY, status: 3 })).toThrow(/status/);
     expect(parseResponsePolicies([{ ...POLICY, status: verdict }])[0]?.status).toBe(verdict);
+  });
+
+  it("keeps a known machine-readable verdict and ignores an unknown one (SYNTHETIC values)", () => {
+    expect(parsePolicyInfo({ ...POLICY, verdict: "not_supported" }).verdict).toBe("not_supported");
+    expect(parsePolicyInfo({ ...POLICY, verdict: "observational_supported" }).verdict).toBe("observational_supported");
+    expect(parsePolicyInfo({ ...POLICY, verdict: "some_future_verdict" }).verdict).toBeNull();
+    expect(parsePolicyInfo({ ...POLICY, verdict: null }).verdict).toBeNull();
+    expect(parsePolicyInfo(POLICY).verdict).toBeNull();
+    expect(() => parsePolicyInfo({ ...POLICY, verdict: 1 })).toThrow(/verdict/);
   });
 
   it("rejects malformed policies", () => {
@@ -83,7 +92,7 @@ describe("parseScenario with and without a policy", () => {
 
   it("accepts a null policy and a well-formed policy", () => {
     expect(parseScenario(scenario({ policy: null })).policy).toBeNull();
-    expect(parseScenario(scenario({ policy: POLICY })).policy).toEqual({ ...POLICY, status: null });
+    expect(parseScenario(scenario({ policy: POLICY })).policy).toEqual({ ...POLICY, status: null, verdict: null });
     const withStatus = { ...POLICY, status: "experimental: synthetic verdict" };
     expect(parseScenario(scenario({ policy: withStatus })).policy?.status).toBe("experimental: synthetic verdict");
   });

@@ -275,6 +275,18 @@ def test_response_policies_endpoint(client: TestClient) -> None:
             assert learned["validation_ref"] and learned["status"].startswith("validated")
         else:
             assert learned["status"].startswith("experimental")
+    verdict = {p["name"]: p["verdict"] for p in served}
+    assert verdict["none"] == "no_response"
+    assert verdict["marker_follows"] == verdict["lane_cover"] == "observational_supported"
+    assert verdict["press_carrier"] == verdict["zonal_shift"] == "not_supported"
+    for learned in [p for p in served if p["name"] in ("learned", "learned_innovation")]:
+        expected = {
+            "learned": "forecast_validated",
+            "learned_innovation": "observational_validated",
+        }
+        assert learned["verdict"] == (
+            expected[learned["name"]] if learned["validated"] else "unchecked"
+        )
     assert client.get("/api/response-policies", params={"match_id": "nope"}).status_code == 404
 
 

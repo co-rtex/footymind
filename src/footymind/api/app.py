@@ -822,6 +822,7 @@ def _policy_out(p: PolicyInfo) -> S.ResponsePolicyOut:
         validated=p.validated,
         validation_ref=p.validation_ref,
         status=p.status,
+        verdict=p.verdict,  # type: ignore[arg-type]
     )
 
 

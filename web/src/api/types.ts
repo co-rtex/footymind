@@ -334,7 +334,19 @@ export interface PolicyInfo {
    * from it (src/lib/policies.ts policyBadge). Absent on older backends.
    */
   status?: string | null;
+  /** machine-readable form of `status` (newer backends); the badge prefers it when present */
+  verdict?: PolicyVerdict | null;
 }
+
+export const POLICY_VERDICTS = [
+  "no_response",
+  "forecast_validated",
+  "observational_validated",
+  "observational_supported",
+  "not_supported",
+  "unchecked",
+] as const;
+export type PolicyVerdict = (typeof POLICY_VERDICTS)[number];
 export type VelocityMode = "keep" | "zero";
 export type ValueModel = "option_model" | "physics";
 
@@ -455,6 +467,10 @@ export interface DefensiveShadowOut {
   horizon_s: number;
   alt_radius_m: number;
   status: string;
+  /** provider the status refers to, the ledger claim behind it, and its committed results file (newer backends) */
+  provider?: string | null;
+  validation_claim?: string | null;
+  validation_ref?: string | null;
 }
 
 /** Schema bounds for interventions, mirrored from InterventionIn. */

@@ -13,6 +13,7 @@ import type {
   Pitch,
   PlayerOut,
   PolicyInfo,
+  PolicyVerdict,
   PossessionSummary,
   ProvenanceLabel,
   Replay,
@@ -22,6 +23,7 @@ import type {
   StatementOut,
   Team,
 } from "./types";
+import { POLICY_VERDICTS } from "./types";
 
 export class ContractError extends Error {
   constructor(message: string) {
@@ -130,6 +132,10 @@ export function parsePolicyInfo(raw: unknown, what = "policy"): PolicyInfo {
   // The verdict text (newer backends). Absent or null on older backends: the badge falls back.
   const status = raw.status;
   need(status === undefined || status === null || typeof status === "string", `${what}.status is not a string or null`);
+  // Machine-readable verdict (newer backends). An unknown value is treated as absent so a newer
+  // backend's vocabulary does not break the lab; the badge then falls back to the status text.
+  const verdict = raw.verdict;
+  need(verdict === undefined || verdict === null || typeof verdict === "string", `${what}.verdict is not a string or null`);
   return {
     name: raw.name,
     description: raw.description,
@@ -137,6 +143,7 @@ export function parsePolicyInfo(raw: unknown, what = "policy"): PolicyInfo {
     validated: raw.validated,
     validation_ref: typeof ref === "string" ? ref : null,
     status: typeof status === "string" && status.trim() ? status.trim() : null,
+    verdict: (POLICY_VERDICTS as readonly string[]).includes(verdict as string) ? (verdict as PolicyVerdict) : null,
   };
 }
 

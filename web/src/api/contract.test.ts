@@ -97,7 +97,7 @@ const TS: Record<string, string[]> = {
   ModelInfo: keysOf<ModelInfo>({ name: true, reference: true, status: true, params: true, provider: true, resource: true }),
   StatementOut: keysOf<StatementOut>({ kind: true, text: true, metric: true, value: true, provenance: true, players: true }),
   PolicyInfo: keysOf<PolicyInfo>({
-    name: true, description: true, assumptions: true, validated: true, validation_ref: true, status: true,
+    name: true, description: true, assumptions: true, validated: true, validation_ref: true, status: true, verdict: true,
   }),
   ScenarioResponse: keysOf<ScenarioResponse>({
     observed: true, hypothetical: true, feasibility: true, movements: true, option_deltas: true,
@@ -118,7 +118,7 @@ const TS: Record<string, string[]> = {
   DefensiveShadowOut: keysOf<DefensiveShadowOut>({
     match_id: true, frame: true, attacking_team: true, carrier_id: true, value_model: true, v_best_observed: true,
     v_sum_observed: true, defenders: true, assumptions: true, noise_floor: true, horizon_s: true, alt_radius_m: true,
-    status: true,
+    status: true, provider: true, validation_claim: true, validation_ref: true,
   }),
   DefenderShadowOut: keysOf<DefenderShadowOut>({
     player_id: true, x: true, y: true, shadow_best: true, shadow_sum: true, alt_radius_m: true, alternatives: true,

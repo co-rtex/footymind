@@ -191,7 +191,8 @@
     "name",
     "status",
     "validated",
-    "validation_ref"
+    "validation_ref",
+    "verdict"
   ],
   "ScenarioResponse": [
     "assumptions",
@@ -253,9 +254,12 @@
     "horizon_s",
     "match_id",
     "noise_floor",
+    "provider",
     "status",
     "v_best_observed",
     "v_sum_observed",
+    "validation_claim",
+    "validation_ref",
     "value_model"
   ],
   "DefenderShadowOut": [

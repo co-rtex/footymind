@@ -5,7 +5,7 @@
  * baseline (only the moved players change). Every other policy is a model of behaviour, so
  * the lab shows how much a conclusion depends on it by comparing against the static result.
  */
-import type { OptionDeltaOut, PolicyInfo, ResponsePolicy } from "../api/types";
+import type { OptionDeltaOut, PolicyInfo, PolicyVerdict, ResponsePolicy } from "../api/types";
 import type { PlayerOut } from "../api/types";
 import { isNegligible } from "./agreement";
 import { playerLabel } from "./format";
@@ -73,10 +73,21 @@ export type PolicyBadgeKind = "observational" | "forecaster" | "not supported" |
 
 const NEGATIVE = /\bnot supported\b|\bunsupported\b|\bovershoot|\bundershoot|\bnot consistent\b|\binconsistent\b|\bfails?\b/;
 
+/** The badge for each machine-readable verdict (newer backends send one with every policy). */
+const VERDICT_BADGE: Record<PolicyVerdict, PolicyBadgeKind | null> = {
+  no_response: null,
+  forecast_validated: "forecaster",
+  observational_validated: "observational",
+  observational_supported: "observational",
+  not_supported: "not supported",
+  unchecked: "experimental",
+};
+
 export function policyBadge(
-  p: Pick<PolicyInfo, "name" | "validated" | "status"> | null | undefined,
+  p: Pick<PolicyInfo, "name" | "validated" | "status" | "verdict"> | null | undefined,
 ): PolicyBadgeKind | null {
   if (!p) return null;
+  if (p.verdict) return VERDICT_BADGE[p.verdict];
   const s = (p.status ?? "").trim().toLowerCase();
   if (/^no response\b/.test(s)) return null;
   // older backends send no status: only the static baseline is recognisable without one

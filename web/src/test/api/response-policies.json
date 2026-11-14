@@ -7,7 +7,8 @@
     ],
     "validated": false,
     "validation_ref": null,
-    "status": "no response simulated"
+    "status": "no response simulated",
+    "verdict": "no_response"
   },
   {
     "name": "marker_follows",
@@ -19,7 +20,8 @@
     ],
     "validated": false,
     "validation_ref": null,
-    "status": "experimental: consistent with real defender reactions in an observational check on both providers (not a forecast, not an intervention validation)"
+    "status": "experimental: consistent with real defender reactions in an observational check on both providers (not a forecast, not an intervention validation)",
+    "verdict": "observational_supported"
   },
   {
     "name": "press_carrier",
@@ -34,7 +36,8 @@
     ],
     "validated": false,
     "validation_ref": null,
-    "status": "experimental: not supported by the observational check under the current kinematic envelope"
+    "status": "experimental: not supported by the observational check under the current kinematic envelope",
+    "verdict": "not_supported"
   },
   {
     "name": "zonal_shift",
@@ -50,7 +53,8 @@
     ],
     "validated": false,
     "validation_ref": null,
-    "status": "experimental: overshoots real defensive movement in the observational check"
+    "status": "experimental: overshoots real defensive movement in the observational check",
+    "verdict": "not_supported"
   },
   {
     "name": "lane_cover",
@@ -66,7 +70,8 @@
     ],
     "validated": false,
     "validation_ref": null,
-    "status": "experimental: consistent with real defender reactions in an observational check on both providers (not a forecast, not an intervention validation)"
+    "status": "experimental: consistent with real defender reactions in an observational check on both providers (not a forecast, not an intervention validation)",
+    "verdict": "observational_supported"
   },
   {
     "name": "learned",
@@ -84,7 +89,8 @@
     ],
     "validated": true,
     "validation_ref": "experiments/results/response_validation_v1/results.json",
-    "status": "validated: short-horizon forecasts of real play beat constant velocity"
+    "status": "validated: short-horizon forecasts of real play beat constant velocity",
+    "verdict": "forecast_validated"
   },
   {
     "name": "learned_innovation",
@@ -101,6 +107,7 @@
     ],
     "validated": true,
     "validation_ref": "experiments/results/response_diagnostics_v1/results.json",
-    "status": "validated (observational): given attackers' real unexpected movement, its defender forecasts beat constant velocity and a permuted placebo"
+    "status": "validated (observational): given attackers' real unexpected movement, its defender forecasts beat constant velocity and a permuted placebo",
+    "verdict": "observational_validated"
   }
 ]

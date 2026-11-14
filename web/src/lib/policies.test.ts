@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OptionDeltaOut, PlayerOut } from "../api/types";
+import type { OptionDeltaOut, PlayerOut, PolicyVerdict } from "../api/types";
 import { ApiError } from "../api/client";
 import { ContractError } from "../api/parse";
 import { describeError } from "./errors";
@@ -77,6 +77,21 @@ describe("policy labels and flags", () => {
     expect(b("x", false, "experimental: undershoots real movement")).toBe("not supported");
     expect(b("x", false, "")).toBe("experimental");
     expect(policyBadge(null)).toBeNull();
+  });
+
+  it("prefers the machine-readable verdict over the status wording (SYNTHETIC policies)", () => {
+    const v = (verdict: PolicyVerdict, status = "experimental: wording that says something else") =>
+      policyBadge({ name: "x", validated: false, status, verdict });
+    expect(v("no_response")).toBeNull();
+    expect(v("forecast_validated")).toBe("forecaster");
+    expect(v("observational_validated")).toBe("observational");
+    expect(v("observational_supported")).toBe("observational");
+    expect(v("not_supported", "experimental: consistent with real reactions (observational)")).toBe("not supported");
+    expect(v("unchecked")).toBe("experimental");
+    // a null verdict (older backends, or an unknown value) falls back to the status text
+    expect(policyBadge({ name: "x", validated: false, status: "experimental: overshoots", verdict: null })).toBe(
+      "not supported",
+    );
   });
 
   it("reads a fitted range only from an extrapolation statement in the assumptions", () => {

@@ -381,6 +381,22 @@ class ResponsePolicyOut(BaseModel):
         description="committed results.json of the validation run, or null if never validated"
     )
     status: str = Field(description="'validated: ...', 'experimental: ...' or 'no response'")
+    verdict: Literal[
+        "no_response",
+        "forecast_validated",
+        "observational_validated",
+        "observational_supported",
+        "not_supported",
+        "unchecked",
+    ] = Field(
+        description=(
+            "machine-readable form of status: forecast_validated (beats constant velocity on "
+            "held-out real play), observational_validated (also beats a placebo given the "
+            "attackers' real movement), observational_supported (a rule consistent with real "
+            "reactions in the paired observational check, C70), not_supported, unchecked, or "
+            "no_response (the static baseline). Never an intervention validation"
+        )
+    )
 
 
 class MovementOut(BaseModel):
