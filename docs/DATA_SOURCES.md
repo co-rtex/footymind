@@ -65,16 +65,21 @@ Game 1: 381 possessions. Game 2: 366.
   camera-detected (87.4% within 25 m of the ball). Player and ball extrapolations are labelled
   *estimated* (re-ingest bundles from before `ac0629f` to get the ball mask).
 * **Possession boundaries.**
-  * 17 of 4,872 SkillCorner possessions (33 passes) end in a different tracking period than
-    they start, because event and tracking period boundaries disagree.
-  * 63 SkillCorner possessions last longer than 120 s, because long stoppages are not split.
+  * Up to pipeline v2, 17 of 4,872 SkillCorner possessions (33 passes) ended in a different
+    tracking period than they started, because the adapter used the next possession's start
+    (often in the next half) as the end. **Pipeline v3** ends a possession at its period's last
+    tracked frame and leaves an event's end unknown (null) when the next possession is in
+    another period: 0 cross a period now. Pass-dataset rows and values are identical at v2 and
+    v3, so committed research results are unaffected.
+  * 59 SkillCorner possessions (63 at v2) last longer than 120 s, because long stoppages are
+    not split.
     This inflates `time_in_possession_s` for the passes in them.
   * On Metrica, 426 of 1,222 possessions overlap the next one, by a median of about 0.1 s and
     at most 6 s. This is the lost pass's arrival frame against the recovery.
 
-  These are documented rather than re-segmented. Re-segmenting would change possession ids and
-  every committed result for well under 1% of passes. It is a candidate for a future pipeline
-  version.
+  The long possessions and the Metrica overlaps are documented rather than re-segmented.
+  Re-segmenting would change possession ids and every committed result for well under 1% of
+  passes.
 * A handful of passes have no ball or no passer position at the start frame (4 + 4 on
   SkillCorner). Their features stay NaN and are never filled.
 

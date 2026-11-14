@@ -1,6 +1,6 @@
 {
   "name": "data_quality_v1",
-  "code_revision": "f5e6ec1b084b07d0303c233a221c90a2e6af99c5",
+  "code_revision": "83d4830b224b0e150daeac2fc6fdace83f0e0962",
   "providers": {
     "metrica": {
       "n_matches": 3,
@@ -30,12 +30,12 @@
       "event_start_not_in_tracking": 0,
       "pass_ball_unobserved_at_start": 4,
       "pass_passer_unobserved_at_start": 4,
-      "pass_ends_in_other_period": 3,
+      "pass_ends_in_other_period": 0,
       "pass_kick_underway_at_start": 8422,
       "pass_kick_checked": 13439,
       "n_possessions": 4872,
-      "possessions_crossing_tracking_period": 17,
-      "possessions_longer_than_120s": 63,
+      "possessions_crossing_tracking_period": 0,
+      "possessions_longer_than_120s": 59,
       "possessions_overlapping_next": 0,
       "share_kick_underway_at_start": 0.6266835330009674,
       "frames_over_11": 0,
@@ -116,7 +116,7 @@
     "skillcorner-1874553": {
       "provider": "skillcorner",
       "n_possessions": 234,
-      "possessions_crossing_tracking_period": 1,
+      "possessions_crossing_tracking_period": 0,
       "possessions_longer_than_120s": 3,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
@@ -139,7 +139,7 @@
     "skillcorner-1886347": {
       "provider": "skillcorner",
       "n_possessions": 234,
-      "possessions_crossing_tracking_period": 1,
+      "possessions_crossing_tracking_period": 0,
       "possessions_longer_than_120s": 4,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
@@ -185,7 +185,7 @@
     "skillcorner-1925299": {
       "provider": "skillcorner",
       "n_possessions": 249,
-      "possessions_crossing_tracking_period": 1,
+      "possessions_crossing_tracking_period": 0,
       "possessions_longer_than_120s": 5,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
@@ -208,7 +208,7 @@
     "skillcorner-1927964": {
       "provider": "skillcorner",
       "n_possessions": 212,
-      "possessions_crossing_tracking_period": 1,
+      "possessions_crossing_tracking_period": 0,
       "possessions_longer_than_120s": 3,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
@@ -222,7 +222,7 @@
       "event_start_not_in_tracking": 0,
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
-      "pass_ends_in_other_period": 1,
+      "pass_ends_in_other_period": 0,
       "pass_kick_underway_at_start": 578,
       "pass_kick_checked": 902,
       "detected_share_at_pass_start": 0.701975408183834,
@@ -231,7 +231,7 @@
     "skillcorner-1953632": {
       "provider": "skillcorner",
       "n_possessions": 206,
-      "possessions_crossing_tracking_period": 1,
+      "possessions_crossing_tracking_period": 0,
       "possessions_longer_than_120s": 2,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
@@ -277,7 +277,7 @@
     "skillcorner-1986691": {
       "provider": "skillcorner",
       "n_possessions": 232,
-      "possessions_crossing_tracking_period": 1,
+      "possessions_crossing_tracking_period": 0,
       "possessions_longer_than_120s": 4,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
@@ -300,7 +300,7 @@
     "skillcorner-1996435": {
       "provider": "skillcorner",
       "n_possessions": 242,
-      "possessions_crossing_tracking_period": 1,
+      "possessions_crossing_tracking_period": 0,
       "possessions_longer_than_120s": 3,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
@@ -323,7 +323,7 @@
     "skillcorner-1996436": {
       "provider": "skillcorner",
       "n_possessions": 251,
-      "possessions_crossing_tracking_period": 1,
+      "possessions_crossing_tracking_period": 0,
       "possessions_longer_than_120s": 0,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
@@ -346,7 +346,7 @@
     "skillcorner-2006229": {
       "provider": "skillcorner",
       "n_possessions": 233,
-      "possessions_crossing_tracking_period": 1,
+      "possessions_crossing_tracking_period": 0,
       "possessions_longer_than_120s": 4,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
@@ -360,7 +360,7 @@
       "event_start_not_in_tracking": 0,
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
-      "pass_ends_in_other_period": 1,
+      "pass_ends_in_other_period": 0,
       "pass_kick_underway_at_start": 456,
       "pass_kick_checked": 723,
       "detected_share_at_pass_start": 0.7508487363259146,
@@ -369,7 +369,7 @@
     "skillcorner-2006363": {
       "provider": "skillcorner",
       "n_possessions": 235,
-      "possessions_crossing_tracking_period": 1,
+      "possessions_crossing_tracking_period": 0,
       "possessions_longer_than_120s": 5,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
@@ -392,7 +392,7 @@
     "skillcorner-2007448": {
       "provider": "skillcorner",
       "n_possessions": 214,
-      "possessions_crossing_tracking_period": 1,
+      "possessions_crossing_tracking_period": 0,
       "possessions_longer_than_120s": 4,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
@@ -415,7 +415,7 @@
     "skillcorner-2007721": {
       "provider": "skillcorner",
       "n_possessions": 232,
-      "possessions_crossing_tracking_period": 1,
+      "possessions_crossing_tracking_period": 0,
       "possessions_longer_than_120s": 1,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
@@ -438,7 +438,7 @@
     "skillcorner-2010085": {
       "provider": "skillcorner",
       "n_possessions": 207,
-      "possessions_crossing_tracking_period": 1,
+      "possessions_crossing_tracking_period": 0,
       "possessions_longer_than_120s": 7,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
@@ -452,7 +452,7 @@
       "event_start_not_in_tracking": 0,
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
-      "pass_ends_in_other_period": 1,
+      "pass_ends_in_other_period": 0,
       "pass_kick_underway_at_start": 458,
       "pass_kick_checked": 710,
       "detected_share_at_pass_start": 0.6071702944942382,
@@ -461,8 +461,8 @@
     "skillcorner-2011166": {
       "provider": "skillcorner",
       "n_possessions": 249,
-      "possessions_crossing_tracking_period": 1,
-      "possessions_longer_than_120s": 5,
+      "possessions_crossing_tracking_period": 0,
+      "possessions_longer_than_120s": 4,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
       "n_frames": 59292,
@@ -484,8 +484,8 @@
     "skillcorner-2013725": {
       "provider": "skillcorner",
       "n_possessions": 295,
-      "possessions_crossing_tracking_period": 1,
-      "possessions_longer_than_120s": 2,
+      "possessions_crossing_tracking_period": 0,
+      "possessions_longer_than_120s": 1,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
       "n_frames": 56792,
@@ -507,8 +507,8 @@
     "skillcorner-2015213": {
       "provider": "skillcorner",
       "n_possessions": 261,
-      "possessions_crossing_tracking_period": 1,
-      "possessions_longer_than_120s": 1,
+      "possessions_crossing_tracking_period": 0,
+      "possessions_longer_than_120s": 0,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
       "n_frames": 59902,
@@ -530,8 +530,8 @@
     "skillcorner-2016236": {
       "provider": "skillcorner",
       "n_possessions": 309,
-      "possessions_crossing_tracking_period": 1,
-      "possessions_longer_than_120s": 3,
+      "possessions_crossing_tracking_period": 0,
+      "possessions_longer_than_120s": 2,
       "possessions_overlapping_next": 0,
       "possession_overlap_s_max": 0.0,
       "n_frames": 60042,
