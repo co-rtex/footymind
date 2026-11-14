@@ -172,3 +172,11 @@ def test_opt_in_censoring_of_extrapolated_ball() -> None:
             n_diff += 1
             n_nan_more += int(np.isnan(on) and not np.isnan(off))
     assert n_diff == n_nan_more  # censoring only ever turns a value into "unknown"
+
+
+def test_event_carrier_tolerance_is_a_time() -> None:
+    """Regression (session-4 audit): 3 frames meant 0.12 s at 25 Hz but 0.3 s at 10 fps."""
+    from footymind.spatial.state import event_carrier_tolerance_frames
+
+    assert event_carrier_tolerance_frames(10.0) == 3  # SkillCorner unchanged
+    assert event_carrier_tolerance_frames(25.0) == 8  # Metrica now the same 0.3 s window
