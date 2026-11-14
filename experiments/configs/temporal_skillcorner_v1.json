@@ -1,0 +1,109 @@
+{
+  "name": "temporal_skillcorner_v1",
+  "description": "Temporal context (session 3, pre-registered in docs/RESEARCH.md before running). Primary hypotheses: H-T1 time-on-ball/event timing improves the decision-time event baseline (Adt -> Adt_tob); H-T2 1.0 s movement history improves decision-time spatial context beyond static positions + time-on-ball (Bdt_tob -> Bdt_tt); H-T3 the decision-time spatial gain survives the stronger temporal event baseline (Adt_tob -> Bdt_tob). 0.5 s / 2.0 s lookbacks and Bdt_ttonly are sensitivity analyses. Same rules v2, LOMO, a-priori hyperparameters and possession-clustered paired bootstrap as pass_outcome_v3.",
+  "matches": [
+    "skillcorner-1874553",
+    "skillcorner-1886347",
+    "skillcorner-1899585",
+    "skillcorner-1925299",
+    "skillcorner-1927964",
+    "skillcorner-1953632",
+    "skillcorner-1959846",
+    "skillcorner-1986691",
+    "skillcorner-1996435",
+    "skillcorner-1996436",
+    "skillcorner-2006229",
+    "skillcorner-2006363",
+    "skillcorner-2007448",
+    "skillcorner-2007721",
+    "skillcorner-2010085",
+    "skillcorner-2011166",
+    "skillcorner-2013725",
+    "skillcorner-2015213",
+    "skillcorner-2016236",
+    "skillcorner-2017461"
+  ],
+  "seed": 0,
+  "dataset": {
+    "rules": "v2",
+    "include_ball_out": true
+  },
+  "n_boot": 1000,
+  "models": [
+    "base_rate",
+    "Adt_logreg",
+    "Adt_te_logreg",
+    "Adt_tob_logreg",
+    "Bdt_logreg",
+    "Bdt_tob_logreg",
+    "Bdt_tt_logreg",
+    "Bdt_tt05_logreg",
+    "Bdt_tt20_logreg",
+    "Bdt_ttonly_logreg",
+    "Adt_gbm",
+    "Adt_tob_gbm",
+    "Bdt_gbm",
+    "Bdt_tob_gbm",
+    "Bdt_tt_gbm"
+  ],
+  "comparisons": [
+    [
+      "Adt_logreg",
+      "Adt_te_logreg"
+    ],
+    [
+      "Adt_logreg",
+      "Adt_tob_logreg"
+    ],
+    [
+      "Bdt_logreg",
+      "Bdt_tob_logreg"
+    ],
+    [
+      "Bdt_tob_logreg",
+      "Bdt_tt_logreg"
+    ],
+    [
+      "Bdt_logreg",
+      "Bdt_ttonly_logreg"
+    ],
+    [
+      "Adt_tob_logreg",
+      "Bdt_tob_logreg"
+    ],
+    [
+      "Adt_tob_logreg",
+      "Bdt_tt_logreg"
+    ],
+    [
+      "Bdt_tt_logreg",
+      "Bdt_tt05_logreg"
+    ],
+    [
+      "Bdt_tt_logreg",
+      "Bdt_tt20_logreg"
+    ],
+    [
+      "Adt_tob_gbm",
+      "Bdt_tob_gbm"
+    ],
+    [
+      "Bdt_tob_gbm",
+      "Bdt_tt_gbm"
+    ],
+    [
+      "Adt_logreg",
+      "Bdt_logreg"
+    ]
+  ],
+  "calibration": [
+    "Adt_logreg",
+    "Adt_tob_logreg",
+    "Bdt_logreg",
+    "Bdt_tob_logreg",
+    "Bdt_tt_logreg"
+  ],
+  "importances": [
+    "Bdt_tt_logreg"
+  ]
+}

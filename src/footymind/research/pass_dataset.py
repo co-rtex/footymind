@@ -49,6 +49,13 @@ from footymind.spatial.lanes import lane, point_segment_distance
 from footymind.spatial.option_features import option_feature_rows
 from footymind.spatial.pitch_control import DEFAULT_PARAMS, pitch_control
 from footymind.spatial.state import frame_state
+from footymind.spatial.temporal import (
+    LOOKBACK_SENSITIVITY_S,
+    TEMPORAL_LOOKBACK_S,
+    history_detected_fraction,
+    temporal_context,
+    track_feature_names,
+)
 from footymind.tracking.model import TrackingData
 
 RELEASE_WINDOW_S = 0.12  # 3 frames at 25 Hz (Metrica), 1 frame at 10 Hz (SkillCorner)
@@ -158,6 +165,16 @@ GROUP_TARGET_DEFENSE = [
     "cand_def_within_3m_lane",
     "cand_p_success_physics",
 ]
+
+# Temporal context (session 3, pre-specified; see spatial/temporal.py). All causal.
+# Event-derived timing: available to an event-only baseline.
+TEMPORAL_EVENT_FEATURES = ["time_since_prev_event_s"]
+# Time-on-ball from tracking (the ball within 2 m of the passer, counted backwards).
+TIME_ON_BALL_FEATURES = ["passer_control_s", "quick_release"]
+# Movement over the primary 1.0 s lookback; the 0.5 s / 2.0 s variants are sensitivity runs.
+TEMPORAL_TRACK_FEATURES = track_feature_names(TEMPORAL_LOOKBACK_S)
+TEMPORAL_TRACK_FEATURES_L05 = track_feature_names(LOOKBACK_SENSITIVITY_S[0])
+TEMPORAL_TRACK_FEATURES_L20 = track_feature_names(LOOKBACK_SENSITIVITY_S[1])
 
 INTERACTION_FEATURES = [
     "cand2_p_success_physics",
@@ -379,7 +396,21 @@ def _features_for(
         "time_in_possession_s": float(r["start_time_s"] - r["possession_start_s"]),
         "period": int(r["period"]),
         "match_minute": float(r["start_time_s"] / 60.0),
+        # strictly earlier event of the same possession (v2 history); NaN if none
+        "time_since_prev_event_s": (
+            float((f0 - int(r["prev_frame_strict"])) / td.fps)
+            if r.get("prev_frame_strict") is not None
+            else np.nan
+        ),
     }
+
+    row.update(
+        temporal_context(
+            td, i0, team, passer, s.is_gk, (TEMPORAL_LOOKBACK_S, *LOOKBACK_SENSITIVITY_S)
+        )
+    )
+    # tracking-quality metadata for stratified analysis (never a feature)
+    row["history_detected_frac"] = history_detected_fraction(td, i0)
 
     att = s.team_mask(team) & s.on_pitch()
     dfn = (~s.team_mask(team)) & s.on_pitch()

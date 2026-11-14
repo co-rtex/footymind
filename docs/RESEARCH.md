@@ -535,6 +535,40 @@ The API warns that 9 of 22 positions (away from the ball) are extrapolations. De
 `#/lab/skillcorner-1899585%3Ap0181?f=39177&move=home_25,22.46,-5.77`. Selection effects apply
 as for the Metrica example.
 
+## RQ2: Does temporal context improve decision-time pass-outcome prediction? (session 3)
+
+**Pre-registration (written and committed before any result was seen).** Configs:
+`experiments/configs/temporal_v1.json` (Metrica, 3 matches) and
+`experiments/configs/temporal_skillcorner_v1.json` (SkillCorner, 20 matches). Each is
+evaluated separately; providers are never pooled.
+
+*Features* (`spatial/temporal.py`; every one is computed from frames at or before the release
+frame, and a regression test corrupts all later frames to prove it):
+
+| block | features | needs tracking? |
+|---|---|---|
+| event timing (`te`) | time since the previous event of the possession (strictly earlier frame) | no |
+| time-on-ball (`tob`) | `passer_control_s` (ball within 2 m of the passer, counted backwards, capped at 10 s; stops at an unobserved ball), `quick_release` (< 1 s) | yes |
+| movement history (`tt`, 1.0 s) | change in nearest-defender distance (same defender) and in defenders within 5 m; ball path length; forward movement of the passer and of both team centroids; change in defensive compactness and line depth; change in open straight lanes from the passer | yes |
+
+*Hypotheses and pre-specified comparisons* (Δ = log loss of the second model minus the
+first; negative favours the second; 95% CI from the possession-clustered paired bootstrap):
+
+* **H-T1.** Event timing and time-on-ball improve the event baseline: `Adt → Adt_te`,
+  `Adt → Adt_tob`.
+* **H-T2 (primary).** A 1.0 s movement history improves on static decision-time spatial
+  context plus time-on-ball: `Bdt_tob → Bdt_tt` (LR, and GBM as a check).
+* **H-T3 (robustness of C20/C28).** The decision-time spatial gain survives the stronger
+  temporal event baseline: `Adt_tob → Bdt_tob`.
+* *Sensitivity only (not for selection):* lookbacks of 0.5 s and 2.0 s, and movement history
+  without timing (`Bdt → Bdt_ttonly`).
+* *Stratified, descriptive:* SkillCorner gains by tracking quality (share of positions in
+  the 1 s window that are detected, split at the median) and by quick vs slower release.
+
+A hypothesis counts as supported only if the CI excludes zero in the stated direction. The
+lookback is not chosen from these results. The primary model stays at 1.0 s whatever the
+sensitivity runs show.
+
 ## Prior art and references
 * Spearman, W., Basye, A., Dick, G., Hotovy, R., Pop, P. (2017). *Physics-Based Modeling of Pass Probabilities in Soccer.* MIT Sloan Sports Analytics Conference.
 * Spearman, W. (2018). *Beyond Expected Goals.* MIT Sloan SAC. (Pitch control; off-ball scoring opportunity.)

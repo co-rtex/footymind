@@ -37,6 +37,11 @@ from footymind.research.pass_dataset import (
     GROUP_TARGET_GEOMETRY,
     INTERACTION_FEATURES,
     SPATIAL_FEATURES,
+    TEMPORAL_EVENT_FEATURES,
+    TEMPORAL_TRACK_FEATURES,
+    TEMPORAL_TRACK_FEATURES_L05,
+    TEMPORAL_TRACK_FEATURES_L20,
+    TIME_ON_BALL_FEATURES,
 )
 from footymind.spatial.option_model import OPTION_FEATURES, OPTION_FEATURES_V2
 
@@ -139,6 +144,37 @@ def model_specs() -> dict[str, ModelSpec]:
         ModelSpec("C_logreg", "C", c, lambda s: _logreg(), "event + spatial + interaction, LR"),
         ModelSpec("C_gbm", "C", c, _gbm, "event + spatial + interaction, gradient boosting"),
     ]
+    # Temporal families (session 3, pre-specified). Each adds one block to the previous model.
+    adt, bdt = DECISION_EVENT_FEATURES, DECISION_SPATIAL_FEATURES
+    te, tob = TEMPORAL_EVENT_FEATURES, TIME_ON_BALL_FEATURES
+    temporal = {
+        "Adt_te": (adt + te, "decision-time events + time since previous event"),
+        "Adt_tob": (adt + te + tob, "decision-time events + event timing + tracking time-on-ball"),
+        "Bdt_tob": (bdt + te + tob, "decision-time spatial + event timing + time-on-ball"),
+        "Bdt_tt": (
+            bdt + te + tob + TEMPORAL_TRACK_FEATURES,
+            "decision-time spatial + timing + time-on-ball + 1.0 s movement history",
+        ),
+        "Bdt_tt05": (
+            bdt + te + tob + TEMPORAL_TRACK_FEATURES_L05,
+            "as Bdt_tt with a 0.5 s lookback (sensitivity)",
+        ),
+        "Bdt_tt20": (
+            bdt + te + tob + TEMPORAL_TRACK_FEATURES_L20,
+            "as Bdt_tt with a 2.0 s lookback (sensitivity)",
+        ),
+        "Bdt_ttonly": (
+            bdt + TEMPORAL_TRACK_FEATURES,
+            "decision-time spatial + 1.0 s movement history only (no timing/time-on-ball)",
+        ),
+    }
+    for n, (feats, desc) in temporal.items():
+        specs.append(
+            ModelSpec(f"{n}_logreg", "temporal", feats, lambda s: _logreg(), desc + ", LR")
+        )
+    for n in ("Adt_tob", "Bdt_tob", "Bdt_tt"):
+        feats, desc = temporal[n]
+        specs.append(ModelSpec(f"{n}_gbm", "temporal", feats, _gbm, desc + ", GBM"))
     a_ = EVENT_FEATURES
     ablations = {
         "A+pressure": a_ + GROUP_PRESSURE,
