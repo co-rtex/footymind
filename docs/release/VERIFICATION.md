@@ -106,6 +106,34 @@ automatically on the next start: it keeps answering 503 with the command that fi
 In-process freshness (a bundle or index replaced while the server runs, a stale bundle never
 served silently, healthy matches staying available) is covered by `tests/test_freshness.py`.
 
+## 1.0 release verification (2026-11-14)
+
+**Clean environment.** A fresh clone of the branch (at 9ea2241) with an empty
+`FOOTYMIND_DATA_DIR` ran the README's minimal path as written: `uv sync`, `footymind download
+metrica` (three games fetched from GitHub and SHA-256 verified), `footymind ingest metrica`,
+`footymind build-similarity-index --provider metrica` (32 s), `uv run pytest -q` (317 passed,
+14 skipped: the SkillCorner tests, whose data was not downloaded), `npm ci` and
+`npm run build`; then `footymind serve` served the built lab, `smoke_api.py --require-similar`
+passed for all three games, and every Metrica-only Playwright flow test passed (8/8) against
+that server. The uv and npm package caches of the machine were used (they only change speed);
+no data, model or index came from the development checkout.
+
+**Representative experiment reproduction.** `footymind experiment
+experiments/configs/pass_outcome_v3.json` (C20) re-run at 259c0be on pipeline-v3 bundles, into
+a scratch `FOOTYMIND_EXPERIMENTS_DIR`: same 3,593 passes and raw-data checksums, all 9
+comparisons and all 16 pooled metrics identical to the committed result (2131084) to the last
+digit.
+
+**Licence-clear demo configuration.** The entrypoint with
+`FOOTYMIND_SOURCES="skillcorner-1874553 skillcorner-1899585 skillcorner-2017461"` on an empty
+data directory: download, ingest, index, `smoke_api.py --require-similar` passed, and the lab
+landing loaded with no console errors or failed requests (`DATA_LICENSES.md`).
+
+**Security.** 130 hostile GET requests (path traversal in ids, NUL bytes, 5,000-character ids,
+out-of-range numbers): no 500, no path or traceback in any body. `pip-audit` on the locked
+runtime and dev dependencies: no known vulnerabilities. `npm audit --omit=dev`: 0; the 7
+moderate advisories are in dev-only lint tooling. No secrets in the repository; no pickles.
+
 ## Clean-setup findings (fresh clone, README commands as written)
 
 | Step | Finding | Fix |
