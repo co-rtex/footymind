@@ -75,6 +75,7 @@ def load_tracking(
     pos: list[np.ndarray] = []
     det: list[np.ndarray] = []
     balls: list[tuple[float, float]] = []
+    ball_det: list[bool] = []
     p_n = len(players)
     with tracking_jsonl.open() as fh:
         for line in fh:
@@ -93,6 +94,7 @@ def load_tracking(
                 d[i] = bool(pd.get("is_detected"))
             b = r.get("ball_data") or {}
             balls.append((np.nan, np.nan) if b.get("x") is None else (float(b["x"]), float(b["y"])))
+            ball_det.append(b.get("x") is not None and bool(b.get("is_detected")))
             rows.append((f, per))
             pos.append(xy)
             det.append(d)
@@ -119,6 +121,7 @@ def load_tracking(
         home_attacks_positive_x=direction,
         provenance=provenance,
         detected=np.stack(det),
+        ball_detected=np.array(ball_det, dtype=bool),
     )
     return td, meta
 

@@ -106,6 +106,9 @@ class TrackingData:
     # also reports extrapolated positions for players outside the camera view; those are
     # estimates, not observations. None means all non-NaN positions are observed (Metrica).
     detected: npt.NDArray[np.bool_] | None = None
+    # (T,) True where the provider detected the ball. None: every non-NaN ball position is
+    # observed (Metrica, or a bundle ingested before this field existed).
+    ball_detected: npt.NDArray[np.bool_] | None = None
     _frame_index: dict[int, int] = field(default_factory=dict, repr=False)
 
     def __post_init__(self) -> None:

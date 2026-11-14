@@ -88,6 +88,9 @@ def test_tracking_parse_mask_periods_and_absence(tmp_path: Path) -> None:
     i102 = td.player_index("home_8")
     assert td.detected[0, i102] and not td.detected[1, i102]
     assert np.isnan(td.ball_xy[1]).all()
+    # the ball's detection flag is kept: detected where the provider says so, never for NaN
+    assert td.ball_detected is not None
+    assert td.ball_detected.tolist() == [True, False, True, True, True, True, True, True]
     assert td.home_attacks_positive_x == {1: True, 2: False}
 
 

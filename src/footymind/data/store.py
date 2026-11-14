@@ -115,6 +115,8 @@ def ingest(match_id: str, raw_root: Path = RAW_DIR, out_root: Path = PROCESSED_D
     }
     if td.detected is not None:
         arrays["detected"] = td.detected
+    if td.ball_detected is not None:
+        arrays["ball_detected"] = td.ball_detected
     np.savez_compressed(out / "tracking.npz", **arrays)  # type: ignore[arg-type]
     pl.DataFrame([asdict(p) for p in td.players]).write_parquet(out / "players.parquet")
     events.write_parquet(out / "events.parquet")
@@ -167,6 +169,7 @@ def load_match(match_id: str, root: Path = PROCESSED_DIR) -> MatchBundle:
         home_attacks_positive_x={int(k): v for k, v in manifest["home_attacks_positive_x"].items()},
         provenance=prov,
         detected=z["detected"] if "detected" in z.files else None,
+        ball_detected=z["ball_detected"] if "ball_detected" in z.files else None,
     )
     return MatchBundle(
         tracking=td,

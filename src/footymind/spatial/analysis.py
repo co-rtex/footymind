@@ -110,6 +110,11 @@ def analyze(
         )
     if np.isnan(state.ball).any():
         warnings.append("ball position not observed at this frame; pass options unavailable")
+    elif state.ball_provenance == Provenance.ESTIMATED:
+        warnings.append(
+            "the ball position is a provider extrapolation (not detected by the camera); pass "
+            "options are computed from an estimated ball position"
+        )
     n_est = sum(
         1
         for k, prov in enumerate(state.position_provenance)

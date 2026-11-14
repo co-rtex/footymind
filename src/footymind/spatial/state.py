@@ -64,6 +64,8 @@ class FrameState:
     attack_sign: int  # +1 if attacking team attacks +x in this period
     position_provenance: list[Provenance] = field(default_factory=list)
     velocity_provenance: list[Provenance] = field(default_factory=list)
+    # ESTIMATED when broadcast tracking reports a provider-extrapolated (undetected) ball
+    ball_provenance: Provenance = Provenance.OBSERVED
 
     def copy(self) -> FrameState:
         return replace(
@@ -177,4 +179,11 @@ def frame_state(match_id: str, frame: int) -> FrameState:
             ]
         ),
         velocity_provenance=vprov,
+        ball_provenance=(
+            Provenance.ESTIMATED
+            if td.ball_detected is not None
+            and not bool(td.ball_detected[i])
+            and not np.isnan(ball).any()
+            else Provenance.OBSERVED
+        ),
     )
