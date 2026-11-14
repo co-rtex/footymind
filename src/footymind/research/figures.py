@@ -219,12 +219,82 @@ def replication(path: Path) -> None:
     plt.close(fig)
 
 
+def rq2(path: Path) -> None:
+    """RQ2 temporal context: release frame vs 0.2 s guard, per provider (never pooled).
+
+    Colour = provider; filled marker = guarded run (ADR-0007), hollow = release frame.
+    """
+    runs = [
+        ("temporal_v1", "Metrica, release frame", SERIES[0], False),
+        ("temporal_guard_v1_02s", "Metrica, 0.2 s guard", SERIES[0], True),
+        ("temporal_skillcorner_v1", "SkillCorner, release frame", SERIES[1], False),
+        (
+            "temporal_guard_skillcorner_v1_02s",
+            "SkillCorner, 0.2 s guard (primary)",
+            SERIES[1],
+            True,
+        ),
+    ]
+    comps = [
+        (("Adt_logreg", "Bdt_logreg"), "+ spatial context (C20/C28)"),
+        (("Adt_tob_logreg", "Bdt_tob_logreg"), "+ spatial, vs time-on-ball baseline (H-T3)"),
+        (("Adt_logreg", "Adt_tob_logreg"), "+ time-on-ball (H-T1)"),
+        (("Bdt_tob_logreg", "Bdt_tt_logreg"), "+ 1 s movement history (H-T2)"),
+    ]
+    fig, ax = plt.subplots(figsize=(7.4, 4.4), dpi=200, facecolor=SURFACE)
+    _style(ax)
+    ax.grid(True, axis="x", color=GRID)
+    ax.grid(False, axis="y")
+    ax.axvline(0, color=INK_2, linewidth=1)
+    offsets = [0.27, 0.09, -0.09, -0.27]
+    for k, (name, label, color, guarded) in enumerate(runs):
+        try:
+            r = _load(name)
+        except FileNotFoundError:
+            continue
+        by = {(c["a"], c["b"]): c["log_loss"] for c in r["comparisons"]}
+        first = True
+        for i, (pair, _) in enumerate(comps):
+            if pair not in by:
+                continue
+            ll = by[pair]
+            y = len(comps) - 1 - i + offsets[k]
+            lo, hi = ll["ci95"]
+            ax.plot([lo, hi], [y, y], color=color, linewidth=2, solid_capstyle="round")
+            ax.plot(
+                [ll["delta"]],
+                [y],
+                "o",
+                color=color,
+                markersize=6,
+                markerfacecolor=color if guarded else SURFACE,
+                markeredgecolor=color,
+                markeredgewidth=1.6,
+                label=label if first else None,
+            )
+            first = False
+    ax.set_yticks(range(len(comps)))
+    ax.set_yticklabels([c[1] for c in comps][::-1], fontsize=8, color=INK)
+    ax.set_xlabel("Δ held-out log loss (95% CI; left of 0 = better)", color=INK, fontsize=9)
+    ax.set_title(
+        "RQ2: temporal context, release frame vs guard frame (LOMO, never pooled)",
+        color=INK,
+        fontsize=10,
+        loc="left",
+    )
+    ax.legend(frameon=False, fontsize=7.5, loc="lower left", labelcolor=INK)
+    fig.tight_layout()
+    fig.savefig(path, facecolor=SURFACE)
+    plt.close(fig)
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     reliability(OUT / "calibration_v3.png")
     ablation(OUT / "ablation_v3.png")
     folds(OUT / "folds_v3.png")
     replication(OUT / "replication_v1.png")
+    rq2(OUT / "rq2_temporal_v1.png")
     print(sorted(p.name for p in OUT.glob("*.png")))
 
 
