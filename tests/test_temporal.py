@@ -201,9 +201,11 @@ def _synthetic_td(ball_detected: np.ndarray | None) -> tuple:
 
 
 def _tob(td: object, gk: np.ndarray, censor: bool, i0: int = 59) -> float:
-    return float(temporal_context(td, i0, "home", 0, gk, censor_undetected_ball=censor)[  # type: ignore[arg-type]
-        "passer_control_s"
-    ])
+    return float(
+        temporal_context(td, i0, "home", 0, gk, censor_undetected_ball=censor)[  # type: ignore[arg-type]
+            "passer_control_s"
+        ]
+    )
 
 
 def test_censor_flag_synthetic_detected_ball_unchanged() -> None:
@@ -252,3 +254,11 @@ def test_censor_flag_synthetic_movement_features_unaffected() -> None:
     on = temporal_context(td, 59, "home", 0, gk, censor_undetected_ball=True)
     for k in track_feature_names():
         assert off[k] == pytest.approx(on[k], nan_ok=True), k
+
+
+def test_event_carrier_tolerance_is_a_time() -> None:
+    """Regression (session-4 audit): 3 frames meant 0.12 s at 25 Hz but 0.3 s at 10 fps."""
+    from footymind.spatial.state import event_carrier_tolerance_frames
+
+    assert event_carrier_tolerance_frames(10.0) == 3  # SkillCorner unchanged
+    assert event_carrier_tolerance_frames(25.0) == 8  # Metrica now the same 0.3 s window
