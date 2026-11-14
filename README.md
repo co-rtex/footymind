@@ -18,11 +18,11 @@ Behind the lab is a research pipeline of leakage-audited, leave-one-match-out ex
 pre-registered from the temporal study (RQ2) onwards. Every number quoted here is traced in a [claims ledger](docs/CLAIMS_LEDGER.md) to a
 committed result.
 
-> **Status: 1.0 release candidate (2026-11-14).** All five pillars run end to end on real data:
-> data engineering, analysis engine, Possession Multiverse, web lab, and a reproducible research
-> release. The container is verified at runtime. Read the
-> [technical research report](docs/RESEARCH_REPORT.md), the [model cards](docs/MODEL_CARDS.md)
-> and [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md).
+> **Status: FootyMind 1.0.0 (2026-11-14), feature-frozen release candidate awaiting the owner's
+> merge.** The data platform, analysis engine, Possession Multiverse, web lab and reproducible
+> research run end to end on real data; the container, its recovery paths and the browser
+> suite are verified in CI. Read the [release notes](docs/release/RELEASE_NOTES_1.0.md), the
+> [technical research report](docs/RESEARCH_REPORT.md) and the [model cards](docs/MODEL_CARDS.md).
 
 ![Guided tour: watch a real possession, understand the decision, then ask "what if?"](web/screenshots/guided-tour-desktop.png)
 

@@ -41,7 +41,7 @@ export default defineConfig({
           timeout: 120_000,
         },
         {
-          command: "npm run dev -- --port 5173 --strictPort",
+          command: "npm run dev -- --host 127.0.0.1 --port 5173 --strictPort", // IPv4, as polled below (CI resolves localhost to ::1)
           env: { FOOTYMIND_API: "http://127.0.0.1:8765" },
           url: "http://127.0.0.1:5173",
           reuseExistingServer: true,

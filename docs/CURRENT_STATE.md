@@ -1,14 +1,15 @@
 # Current state and session handoff
 
-_Last updated: 2026-11-14, end of session 4 (overnight completion session, started 03:47:03 UTC).
+_Last updated: 2026-11-14, end of the final 1.0 release session (started 14:45:49 UTC).
+FootyMind **1.0.0** is a release candidate on this branch, pending the owner's decisions below.
 Keep this file factual and update it at every checkpoint._
 
 ## Branch and repository
-* Working branch: `claude/loving-wright-i0shmp` (pushed to `origin`). `main` is untouched, and
-  no PR has been opened (the owner has not asked for one).
+* Working branch: `claude/loving-wright-i0shmp` (pushed to `origin`). `main` is untouched. A
+  non-merging release PR to `main` is prepared for the owner's review (see the release notes);
+  nothing is merged or tagged.
 * Commits are authored as Christian Cortez with no assistant trailers (see CLAUDE.md).
-* All specialist worktrees and branches from session 4 were merged and removed. A detached
-  scratch worktree used to run experiments from a clean revision was removed as well.
+* All specialist worktrees and branches were merged and removed; no other worktrees exist.
 * **Stop-hook note.** The cloud environment runs a *managed* Stop hook
   (`~/.claude/stop-hook-git-check.sh`) that asks for commits to be re-authored as "Claude".
   That conflicts with the owner's authorship rule and is deliberately not done. Do not rewrite
@@ -60,17 +61,24 @@ indexes on start.
   request-body cap (413), cache freshness after re-ingest, stale or unreadable bundles left out
   of `/api/matches` (listed as `unavailable` in `/api/health`) with 503 on their own endpoints.
 * Docs and ledger consistency are tested (`tests/test_claims_ledger.py`).
-* Docker image verified at runtime (CI `docker` job: empty volume, Metrica 1–2 downloaded by
-  the entrypoint, `smoke_api.py --require-similar`, `HEALTHCHECK`).
+* Docker image verified at runtime in CI on every push: first start on an empty volume
+  (Metrica 1–2 downloaded by the entrypoint, `smoke_api.py --require-similar`, `HEALTHCHECK`),
+  then `scripts/container_recovery.py docker` (healthy restart, outdated bundle, interrupted
+  first start, unknown source and damaged file, restart on the damaged volume).
+* The CLI names its sources (`metrica`, `skillcorner`, `all` or ids); a bare `download` stops.
+* Release documents: `docs/release/` (release notes, checklist, verification, deployment,
+  data licences), `docs/ROADMAP.md` (post-1.0 ideas), `docs/product/release-1.0/QA_REPORT.md`.
 
-## Verification (end of session 4)
+## Verification (final release session)
 | Gate | Result |
 |---|---|
-| `scripts/check.sh` (exit code 0, all 23 bundles at v3) | ruff, format, mypy, **345 pytest passed, 0 skipped**; web typecheck, lint, **213 vitest**, build |
-| `cd web && npx playwright test --trace off` | **27/27** against the real API on v3 data (flow, screenshots, broadcast tests) |
-| GitHub CI | every job green for 83d4830, including the container-runtime `docker` job; see the final report for the newest run |
-| `scripts/reproduce.sh --dry-run` | exit 0, every committed artefact in dependency order |
-| Container | built and run in CI on every push; locally verified in session 4 by the release-engineering agent (Playwright 11/11 against the container) |
+| `scripts/check.sh` (exit 0; all 23 bundles at pipeline v3) | ruff, format and mypy on `src`, `tests`, `scripts`; **355 pytest passed, 0 skipped**; web typecheck, lint, **222 vitest**, build |
+| `cd web && npx playwright test --trace off` | **31/31** against the real API on all 23 matches; **25/25** on Metrica-only data (`--grep-invert @skillcorner`, as CI runs it) |
+| Entrypoint recovery | `scripts/container_recovery.py local`: 49/49 checks; `docker` mode in CI (see `docs/release/RELEASE_CHECKLIST.md`) |
+| Clean environment | fresh clone + empty data dir, README minimal path: pytest 317 passed / 14 skipped (no SkillCorner), build, smoke, 8/8 Metrica flow tests |
+| Experiment reproduction | `pass_outcome_v3` (C20) re-run at 259c0be: identical to the committed result |
+| Security | hostile-input sweep (no 500, no leaks); `pip-audit` clean; `npm audit --omit=dev` 0 |
+| GitHub CI | the run for the final commit is recorded in `docs/release/RELEASE_CHECKLIST.md` |
 
 ## Research status (numbers live in CLAIMS_LEDGER.md; session 4 = C45–C50, C55–C58, C61–C71)
 * **RQ1/RQ2 unchanged and strengthened.** Spatial context improves decision-time pass prediction
@@ -104,23 +112,23 @@ indexes on start.
   (`docs/research/offball_opportunity.md`).
 * **Similar moments (C36)**, **Defensive Shadow (C17, C29)**, **movement decomposition
   (C31, C32)** as before.
-* Session 4 ran independent reviews: an engineering review and a methodology review of the
-  release (every blocker fixed or reported), a numbers audit of the new ledger rows against
-  their results files (four errors corrected in 90f7bba), and a code review of the late
-  changes (six findings fixed in ac40a4f).
+* Independent reviews: session 4 ran an engineering review, a methodology review, a numbers
+  audit and a code review. The final session ran a research-claims audit (4 medium, 11 low
+  findings, all fixed in 22070db), a product QA in the browser (8 defects fixed, 7 low/info
+  documented in `docs/product/release-1.0/QA_REPORT.md`) and a final release-blocker review
+  (2 medium, 7 low, all fixed in ae9188c; no critical or high findings).
 
-## Next executable actions (prioritised)
-1. **Multi-attacker responses.** The off-ball study moves one attacker at a time; real runs are
-   joint. A joint-innovation counterfactual with `learned_innovation` is the natural next study.
-2. **Possession-value target.** Replace the best-progressive-option measure with a
-   possession-value model so off-ball credit is measured in a quantity that sees small moves.
-3. **More Metrica-like data.** Three optical matches limit every Metrica CI to within-match
-   sampling.
+## After 1.0
+FootyMind 1.0 is feature-frozen. Post-1.0 research and product ideas are in
+[`docs/ROADMAP.md`](ROADMAP.md); none of them is unfinished 1.0 work.
 
 ## Decisions needing the owner
-* Whether to host a public demo (Metrica has no licence file; SkillCorner is MIT with a
-  credit request, and the app shows SkillCorner team names, competition and date).
-* Whether to open a PR from this branch to `main`.
+* **Merge** the release PR into `main` and **tag/publish** v1.0.0.
+* **Public deployment**: whether and where to host a demo. A SkillCorner-only configuration is
+  licence-clear (MIT, credit given); including Metrica's sample data in a public demo depends on
+  their "responsible use, acknowledge the source" terms (`docs/release/DATA_LICENSES.md`).
+* **A code licence** for the repository (none is set; the project is public but all rights are
+  reserved until one is chosen).
 * Whether to change the managed stop hook or enable commit signing.
 
 ## Resume

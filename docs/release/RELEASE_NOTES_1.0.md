@@ -1,5 +1,7 @@
 # FootyMind 1.0 release notes
 
+Version **1.0.0** (Python package, API `/api/health` and web app), 2026-11-14.
+
 FootyMind is a football tracking-analytics lab. It reconstructs the space, pressure and passing
 options the event log cannot see, from real player tracking by two providers (3 Metrica
 matches, optical, 25 Hz; 20 SkillCorner A-League matches, broadcast, 10 fps). It pairs a
@@ -73,7 +75,24 @@ Full write-up: [`docs/RESEARCH_REPORT.md`](../RESEARCH_REPORT.md); models:
 * Response models labelled for another provider are refused (C69); claims-ledger and
   documentation corrections from an independent research-integrity audit; product-QA fixes
   (see [`docs/product/release-1.0/QA_REPORT.md`](../product/release-1.0/QA_REPORT.md)).
-* `scripts/` is linted and type-checked in CI.
+* `scripts/` is linted and type-checked in CI, and CI runs the Playwright suite on Metrica data.
+* An independent final review's findings are fixed: one damaged or outdated bundle no longer
+  disables similar moments for its provider, a newly added match makes the index rebuild,
+  error bodies carry no server paths, and the version is 1.0.0.
+
+## Verification
+
+| Gate | Result |
+|---|---|
+| `scripts/check.sh` | ruff, format, mypy (`src`, `tests`, `scripts`); 355 pytest passed, 0 skipped; web typecheck, lint, 222 vitest, build |
+| Playwright | 31/31 on all 23 matches; 25/25 on Metrica-only data, as CI runs it |
+| Docker | CI: build, first start on an empty volume, smoke checks, `HEALTHCHECK`; entrypoint recovery on existing volumes (`scripts/container_recovery.py`) |
+| Clean setup | fresh clone and empty data directory, README minimal path as written |
+| Reproduction | `pass_outcome_v3` (C20) re-run: identical to the committed result |
+| Security | hostile-input sweep with no 500 and no leaked paths; `pip-audit` and `npm audit --omit=dev` clean |
+| Reviews | research-claims audit, browser product QA and a final release-blocker review; every critical, high and medium finding fixed |
+
+Details: [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) and [`VERIFICATION.md`](VERIFICATION.md).
 
 ## Known limitations
 
