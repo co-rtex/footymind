@@ -151,7 +151,7 @@ export function verdictText(c: PolicyComparison, policy: string, players: Map<st
     return `The conclusion depends on how defenders respond: ${parts.join(", and ")}.`;
   }
   if (v === "shifts") {
-    return `Same direction under both assumptions, but the size of the changes differs by up to ${(c.maxAbsGap ?? 0).toFixed(2)}.`;
+    return `No pass option changes direction, but the size of the changes differs by up to ${(c.maxAbsGap ?? 0).toFixed(2)}.`;
   }
-  return `Little difference: with static defenders the changes have the same direction and differ by at most ${(c.maxAbsGap ?? 0).toFixed(2)}.`;
+  return `Little difference: no pass option changes direction, and the changes differ by at most ${(c.maxAbsGap ?? 0).toFixed(2)}.`;
 }
