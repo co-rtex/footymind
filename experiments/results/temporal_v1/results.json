@@ -1,0 +1,1723 @@
+{
+  "name": "temporal_v1",
+  "config": {
+    "name": "temporal_v1",
+    "description": "Temporal context (session 3, pre-registered in docs/RESEARCH.md before running). Primary hypotheses: H-T1 time-on-ball/event timing improves the decision-time event baseline (Adt -> Adt_tob); H-T2 1.0 s movement history improves decision-time spatial context beyond static positions + time-on-ball (Bdt_tob -> Bdt_tt); H-T3 the decision-time spatial gain survives the stronger temporal event baseline (Adt_tob -> Bdt_tob). 0.5 s / 2.0 s lookbacks and Bdt_ttonly are sensitivity analyses. Same rules v2, LOMO, a-priori hyperparameters and possession-clustered paired bootstrap as pass_outcome_v3. Revised before any valid run after the independent review (2026-11-14): time-on-ball is censored (NaN) when an unobserved ball ends the run; a header/cross control comparison is added; strata are restart vs open play.",
+    "matches": [
+      "metrica-sample-1",
+      "metrica-sample-2",
+      "metrica-sample-3"
+    ],
+    "seed": 0,
+    "dataset": {
+      "rules": "v2",
+      "include_ball_out": true
+    },
+    "n_boot": 2000,
+    "models": [
+      "base_rate",
+      "Adt_logreg",
+      "Adt_te_logreg",
+      "Adt_tob_logreg",
+      "Bdt_logreg",
+      "Bdt_tob_logreg",
+      "Bdt_tt_logreg",
+      "Bdt_tt05_logreg",
+      "Bdt_tt20_logreg",
+      "Bdt_ttonly_logreg",
+      "Adt_gbm",
+      "Adt_tob_gbm",
+      "Bdt_gbm",
+      "Bdt_tob_gbm",
+      "Bdt_tt_gbm",
+      "Bdt_tob_hc_logreg",
+      "Bdt_tt_hc_logreg"
+    ],
+    "comparisons": [
+      [
+        "Adt_logreg",
+        "Adt_te_logreg"
+      ],
+      [
+        "Adt_logreg",
+        "Adt_tob_logreg"
+      ],
+      [
+        "Bdt_logreg",
+        "Bdt_tob_logreg"
+      ],
+      [
+        "Bdt_tob_logreg",
+        "Bdt_tt_logreg"
+      ],
+      [
+        "Bdt_logreg",
+        "Bdt_ttonly_logreg"
+      ],
+      [
+        "Adt_tob_logreg",
+        "Bdt_tob_logreg"
+      ],
+      [
+        "Adt_tob_logreg",
+        "Bdt_tt_logreg"
+      ],
+      [
+        "Bdt_tt_logreg",
+        "Bdt_tt05_logreg"
+      ],
+      [
+        "Bdt_tt_logreg",
+        "Bdt_tt20_logreg"
+      ],
+      [
+        "Adt_tob_gbm",
+        "Bdt_tob_gbm"
+      ],
+      [
+        "Bdt_tob_gbm",
+        "Bdt_tt_gbm"
+      ],
+      [
+        "Adt_logreg",
+        "Bdt_logreg"
+      ],
+      [
+        "Bdt_tob_hc_logreg",
+        "Bdt_tt_hc_logreg"
+      ]
+    ],
+    "calibration": [
+      "Adt_logreg",
+      "Adt_tob_logreg",
+      "Bdt_logreg",
+      "Bdt_tob_logreg",
+      "Bdt_tt_logreg"
+    ],
+    "importances": [
+      "Bdt_tt_logreg"
+    ]
+  },
+  "code_revision": "379b98eea585e3a4754166ac9bbc27bdc9e35a95",
+  "data_files_sha256": {
+    "metrica-sample-1": {
+      "Sample_Game_1_RawEventsData.csv": "097dda6345e17390dca095331458fd00e47960c480c76f4356fd4edf2575ef05",
+      "Sample_Game_1_RawTrackingData_Away_Team.csv": "0a3df68a92af0290ede472e62de3b6489ddee29223da09bdf0cf76c8e0ab0618",
+      "Sample_Game_1_RawTrackingData_Home_Team.csv": "0a3d0eff7785950379c587d3597b86a2d91c2492281b4652e1abb97c99b6b364"
+    },
+    "metrica-sample-2": {
+      "Sample_Game_2_RawEventsData.csv": "edf31a18599265b77a8baf150f2ce6d89456fb0324b62ea7a391229657a619ba",
+      "Sample_Game_2_RawTrackingData_Away_Team.csv": "aa639f40762eade46c389020fe4458266b5ba14027b1e96e22e75db62803718b",
+      "Sample_Game_2_RawTrackingData_Home_Team.csv": "3f9990ac204b07133e4202441d6fcbb386897c7c7f81e1bc3ce4d35bc8644694"
+    },
+    "metrica-sample-3": {
+      "Sample_Game_3_events.json": "28a53bfe9eaf32535362335553d517cdce0eabb588af6166009081753751f4e0",
+      "Sample_Game_3_metadata.xml": "009c7dcfcb66192014917ca1559c158f612353e390eafb85f8214b06a1c7dec1",
+      "Sample_Game_3_tracking.txt": "570e6ce82c2d93bc92723af331d93c31110bec1d6dc0be07c6d44ca3f981d658"
+    }
+  },
+  "runtime_s": 191.6,
+  "dataset": {
+    "n": 3593,
+    "success_rate": 0.7957138881157807,
+    "by_match": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "success_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "success_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "success_rate": 0.7997128499641063
+      }
+    },
+    "by_label_source": {
+      "BALL LOST": 598,
+      "BALL OUT": 136,
+      "PASS": 2859
+    },
+    "n_truncated_release": 16,
+    "receiver_inference": {
+      "n_completed": 2859,
+      "accuracy": 0.7618048268625394
+    }
+  },
+  "models": {
+    "base_rate": {
+      "family": "baseline",
+      "description": "training-set completion rate",
+      "n_features": 0
+    },
+    "Adt_logreg": {
+      "family": "A-decision",
+      "description": "decision-time event context only (no release features), LR",
+      "n_features": 13
+    },
+    "Adt_gbm": {
+      "family": "A-decision",
+      "description": "decision-time event context only, GBM",
+      "n_features": 13
+    },
+    "Bdt_logreg": {
+      "family": "B-decision",
+      "description": "decision-time event + spatial context (no release features), LR",
+      "n_features": 25
+    },
+    "Bdt_gbm": {
+      "family": "B-decision",
+      "description": "decision-time event + spatial context, GBM",
+      "n_features": 25
+    },
+    "Adt_te_logreg": {
+      "family": "temporal",
+      "description": "decision-time events + time since previous event, LR",
+      "n_features": 14
+    },
+    "Adt_tob_logreg": {
+      "family": "temporal",
+      "description": "decision-time events + event timing + tracking time-on-ball, LR",
+      "n_features": 16
+    },
+    "Bdt_tob_logreg": {
+      "family": "temporal",
+      "description": "decision-time spatial + event timing + time-on-ball, LR",
+      "n_features": 28
+    },
+    "Bdt_tt_logreg": {
+      "family": "temporal",
+      "description": "decision-time spatial + timing + time-on-ball + 1.0 s movement history, LR",
+      "n_features": 37
+    },
+    "Bdt_tt05_logreg": {
+      "family": "temporal",
+      "description": "as Bdt_tt with a 0.5 s lookback (sensitivity), LR",
+      "n_features": 37
+    },
+    "Bdt_tt20_logreg": {
+      "family": "temporal",
+      "description": "as Bdt_tt with a 2.0 s lookback (sensitivity), LR",
+      "n_features": 37
+    },
+    "Bdt_ttonly_logreg": {
+      "family": "temporal",
+      "description": "decision-time spatial + 1.0 s movement history only (no timing/time-on-ball), LR",
+      "n_features": 34
+    },
+    "Bdt_tob_hc_logreg": {
+      "family": "temporal",
+      "description": "Bdt_tob + header/cross annotations (control), LR",
+      "n_features": 30
+    },
+    "Bdt_tt_hc_logreg": {
+      "family": "temporal",
+      "description": "Bdt_tt + header/cross annotations (control), LR",
+      "n_features": 39
+    },
+    "Adt_tob_gbm": {
+      "family": "temporal",
+      "description": "decision-time events + event timing + tracking time-on-ball, GBM",
+      "n_features": 16
+    },
+    "Bdt_tob_gbm": {
+      "family": "temporal",
+      "description": "decision-time spatial + event timing + time-on-ball, GBM",
+      "n_features": 28
+    },
+    "Bdt_tt_gbm": {
+      "family": "temporal",
+      "description": "decision-time spatial + timing + time-on-ball + 1.0 s movement history, GBM",
+      "n_features": 37
+    }
+  },
+  "pooled_oof_metrics": {
+    "base_rate": {
+      "n": 3593,
+      "log_loss": 0.5080050096932018,
+      "brier": 0.1631086989699449,
+      "auc": 0.4625562185669233,
+      "ece": 0.027837176557037095,
+      "mean_pred": 0.7947159142498988,
+      "base_rate": 0.7957138881157807
+    },
+    "Adt_logreg": {
+      "n": 3593,
+      "log_loss": 0.48191944635395284,
+      "brier": 0.1533149323972563,
+      "auc": 0.6475440146466105,
+      "ece": 0.014150213029302259,
+      "mean_pred": 0.7971388144754256,
+      "base_rate": 0.7957138881157807
+    },
+    "Adt_gbm": {
+      "n": 3593,
+      "log_loss": 0.4761795099959782,
+      "brier": 0.15223750548095305,
+      "auc": 0.6834362160508476,
+      "ece": 0.0278240985036773,
+      "mean_pred": 0.7958653344245531,
+      "base_rate": 0.7957138881157807
+    },
+    "Bdt_logreg": {
+      "n": 3593,
+      "log_loss": 0.45617198305302775,
+      "brier": 0.14565072843250934,
+      "auc": 0.720737991695044,
+      "ece": 0.019895535289812083,
+      "mean_pred": 0.795262987846014,
+      "base_rate": 0.7957138881157807
+    },
+    "Bdt_gbm": {
+      "n": 3593,
+      "log_loss": 0.45391860505575093,
+      "brier": 0.1455763065028492,
+      "auc": 0.7281899599048084,
+      "ece": 0.01963493788170459,
+      "mean_pred": 0.7961107249895593,
+      "base_rate": 0.7957138881157807
+    },
+    "Adt_te_logreg": {
+      "n": 3593,
+      "log_loss": 0.48300479968035354,
+      "brier": 0.15342558001629675,
+      "auc": 0.6467186655649305,
+      "ece": 0.014319521156489969,
+      "mean_pred": 0.7969758079786594,
+      "base_rate": 0.7957138881157807
+    },
+    "Adt_tob_logreg": {
+      "n": 3593,
+      "log_loss": 0.4778064201571969,
+      "brier": 0.1520629212092296,
+      "auc": 0.6635377740163717,
+      "ece": 0.0057921890989262965,
+      "mean_pred": 0.7947804916315868,
+      "base_rate": 0.7957138881157807
+    },
+    "Bdt_tob_logreg": {
+      "n": 3593,
+      "log_loss": 0.4554093468139406,
+      "brier": 0.14525749032699778,
+      "auc": 0.7219274093092897,
+      "ece": 0.016722661924136316,
+      "mean_pred": 0.7931723083966657,
+      "base_rate": 0.7957138881157807
+    },
+    "Bdt_tt_logreg": {
+      "n": 3593,
+      "log_loss": 0.43951014824066165,
+      "brier": 0.13918251600032017,
+      "auc": 0.7532353969919553,
+      "ece": 0.017424248220800503,
+      "mean_pred": 0.7943226299720056,
+      "base_rate": 0.7957138881157807
+    },
+    "Bdt_tt05_logreg": {
+      "n": 3593,
+      "log_loss": 0.4384145753125783,
+      "brier": 0.13904814517580616,
+      "auc": 0.754461507377153,
+      "ece": 0.017470395022989527,
+      "mean_pred": 0.7929193670765576,
+      "base_rate": 0.7957138881157807
+    },
+    "Bdt_tt20_logreg": {
+      "n": 3593,
+      "log_loss": 0.44563459516061177,
+      "brier": 0.14079561637052282,
+      "auc": 0.7405735318364589,
+      "ece": 0.019421429622537352,
+      "mean_pred": 0.7940284508841032,
+      "base_rate": 0.7957138881157807
+    },
+    "Bdt_ttonly_logreg": {
+      "n": 3593,
+      "log_loss": 0.4392105674438166,
+      "brier": 0.13913383630473106,
+      "auc": 0.7533030641799452,
+      "ece": 0.018637995456608533,
+      "mean_pred": 0.7957087922041244,
+      "base_rate": 0.7957138881157807
+    },
+    "Bdt_tob_hc_logreg": {
+      "n": 3593,
+      "log_loss": 0.4494269760654964,
+      "brier": 0.14244531130742832,
+      "auc": 0.7325482986467515,
+      "ece": 0.013651822200968219,
+      "mean_pred": 0.7935694689334444,
+      "base_rate": 0.7957138881157807
+    },
+    "Bdt_tt_hc_logreg": {
+      "n": 3593,
+      "log_loss": 0.4363603869317366,
+      "brier": 0.13762305581677237,
+      "auc": 0.7583719083957826,
+      "ece": 0.0167844215625513,
+      "mean_pred": 0.7946614949916416,
+      "base_rate": 0.7957138881157807
+    },
+    "Adt_tob_gbm": {
+      "n": 3593,
+      "log_loss": 0.469802928457596,
+      "brier": 0.1503909252949915,
+      "auc": 0.6982886872851447,
+      "ece": 0.022577127829014484,
+      "mean_pred": 0.7937863434836546,
+      "base_rate": 0.7957138881157807
+    },
+    "Bdt_tob_gbm": {
+      "n": 3593,
+      "log_loss": 0.44910090953158127,
+      "brier": 0.14390810789461123,
+      "auc": 0.7379440420947093,
+      "ece": 0.018736162803458203,
+      "mean_pred": 0.792353122767783,
+      "base_rate": 0.7957138881157807
+    },
+    "Bdt_tt_gbm": {
+      "n": 3593,
+      "log_loss": 0.4361278794728194,
+      "brier": 0.1392244066201227,
+      "auc": 0.759696183856515,
+      "ece": 0.02725622054797778,
+      "mean_pred": 0.7944680766784157,
+      "base_rate": 0.7957138881157807
+    }
+  },
+  "fold_metrics": {
+    "base_rate": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.5550265374558391,
+        "brier": 0.18335088792576537,
+        "auc": 0.5,
+        "ece": 0.04676685512576184,
+        "mean_pred": 0.8091334894613583,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.4749635318850007,
+        "brier": 0.14870443734952732,
+        "auc": 0.5,
+        "ece": 0.036530898598842065,
+        "mean_pred": 0.7838283828382837,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.500931278490408,
+        "brier": 0.16021486194253437,
+        "auc": 0.5,
+        "ece": 0.006531031782288088,
+        "mean_pred": 0.7931818181818182,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Adt_logreg": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.5364404575116598,
+        "brier": 0.17495902399987762,
+        "auc": 0.6526146336397154,
+        "ece": 0.055199015715943704,
+        "mean_pred": 0.8143877304043445,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.4388634751515372,
+        "brier": 0.1362356165380541,
+        "auc": 0.6904066736183525,
+        "ece": 0.039533911813151974,
+        "mean_pred": 0.7834749116651051,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.4776992509713456,
+        "brier": 0.1516284010240365,
+        "auc": 0.636721942304846,
+        "ece": 0.016802762296954498,
+        "mean_pred": 0.7958390801341112,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Adt_gbm": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.513333562766973,
+        "brier": 0.1682891424241618,
+        "auc": 0.6938619722698239,
+        "ece": 0.050524522387715806,
+        "mean_pred": 0.802076489336249,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.4452117469504715,
+        "brier": 0.14146508426955837,
+        "auc": 0.6941307910025324,
+        "ece": 0.0410056923299345,
+        "mean_pred": 0.7793535891071912,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.47466873224529765,
+        "brier": 0.14939739256470908,
+        "auc": 0.6746330508420043,
+        "ece": 0.0290628621282504,
+        "mean_pred": 0.8051248674913422,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_logreg": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.5128264653297006,
+        "brier": 0.1655823760160081,
+        "auc": 0.7080178636340033,
+        "ece": 0.05990738928430779,
+        "mean_pred": 0.8180217538657126,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.41451339971104945,
+        "brier": 0.13031528459430544,
+        "auc": 0.7460996077263022,
+        "ece": 0.03141066233628015,
+        "mean_pred": 0.7912600341194864,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.4492000610857075,
+        "brier": 0.1437681765217219,
+        "auc": 0.7271352547891611,
+        "ece": 0.030813356184049838,
+        "mean_pred": 0.7817778228352468,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_gbm": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.5016322982811865,
+        "brier": 0.1625885999513369,
+        "auc": 0.7246559692579322,
+        "ece": 0.0584214911701434,
+        "mean_pred": 0.8122028640396992,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.4182196129231468,
+        "brier": 0.13285030463252634,
+        "auc": 0.7474005660658424,
+        "ece": 0.03874813685887198,
+        "mean_pred": 0.7824644974234898,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.4485627573081489,
+        "brier": 0.14366462067443328,
+        "auc": 0.729268418241604,
+        "ece": 0.027997876038503452,
+        "mean_pred": 0.7956523220204571,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Adt_te_logreg": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.5394845889953224,
+        "brier": 0.1752118577928526,
+        "auc": 0.6524173027989821,
+        "ece": 0.055469736861686596,
+        "mean_pred": 0.8146626650059026,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.43881215984570837,
+        "brier": 0.13622501606373652,
+        "auc": 0.6906052932121755,
+        "ece": 0.04000302112124435,
+        "mean_pred": 0.7835688060191807,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.47828874309956887,
+        "brier": 0.15173556341393768,
+        "auc": 0.6337618964884848,
+        "ece": 0.015789158995130653,
+        "mean_pred": 0.795136350473665,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Adt_tob_logreg": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.5335789691642221,
+        "brier": 0.1739481614160666,
+        "auc": 0.6611517889598586,
+        "ece": 0.061243695076625006,
+        "mean_pred": 0.8152351721572388,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.4335566055737526,
+        "brier": 0.13449626765505124,
+        "auc": 0.7048661800486618,
+        "ece": 0.04247861793401146,
+        "mean_pred": 0.7877838396374737,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.4736617936114707,
+        "brier": 0.15060688054274393,
+        "auc": 0.6577511373654306,
+        "ece": 0.016880931276314303,
+        "mean_pred": 0.7855129471658089,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_tob_logreg": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.5126354061025171,
+        "brier": 0.1650818922905251,
+        "auc": 0.7103754478890794,
+        "ece": 0.06265685491566429,
+        "mean_pred": 0.8181128967315512,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.41276939096023313,
+        "brier": 0.1295483739221932,
+        "auc": 0.7468742241422117,
+        "ece": 0.029012987921005096,
+        "mean_pred": 0.792751438707887,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.4488379478666768,
+        "brier": 0.14376789854869185,
+        "auc": 0.7275631744560915,
+        "ece": 0.031165453611396596,
+        "mean_pred": 0.7750662424188592,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_tt_logreg": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.4827787892588865,
+        "brier": 0.15305379940678693,
+        "auc": 0.7507399906527497,
+        "ece": 0.058411462568397146,
+        "mean_pred": 0.814552460666217,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.39763749345997285,
+        "brier": 0.12557639993925943,
+        "auc": 0.786280351556681,
+        "ece": 0.03734494908070442,
+        "mean_pred": 0.7830767933737082,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.44262512638052903,
+        "brier": 0.14033417176723528,
+        "auc": 0.7434734207190337,
+        "ece": 0.03123955425669909,
+        "mean_pred": 0.7887874020737129,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_tt05_logreg": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.4824709421616958,
+        "brier": 0.15342086906908617,
+        "auc": 0.7528535078153399,
+        "ece": 0.057791084111051445,
+        "mean_pred": 0.8164756766716567,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.3996463860997507,
+        "brier": 0.1265462101906417,
+        "auc": 0.7837032623268285,
+        "ece": 0.04580869399937823,
+        "mean_pred": 0.7841573269107761,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.4383412795253247,
+        "brier": 0.1389020458676121,
+        "auc": 0.7479038371202615,
+        "ece": 0.029896641715114317,
+        "mean_pred": 0.7828377229712108,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_tt20_logreg": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.4935965654382942,
+        "brier": 0.156199513583909,
+        "auc": 0.7359817209326479,
+        "ece": 0.058707018554784246,
+        "mean_pred": 0.814940920391885,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.40360264865334206,
+        "brier": 0.12710797384170655,
+        "auc": 0.7728437360345598,
+        "ece": 0.04274266649954987,
+        "mean_pred": 0.7805072528401944,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.4454095801647093,
+        "brier": 0.14088135656376408,
+        "auc": 0.732817255780133,
+        "ece": 0.03178641881739521,
+        "mean_pred": 0.7898974562328515,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_ttonly_logreg": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.48426548329452557,
+        "brier": 0.1536111399939309,
+        "auc": 0.7490782572571012,
+        "ece": 0.05807999363370695,
+        "mean_pred": 0.8149721056020465,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.397055491447863,
+        "brier": 0.1253469909181888,
+        "auc": 0.7872784150156412,
+        "ece": 0.03864309811672216,
+        "mean_pred": 0.782524355150982,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.4412404781381373,
+        "brier": 0.13998862607738205,
+        "auc": 0.7456838027579906,
+        "ece": 0.023538015854646068,
+        "mean_pred": 0.7925157777043872,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_tob_hc_logreg": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.5021077322197872,
+        "brier": 0.16002528901171256,
+        "auc": 0.7231759879524329,
+        "ece": 0.057838590572206694,
+        "mean_pred": 0.8155886341920524,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.4105527824087077,
+        "brier": 0.1284031084912486,
+        "auc": 0.7549282486717315,
+        "ece": 0.028962443703220184,
+        "mean_pred": 0.7937611812140827,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.44305947627347364,
+        "brier": 0.14121801631747644,
+        "auc": 0.7363178317020908,
+        "ece": 0.026420349245005362,
+        "mean_pred": 0.777111557205023,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_tt_hc_logreg": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.47742605057741183,
+        "brier": 0.15050097326786208,
+        "auc": 0.7563171833618944,
+        "ece": 0.05167120116580429,
+        "mean_pred": 0.8124195060846146,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.396856126178807,
+        "brier": 0.1249695080888495,
+        "auc": 0.7896370226922886,
+        "ece": 0.03653147825606859,
+        "mean_pred": 0.7851337413173413,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.4391183062436416,
+        "brier": 0.13871053923519905,
+        "auc": 0.747836270857062,
+        "ece": 0.02736498025803996,
+        "mean_pred": 0.7895139247177018,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Adt_tob_gbm": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.5137062296051743,
+        "brier": 0.16865621368231193,
+        "auc": 0.7040608609856156,
+        "ece": 0.06084311901956133,
+        "mean_pred": 0.8048682148083862,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.4334149751365957,
+        "brier": 0.1370216816301738,
+        "auc": 0.7169223893937137,
+        "ece": 0.03777519486715061,
+        "mean_pred": 0.782584086569975,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.46784543667661715,
+        "brier": 0.14809166723098907,
+        "auc": 0.6893077997207262,
+        "ece": 0.029853197810651228,
+        "mean_pred": 0.7949852156992273,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_tob_gbm": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.49793261031061087,
+        "brier": 0.16177733768141814,
+        "auc": 0.7353377992418342,
+        "ece": 0.06711371130582637,
+        "mean_pred": 0.8090240046857147,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.4127853940216687,
+        "brier": 0.13075580029630304,
+        "auc": 0.7582948507870302,
+        "ece": 0.039687133574617506,
+        "mean_pred": 0.7816380145168417,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.4434349756679118,
+        "brier": 0.1417199324977873,
+        "auc": 0.738348037039182,
+        "ece": 0.023158608056729087,
+        "mean_pred": 0.7890065917469378,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_tt_gbm": {
+      "metrica-sample-1": {
+        "n": 1031,
+        "log_loss": 0.47910795487019414,
+        "brier": 0.1537418404428681,
+        "auc": 0.7571168925585501,
+        "ece": 0.05529224781345726,
+        "mean_pred": 0.8109386542711275,
+        "base_rate": 0.7623666343355965
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.3986133217463039,
+        "brier": 0.12651656190936322,
+        "auc": 0.791052187298277,
+        "ece": 0.0539790512664062,
+        "mean_pred": 0.7776436753931393,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.4357991359319746,
+        "brier": 0.13914400187900805,
+        "auc": 0.7533380951461683,
+        "ece": 0.028329633352291887,
+        "mean_pred": 0.7963966908955029,
+        "base_rate": 0.7997128499641063
+      }
+    }
+  },
+  "comparisons": [
+    {
+      "a": "Adt_logreg",
+      "b": "Adt_te_logreg",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": 0.0010853533264006954,
+        "ci95": [
+          -3.50761569390165e-05,
+          0.0025892863790864503
+        ],
+        "share_improved": 0.0325
+      },
+      "brier": {
+        "delta": 0.00011064761904044929,
+        "ci95": [
+          -7.304681336805507e-05,
+          0.0002946542542103379
+        ],
+        "share_improved": 0.119
+      },
+      "auc": {
+        "delta": -0.0008253490816799713,
+        "ci95": [
+          -0.003283672352225267,
+          0.0016183472161384214
+        ],
+        "share_improved": 0.277
+      }
+    },
+    {
+      "a": "Adt_logreg",
+      "b": "Adt_tob_logreg",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.0041130261967559645,
+        "ci95": [
+          -0.007790059513227037,
+          -0.0006387450866655581
+        ],
+        "share_improved": 0.988
+      },
+      "brier": {
+        "delta": -0.0012520111880267026,
+        "ci95": [
+          -0.0025187691204322958,
+          -5.507833428846627e-05
+        ],
+        "share_improved": 0.9795
+      },
+      "auc": {
+        "delta": 0.015993759369761218,
+        "ci95": [
+          0.005222557858774071,
+          0.02689387724946773
+        ],
+        "share_improved": 0.9995
+      }
+    },
+    {
+      "a": "Bdt_logreg",
+      "b": "Bdt_tob_logreg",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.0007626362390871777,
+        "ci95": [
+          -0.002984599316874029,
+          0.0013307995606794312
+        ],
+        "share_improved": 0.7615
+      },
+      "brier": {
+        "delta": -0.0003932381055115619,
+        "ci95": [
+          -0.0012368669697768128,
+          0.000398833210566171
+        ],
+        "share_improved": 0.8365
+      },
+      "auc": {
+        "delta": 0.0011894176142456248,
+        "ci95": [
+          -0.0024814758816403522,
+          0.004953465711212648
+        ],
+        "share_improved": 0.7355
+      }
+    },
+    {
+      "a": "Bdt_tob_logreg",
+      "b": "Bdt_tt_logreg",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.015899198573278928,
+        "ci95": [
+          -0.02336990287610831,
+          -0.008889261536860801
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.006074974326677612,
+        "ci95": [
+          -0.008907125670650565,
+          -0.003506131986773657
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.03130798768266563,
+        "ci95": [
+          0.020789572124228006,
+          0.042568633901169634
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Bdt_logreg",
+      "b": "Bdt_ttonly_logreg",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.01696141560921116,
+        "ci95": [
+          -0.02462325427952889,
+          -0.009853820156745574
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.006516892127778284,
+        "ci95": [
+          -0.009297094629637183,
+          -0.003925230958891528
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.03256507248490115,
+        "ci95": [
+          0.021962392993187536,
+          0.0438255320661539
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Adt_tob_logreg",
+      "b": "Bdt_tob_logreg",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.022397073343256302,
+        "ci95": [
+          -0.030394254560079707,
+          -0.014512711099968083
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.006805430882231817,
+        "ci95": [
+          -0.009699841032912297,
+          -0.004002644471111821
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.05838963529291796,
+        "ci95": [
+          0.04189902325229349,
+          0.0755599649710112
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Adt_tob_logreg",
+      "b": "Bdt_tt_logreg",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.03829627191653523,
+        "ci95": [
+          -0.049152259783245625,
+          -0.027241991631224656
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.012880405208909429,
+        "ci95": [
+          -0.01684934140305854,
+          -0.00898419252639606
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.08969762297558359,
+        "ci95": [
+          0.07096030909095026,
+          0.10950709386704051
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Bdt_tt_logreg",
+      "b": "Bdt_tt05_logreg",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.0010955729280833215,
+        "ci95": [
+          -0.004248069040707181,
+          0.0019313854979958825
+        ],
+        "share_improved": 0.759
+      },
+      "brier": {
+        "delta": -0.0001343708245140074,
+        "ci95": [
+          -0.0012860007562346168,
+          0.0010055586881687064
+        ],
+        "share_improved": 0.5895
+      },
+      "auc": {
+        "delta": 0.0012261103851977095,
+        "ci95": [
+          -0.003065289328973539,
+          0.0054601345096534585
+        ],
+        "share_improved": 0.713
+      }
+    },
+    {
+      "a": "Bdt_tt_logreg",
+      "b": "Bdt_tt20_logreg",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": 0.006124446919950122,
+        "ci95": [
+          0.0023953956895168384,
+          0.010065466050985116
+        ],
+        "share_improved": 0.0
+      },
+      "brier": {
+        "delta": 0.0016131003702026525,
+        "ci95": [
+          0.00021218411098402682,
+          0.0031280183124057135
+        ],
+        "share_improved": 0.0105
+      },
+      "auc": {
+        "delta": -0.012661865155496388,
+        "ci95": [
+          -0.018411319414300388,
+          -0.006982767505072859
+        ],
+        "share_improved": 0.0
+      }
+    },
+    {
+      "a": "Adt_tob_gbm",
+      "b": "Bdt_tob_gbm",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.020702018926014754,
+        "ci95": [
+          -0.02848188712450375,
+          -0.012387013514798964
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.006482817400380286,
+        "ci95": [
+          -0.009231131317445535,
+          -0.003604321333122078
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.039655354809564614,
+        "ci95": [
+          0.02491243069520168,
+          0.05328267693660659
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Bdt_tob_gbm",
+      "b": "Bdt_tt_gbm",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.01297303005876188,
+        "ci95": [
+          -0.01987274481903649,
+          -0.006554089785156665
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.004683701274488555,
+        "ci95": [
+          -0.007291368743006572,
+          -0.0021200357335331697
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.021752141761805732,
+        "ci95": [
+          0.011999760853614335,
+          0.03226913717529021
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Adt_logreg",
+      "b": "Bdt_logreg",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.02574746330092509,
+        "ci95": [
+          -0.034185048970471636,
+          -0.017732515495217645
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.007664203964746957,
+        "ci95": [
+          -0.010602087265911,
+          -0.0047586581210383285
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.07319397704843356,
+        "ci95": [
+          0.05583414310472534,
+          0.09185944166336593
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Bdt_tob_hc_logreg",
+      "b": "Bdt_tt_hc_logreg",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.013066589133759798,
+        "ci95": [
+          -0.02015177473860303,
+          -0.0067458532316991915
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.004822255490655958,
+        "ci95": [
+          -0.007436374445671105,
+          -0.0023968362090950562
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.025823609749031085,
+        "ci95": [
+          0.01600293851737286,
+          0.03628588111470136
+        ],
+        "share_improved": 1.0
+      }
+    }
+  ],
+  "calibration": {
+    "Adt_logreg": [
+      {
+        "bin": 0,
+        "n": 1,
+        "mean_pred": 0.007499568409950278,
+        "observed": 1.0
+      },
+      {
+        "bin": 2,
+        "n": 2,
+        "mean_pred": 0.2695331896321056,
+        "observed": 0.5
+      },
+      {
+        "bin": 3,
+        "n": 4,
+        "mean_pred": 0.3697580575328058,
+        "observed": 0.25
+      },
+      {
+        "bin": 4,
+        "n": 39,
+        "mean_pred": 0.4643494198868491,
+        "observed": 0.38461538461538464
+      },
+      {
+        "bin": 5,
+        "n": 244,
+        "mean_pred": 0.5610541724471881,
+        "observed": 0.5778688524590164
+      },
+      {
+        "bin": 6,
+        "n": 286,
+        "mean_pred": 0.6487269989492831,
+        "observed": 0.6433566433566433
+      },
+      {
+        "bin": 7,
+        "n": 675,
+        "mean_pred": 0.7654744273676629,
+        "observed": 0.7911111111111111
+      },
+      {
+        "bin": 8,
+        "n": 2153,
+        "mean_pred": 0.8510795718391913,
+        "observed": 0.8444031583836508
+      },
+      {
+        "bin": 9,
+        "n": 189,
+        "mean_pred": 0.9126023197738178,
+        "observed": 0.8677248677248677
+      }
+    ],
+    "Adt_tob_logreg": [
+      {
+        "bin": 0,
+        "n": 1,
+        "mean_pred": 0.004638298694042374,
+        "observed": 1.0
+      },
+      {
+        "bin": 3,
+        "n": 12,
+        "mean_pred": 0.37004425847246786,
+        "observed": 0.4166666666666667
+      },
+      {
+        "bin": 4,
+        "n": 72,
+        "mean_pred": 0.4628529969497145,
+        "observed": 0.4722222222222222
+      },
+      {
+        "bin": 5,
+        "n": 225,
+        "mean_pred": 0.5524449154336804,
+        "observed": 0.5688888888888889
+      },
+      {
+        "bin": 6,
+        "n": 277,
+        "mean_pred": 0.6515049449015029,
+        "observed": 0.6389891696750902
+      },
+      {
+        "bin": 7,
+        "n": 745,
+        "mean_pred": 0.761169108991082,
+        "observed": 0.7664429530201342
+      },
+      {
+        "bin": 8,
+        "n": 1937,
+        "mean_pred": 0.8517169892350271,
+        "observed": 0.8528652555498193
+      },
+      {
+        "bin": 9,
+        "n": 324,
+        "mean_pred": 0.914388738255095,
+        "observed": 0.8981481481481481
+      }
+    ],
+    "Bdt_logreg": [
+      {
+        "bin": 0,
+        "n": 1,
+        "mean_pred": 0.040069969874302155,
+        "observed": 1.0
+      },
+      {
+        "bin": 1,
+        "n": 4,
+        "mean_pred": 0.1814118289868186,
+        "observed": 0.0
+      },
+      {
+        "bin": 2,
+        "n": 18,
+        "mean_pred": 0.2608497719783543,
+        "observed": 0.2222222222222222
+      },
+      {
+        "bin": 3,
+        "n": 64,
+        "mean_pred": 0.3524302075439609,
+        "observed": 0.4375
+      },
+      {
+        "bin": 4,
+        "n": 118,
+        "mean_pred": 0.4550380611039796,
+        "observed": 0.559322033898305
+      },
+      {
+        "bin": 5,
+        "n": 245,
+        "mean_pred": 0.5525343834461778,
+        "observed": 0.5755102040816327
+      },
+      {
+        "bin": 6,
+        "n": 351,
+        "mean_pred": 0.6538740294772761,
+        "observed": 0.6695156695156695
+      },
+      {
+        "bin": 7,
+        "n": 587,
+        "mean_pred": 0.755156432305659,
+        "observed": 0.7666098807495741
+      },
+      {
+        "bin": 8,
+        "n": 1176,
+        "mean_pred": 0.856729057862291,
+        "observed": 0.8358843537414966
+      },
+      {
+        "bin": 9,
+        "n": 1029,
+        "mean_pred": 0.9329426351369287,
+        "observed": 0.924198250728863
+      }
+    ],
+    "Bdt_tob_logreg": [
+      {
+        "bin": 0,
+        "n": 1,
+        "mean_pred": 0.032551765285108204,
+        "observed": 1.0
+      },
+      {
+        "bin": 1,
+        "n": 3,
+        "mean_pred": 0.15096514790596816,
+        "observed": 0.0
+      },
+      {
+        "bin": 2,
+        "n": 23,
+        "mean_pred": 0.25501794374202996,
+        "observed": 0.21739130434782608
+      },
+      {
+        "bin": 3,
+        "n": 69,
+        "mean_pred": 0.3548197654781231,
+        "observed": 0.37681159420289856
+      },
+      {
+        "bin": 4,
+        "n": 130,
+        "mean_pred": 0.4553100852901714,
+        "observed": 0.5846153846153846
+      },
+      {
+        "bin": 5,
+        "n": 243,
+        "mean_pred": 0.5545209864759192,
+        "observed": 0.6008230452674898
+      },
+      {
+        "bin": 6,
+        "n": 341,
+        "mean_pred": 0.6537764325608588,
+        "observed": 0.6656891495601173
+      },
+      {
+        "bin": 7,
+        "n": 607,
+        "mean_pred": 0.7555299545757641,
+        "observed": 0.7545304777594728
+      },
+      {
+        "bin": 8,
+        "n": 1144,
+        "mean_pred": 0.8565917033898235,
+        "observed": 0.8417832167832168
+      },
+      {
+        "bin": 9,
+        "n": 1032,
+        "mean_pred": 0.9337310222152029,
+        "observed": 0.9273255813953488
+      }
+    ],
+    "Bdt_tt_logreg": [
+      {
+        "bin": 0,
+        "n": 10,
+        "mean_pred": 0.058210218230736244,
+        "observed": 0.3
+      },
+      {
+        "bin": 1,
+        "n": 21,
+        "mean_pred": 0.16512836622472568,
+        "observed": 0.14285714285714285
+      },
+      {
+        "bin": 2,
+        "n": 51,
+        "mean_pred": 0.2506607047192698,
+        "observed": 0.3333333333333333
+      },
+      {
+        "bin": 3,
+        "n": 99,
+        "mean_pred": 0.3548811871149894,
+        "observed": 0.47474747474747475
+      },
+      {
+        "bin": 4,
+        "n": 131,
+        "mean_pred": 0.4547689632068268,
+        "observed": 0.4961832061068702
+      },
+      {
+        "bin": 5,
+        "n": 201,
+        "mean_pred": 0.5562331526209366,
+        "observed": 0.6019900497512438
+      },
+      {
+        "bin": 6,
+        "n": 307,
+        "mean_pred": 0.6539334946238003,
+        "observed": 0.6547231270358306
+      },
+      {
+        "bin": 7,
+        "n": 503,
+        "mean_pred": 0.7565879253722798,
+        "observed": 0.757455268389662
+      },
+      {
+        "bin": 8,
+        "n": 1023,
+        "mean_pred": 0.8575176957644234,
+        "observed": 0.8377321603128055
+      },
+      {
+        "bin": 9,
+        "n": 1247,
+        "mean_pred": 0.9399318109187266,
+        "observed": 0.9334402566158782
+      }
+    ]
+  },
+  "permutation_importance": {
+    "Bdt_tt_logreg": [
+      {
+        "feature": "dist_to_goal",
+        "importance": 0.1343428726152935
+      },
+      {
+        "feature": "ball_x_att",
+        "importance": 0.02798862465023382
+      },
+      {
+        "feature": "passer_fwd_m_l10",
+        "importance": 0.025779272543520942
+      },
+      {
+        "feature": "ball_travel_m_l10",
+        "importance": 0.025049201306873863
+      },
+      {
+        "feature": "att_width_m",
+        "importance": 0.02041573336876738
+      },
+      {
+        "feature": "def_line_depth_change_m_l10",
+        "importance": 0.01645895923897493
+      },
+      {
+        "feature": "prev_type_pass",
+        "importance": 0.015649737829095806
+      },
+      {
+        "feature": "att_depth_m",
+        "importance": 0.015363968447799433
+      },
+      {
+        "feature": "n_options_over_0_5",
+        "importance": 0.012589135925453644
+      },
+      {
+        "feature": "press_def_within_5m",
+        "importance": 0.008539264174109606
+      },
+      {
+        "feature": "press_nearest_def_change_m_l10",
+        "importance": 0.007680803333464905
+      },
+      {
+        "feature": "match_minute",
+        "importance": 0.0059420141027815435
+      },
+      {
+        "feature": "def_goal_side_of_ball",
+        "importance": 0.004635714269808516
+      },
+      {
+        "feature": "att_centroid_fwd_m_l10",
+        "importance": 0.004423728836978254
+      },
+      {
+        "feature": "press_def_within_10m",
+        "importance": 0.004341339374415449
+      },
+      {
+        "feature": "ball_y_abs",
+        "importance": 0.003844193880140656
+      },
+      {
+        "feature": "def_centroid_fwd_m_l10",
+        "importance": 0.0038297944584923214
+      },
+      {
+        "feature": "period",
+        "importance": 0.003661500833708631
+      },
+      {
+        "feature": "prev_type_recovery",
+        "importance": 0.0034601422730138457
+      },
+      {
+        "feature": "is_restart",
+        "importance": 0.0034469091814480677
+      },
+      {
+        "feature": "passer_control_s",
+        "importance": 0.0026922922968478625
+      },
+      {
+        "feature": "time_in_possession_s",
+        "importance": 0.0023869560540225026
+      },
+      {
+        "feature": "quick_release",
+        "importance": 0.0018810439556430543
+      },
+      {
+        "feature": "def_compactness_m",
+        "importance": 0.0017139820032607295
+      },
+      {
+        "feature": "def_compactness_change_m_l10",
+        "importance": 0.001434045258774075
+      },
+      {
+        "feature": "angle_to_goal",
+        "importance": 0.0013046816445367482
+      },
+      {
+        "feature": "time_since_prev_event_s",
+        "importance": 0.0012370860402986887
+      },
+      {
+        "feature": "def_line_depth_m",
+        "importance": 0.0011963641236209467
+      },
+      {
+        "feature": "possession_pass_index",
+        "importance": 0.0008407860621491015
+      },
+      {
+        "feature": "is_goal_kick",
+        "importance": 0.0008135439317574952
+      },
+      {
+        "feature": "press_def_within_5m_change_l10",
+        "importance": 0.0005415926075109083
+      },
+      {
+        "feature": "press_closing_speed",
+        "importance": 0.0004963921986162171
+      },
+      {
+        "feature": "prev_type_challenge",
+        "importance": -0.00019617759484557022
+      },
+      {
+        "feature": "passer_speed",
+        "importance": -0.0003249168795689872
+      },
+      {
+        "feature": "press_nearest_def_m",
+        "importance": -0.00036994830523666146
+      },
+      {
+        "feature": "open_lanes_change_l10",
+        "importance": -0.00038555336154931226
+      },
+      {
+        "feature": "best_option_p_success_physics",
+        "importance": -0.0012183166866574595
+      }
+    ]
+  }
+}

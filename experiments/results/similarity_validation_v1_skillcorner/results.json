@@ -1,0 +1,208 @@
+{
+  "name": "similarity_validation_v1_skillcorner",
+  "provider": "skillcorner",
+  "code_revision": "c90e67e27e76d83a9626ed148ee7ba3acda20bab",
+  "matches": [
+    "skillcorner-1874553",
+    "skillcorner-1886347",
+    "skillcorner-1899585",
+    "skillcorner-1925299",
+    "skillcorner-1927964",
+    "skillcorner-1953632",
+    "skillcorner-1959846",
+    "skillcorner-1986691",
+    "skillcorner-1996435",
+    "skillcorner-1996436",
+    "skillcorner-2006229",
+    "skillcorner-2006363",
+    "skillcorner-2007448",
+    "skillcorner-2007721",
+    "skillcorner-2010085",
+    "skillcorner-2011166",
+    "skillcorner-2013725",
+    "skillcorner-2015213",
+    "skillcorner-2016236",
+    "skillcorner-2017461"
+  ],
+  "k": 50,
+  "guard_s": 0.2,
+  "prior_strength": 2.0,
+  "features": [
+    "ball_x_att",
+    "ball_y_abs",
+    "dist_to_goal",
+    "angle_to_goal",
+    "is_goal_kick",
+    "is_restart",
+    "prev_type_pass",
+    "prev_type_recovery",
+    "prev_type_challenge",
+    "possession_pass_index",
+    "time_in_possession_s",
+    "period",
+    "match_minute",
+    "press_nearest_def_m",
+    "press_closing_speed",
+    "press_def_within_5m",
+    "press_def_within_10m",
+    "passer_speed",
+    "best_option_p_success_physics",
+    "n_options_over_0_5",
+    "def_goal_side_of_ball",
+    "def_line_depth_m",
+    "def_compactness_m",
+    "att_width_m",
+    "att_depth_m",
+    "time_since_prev_event_s",
+    "passer_control_s",
+    "quick_release",
+    "press_nearest_def_change_m_l10",
+    "press_def_within_5m_change_l10",
+    "ball_travel_m_l10",
+    "passer_fwd_m_l10",
+    "att_centroid_fwd_m_l10",
+    "def_centroid_fwd_m_l10",
+    "def_compactness_change_m_l10",
+    "def_line_depth_change_m_l10",
+    "open_lanes_change_l10"
+  ],
+  "n": 15893,
+  "metrics": {
+    "train_base_rate": {
+      "n": 15893,
+      "log_loss": 0.4389589084129884,
+      "brier": 0.13404836138541532,
+      "auc": 0.4331878502581078,
+      "ece": 0.00014667142006763445,
+      "mean_pred": 0.8405379066960841,
+      "base_rate": 0.8406845781161517
+    },
+    "knn": {
+      "n": 15893,
+      "log_loss": 0.3878504753049391,
+      "brier": 0.11994523516477455,
+      "auc": 0.742235232153944,
+      "ece": 0.023017627879285865,
+      "mean_pred": 0.8632941182405434,
+      "base_rate": 0.8406845781161517
+    },
+    "Bdt_tt_logreg": {
+      "n": 15893,
+      "log_loss": 0.3873646508114881,
+      "brier": 0.11981948165165142,
+      "auc": 0.746734619266917,
+      "ece": 0.01719904251296739,
+      "mean_pred": 0.8406085363467757,
+      "base_rate": 0.8406845781161517
+    }
+  },
+  "comparisons": [
+    {
+      "a": "train_base_rate",
+      "b": "knn",
+      "n_boot": 1000,
+      "n_groups": 4057,
+      "log_loss": {
+        "delta": -0.0511084331080493,
+        "ci95": [
+          -0.05591166090574324,
+          -0.046140424726027814
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.014103126220640763,
+        "ci95": [
+          -0.015485795112001498,
+          -0.012798962468961879
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.30904738189583625,
+        "ci95": [
+          0.29054164354045153,
+          0.3266475372544509
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Bdt_tt_logreg",
+      "b": "knn",
+      "n_boot": 1000,
+      "n_groups": 4057,
+      "log_loss": {
+        "delta": 0.00048582449345102585,
+        "ci95": [
+          -0.0029075130615522347,
+          0.0044210208185790694
+        ],
+        "share_improved": 0.394
+      },
+      "brier": {
+        "delta": 0.00012575351312313354,
+        "ci95": [
+          -0.000903839345626338,
+          0.0012281706648114843
+        ],
+        "share_improved": 0.404
+      },
+      "auc": {
+        "delta": -0.00449938711297293,
+        "ci95": [
+          -0.011888461211780402,
+          0.0023797581698980523
+        ],
+        "share_improved": 0.099
+      }
+    }
+  ],
+  "calibration_knn": [
+    {
+      "bin": 3,
+      "n": 13,
+      "mean_pred": 0.38292081404627076,
+      "observed": 0.23076923076923078
+    },
+    {
+      "bin": 4,
+      "n": 112,
+      "mean_pred": 0.47104580942619106,
+      "observed": 0.5
+    },
+    {
+      "bin": 5,
+      "n": 386,
+      "mean_pred": 0.5583467930601359,
+      "observed": 0.48186528497409326
+    },
+    {
+      "bin": 6,
+      "n": 867,
+      "mean_pred": 0.6524309904201813,
+      "observed": 0.6009227220299884
+    },
+    {
+      "bin": 7,
+      "n": 1996,
+      "mean_pred": 0.7508319042307194,
+      "observed": 0.7214428857715431
+    },
+    {
+      "bin": 8,
+      "n": 5766,
+      "mean_pred": 0.8566529056094822,
+      "observed": 0.828650711064863
+    },
+    {
+      "bin": 9,
+      "n": 6753,
+      "mean_pred": 0.9541385539100137,
+      "observed": 0.9443210424996298
+    }
+  ],
+  "mean_neighbour_distance": 3.984984767681462,
+  "runtime_s": 289.8,
+  "criterion_knn_beats_base_rate": true
+}
