@@ -677,15 +677,15 @@ the first Metrica run is discarded).** The review found:
 
 Δ log loss, possession-clustered 95% CI (negative = second model better).
 
-| comparison | release frame (`temporal_v1`) | 0.2 s guard (`temporal_guard_v1_02s`) |
-|---|---|---|
-| `Adt → Adt_te` (event timing) | +0.0011 [−0.0000, +0.0026] | (not run) |
-| `Adt → Adt_tob` (H-T1, time-on-ball) | **−0.0041** [−0.0078, −0.0006] | −0.0023 [−0.0051, +0.0005] |
-| `Bdt_tob → Bdt_tt` (H-T2, movement history, LR) | **−0.0159** [−0.0234, −0.0089] | **−0.0137** [−0.0206, −0.0067] |
-| `Bdt_tob → Bdt_tt` (GBM) | **−0.0130** [−0.0199, −0.0066] | **−0.0126** [−0.0194, −0.0060] |
-| `Bdt_tob_hc → Bdt_tt_hc` (header/cross control) | **−0.0131** [−0.0202, −0.0067] | (not run) |
-| `Adt_tob → Bdt_tob` (H-T3, spatial vs stronger baseline) | **−0.0224** [−0.0304, −0.0145] | **−0.0241** [−0.0322, −0.0161] |
-| `Adt → Bdt` (C20 re-test) | −0.0257 [−0.0342, −0.0177] | **−0.0258** [−0.0344, −0.0176] |
+| comparison | release frame (`temporal_v1`) | 0.2 s guard (`temporal_guard_v1_02s`) | 0.4 s guard (`temporal_guard_v1_04s`) |
+|---|---|---|---|
+| `Adt → Adt_te` (event timing) | +0.0011 [−0.0000, +0.0026] | (not run) | (not run) |
+| `Adt → Adt_tob` (H-T1, time-on-ball) | **−0.0041** [−0.0078, −0.0006] | −0.0023 [−0.0051, +0.0005] | −0.0015 [−0.0040, +0.0010] |
+| `Bdt_tob → Bdt_tt` (H-T2, movement history, LR) | **−0.0159** [−0.0234, −0.0089] | **−0.0137** [−0.0206, −0.0067] | **−0.0084** [−0.0145, −0.0023] |
+| `Bdt_tob → Bdt_tt` (GBM) | **−0.0130** [−0.0199, −0.0066] | **−0.0126** [−0.0194, −0.0060] | **−0.0108** [−0.0168, −0.0046] |
+| `Bdt_tob_hc → Bdt_tt_hc` (header/cross control) | **−0.0131** [−0.0202, −0.0067] | (not run) | (not run) |
+| `Adt_tob → Bdt_tob` (H-T3, spatial vs stronger baseline) | **−0.0224** [−0.0304, −0.0145] | **−0.0241** [−0.0322, −0.0161] | **−0.0256** [−0.0340, −0.0176] |
+| `Adt → Bdt` (C20 re-test) | −0.0257 [−0.0342, −0.0177] | **−0.0258** [−0.0344, −0.0176] | **−0.0268** [−0.0354, −0.0188] |
 
 Sensitivity at the release frame: a 0.5 s lookback is indistinguishable from 1.0 s (−0.0011
 [−0.0042, +0.0019]), and 2.0 s is worse (+0.0061 [+0.0024, +0.0101]). ECE barely moves (Bdt_tob
@@ -694,6 +694,9 @@ calibration. Strata (`temporal_v1_strata`, descriptive): open play −0.016 [−
 (n = 3,369); restarts −0.013 [−0.030, +0.005] (n = 224, too few to tell). All 3 matches improve.
 
 **Reading (Metrica).**
+* **The 0.4 s guard shrinks H-T2 (−0.008, LR), but it stays significant.** On Metrica the
+  ball is already at its pre-kick floor by 0.2 s (C38), so the shrinkage is information
+  ageing: the snapshot is further from the actual decision. It is not removed leakage.
 * **H-T2 is supported and survives every control.** Movement over the last second adds about
   −0.014 to −0.016 beyond static positions and time-on-ball. That is more than half the size of
   the original spatial gain. It holds with the guard frame, with a nonlinear model and with
