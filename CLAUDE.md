@@ -23,6 +23,11 @@ cd web && npm ci && npm run dev           # frontend on :5173 (proxies /api to t
 - Decision-time model features: decision-frame positions, **causal** velocities, the
   release direction/speed truncated before the outcome frame, and prior events only. Never
   use event end locations, durations, receiver ids or outcome subtypes (see ADR-0005).
+  On broadcast tracking the event start frame often already contains the kick: decision-time
+  claims for SkillCorner use the 0.2 s guard frame (`static_offset_s`/`temporal_offset_s`,
+  ADR-0007). "No later frame is read" is not a sufficient leakage test. Also test at the guard.
+- Unobserved or censored inputs stay NaN (e.g. time-on-ball cut short by an unobserved ball);
+  never turn "unknown" into 0.
 - Evaluation: leave-one-match-out, a-priori hyperparameters, and possession-clustered CIs.
   Any number quoted in README/docs must have an entry in `docs/CLAIMS_LEDGER.md`
   pointing to a committed `experiments/results/*/results.json` or a test.
