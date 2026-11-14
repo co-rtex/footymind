@@ -57,6 +57,18 @@ Metrica (3 matches, optical, 25 Hz) and SkillCorner (20 A-League matches, broadc
   misspecified. The experimental *Defensive Shadow* metric is robust to tracking noise and
   finds interceptors at 2× chance on Metrica, but it is **not** better than "nearest defender", and
   on SkillCorner it is at chance (the 2× signal does not replicate).
+* **Why off-ball credit is hard (session 3).** In the second before a pass, attacking off-ball
+  movement raises the best progressive option (+0.048 Metrica, +0.029 SkillCorner) and
+  defensive movement takes about as much back (−0.042, −0.036). Their interaction is 58–68% of
+  the attack effect, so crediting a run while holding defenders fixed is not well defined
+  without a response model. This explains the failed run-value metric (C31, C32).
+* **Opponent responses.** A learned short-horizon model forecasts real defender movement better
+  than constant velocity on both providers (C40–C44), but it is nearly inert under hypothetical
+  edits. The interpretable rule policies make forecasts of real play *worse* when real attacker
+  movement is treated as the intervention (C37), so they stay experimental illustrations.
+* **Similar moments are informative.** Outcomes of the 50 most similar decisions from other
+  matches beat the base rate held-out on both providers (−0.057 / −0.051 log loss) and match
+  the logistic model on SkillCorner (C36).
 
 ![Cross-provider replication of the main effects](docs/figures/replication_v1.png)
 
