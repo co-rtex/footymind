@@ -161,13 +161,22 @@ Backend and frontend checks are listed in [`CLAUDE.md`](CLAUDE.md) and [`web/REA
 
 Or run everything in one container (the first start downloads and ingests the three Metrica
 games and builds the similarity index, about a minute; set `FOOTYMIND_SOURCES` to choose
-other sources):
+other sources). On later starts it re-ingests bundles from an older pipeline version, adds
+missing `FOOTYMIND_SOURCES` and rebuilds a stale index; a running server picks up a re-ingest or
+an index rebuild without a restart:
 
 ```bash
 docker build -t footymind .
 docker run --rm -p 8000:8000 -v footymind-data:/data footymind   # http://localhost:8000
 scripts/container_smoke.sh   # build, run on a copy of local data and check it end to end
 ```
+
+`scripts/container_smoke.sh` seeds the container from your local `data/processed`. By default it
+mounts the three Metrica bundles **and** three SkillCorner bundles (1874553, 1899585, 2017461)
+and finishes with the Playwright flow, so it needs those SkillCorner bundles and Playwright
+(`cd web && npm ci && npx playwright install chromium`). For a Metrica-only check run
+`SMOKE_MATCHES="metrica-sample-1 metrica-sample-2 metrica-sample-3" scripts/container_smoke.sh --no-e2e`
+(other flags: `--no-build`, `--keep`; see the script header).
 
 Reproduce the research results:
 

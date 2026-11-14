@@ -29,8 +29,9 @@ use a mirror:
    the volume); the server runs as uid 10001, not root.
 4. `scripts/smoke_api.py`: health and match list agree; unknown match is 404; per provider: a
    possession replay with consistent array lengths, a frame analysis with pitch control,
-   explanations with provenance, temporal context and the provider's own option model, the six
-   response policies, a scenario with `marker_follows` that moves at least one defender
+   explanations with provenance, temporal context and the provider's own option model, the seven
+   response policies (`none`, `marker_follows`, `press_carrier`, `zonal_shift`, `lane_cover`,
+   `learned`, `learned_innovation`), a scenario with `marker_follows` that moves at least one defender
    (`simulated`), and `/similar` with the validated k = 50 estimate and the validation summary
    read from `FOOTYMIND_EXPERIMENTS_DIR` inside the image; the web lab at `/` and its JS bundle.
    Every body is parsed strictly (NaN/Infinity fail).
@@ -45,8 +46,29 @@ excluded): `completed_share` and `estimate` are null rather than 0.
 
 CI (`docker` job) loads the built image, starts it on an empty volume with Metrica games 1 and 2
 (downloaded by the entrypoint, as a user would), runs `smoke_api.py --require-similar` and waits
-for the `HEALTHCHECK`. No data is baked into the image or faked; the e2e flow needs SkillCorner
+for the `HEALTHCHECK`. Its wait loop fails as soon as the container exits, and every CI job has a
+`timeout-minutes`. No data is baked into the image or faked; the e2e flow needs SkillCorner
 data and stays local.
+
+## Re-ingest, index rebuilds and image upgrades (freshness)
+
+A running server does not need a restart after `footymind ingest` or
+`footymind build-similarity-index`. Every in-process cache of a bundle (the bundle itself, its
+manifest, match facts, causal velocities and goalkeepers) is keyed on the manifest file's
+`(mtime_ns, size, inode)`, checked with one `os.stat` per call; `ingest` writes the manifest
+last and replaces it atomically. A bundle re-ingested by another pipeline version is refused
+(503 naming `footymind ingest <id>`), never served from a cache. A similarity index records the
+pipeline version and every bundle's `created_utc` in its parquet metadata; an index that no
+longer matches the served bundles, or one built before this metadata existed, answers 503 naming
+`footymind build-similarity-index --provider <provider>`. A rebuilt index file is re-read on
+the next call (`tests/test_freshness.py`). Requests made while an ingest is writing a bundle can
+still see a mix of old and new files; re-ingest when the server is idle if that matters.
+
+The entrypoint also repairs an existing volume at start: bundles from another pipeline version
+(after an image upgrade) and sources named in `FOOTYMIND_SOURCES` that have no bundle are
+downloaded (checksum-verified; a no-op when the raw files are present) and ingested, then any
+missing or mismatched similarity index is rebuilt. A failed re-ingest is logged and the server
+still starts; the affected matches answer 503. Only an empty volume's first download is fatal.
 
 Startup cost: the server starts only after the index build (measured here on 4 shared vCPU:
 36 s for 3 Metrica matches, 22 s for 3 SkillCorner matches, 143 s for all 20 SkillCorner
@@ -90,10 +112,15 @@ Defects found and fixed in `src/footymind/api`:
 * A corrupt or wrongly shaped similarity index, or an unreadable validation results file, gave a
   500: now a 503 that names the file and the rebuild command (the bad index is not cached).
 * `completed_share` was **0.0** when no neighbour was listed: now null.
+* A 422 echoed the whole rejected input: errors now keep location, message and type only.
+  Request bodies over 1 MB are refused with a 413 (declared or chunked; `tests/test_api_limits.py`).
+* Defensive Shadow served one Metrica-based status for every provider: the status is now per
+  provider and cites its ledger row (Metrica C17, SkillCorner C29).
 * Scenario summaries reported `n_options_physics_over_0_5 = 0` when the frame had no ball or no
   possession: now null (the root is `spatial.analysis.summary`, outside this change).
 * The served option-model info now names its provider and file; a model labelled for another
-  provider is refused (503) on analysis and scenarios. With a provider's model missing, analysis
+  provider, or with no provider label, is refused (503) on analysis and scenarios (the packaged
+  Metrica model now names its provider). With a provider's model missing, analysis
   serves physics options with `p_success_model = null` and scenarios fall back to
   `value_model = "physics"`; Metrica's model is never used for SkillCorner.
 * Replays carry `ball_detected` (one entry per frame, false where the provider extrapolated the
