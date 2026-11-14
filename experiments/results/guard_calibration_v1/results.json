@@ -1,0 +1,78 @@
+{
+  "name": "guard_calibration_v1",
+  "code_revision": "39527225cab33cc176f9b13aa6b5cf6099280157",
+  "away_mps": 3.0,
+  "providers": {
+    "metrica": {
+      "n_matches": 3,
+      "by_offset": [
+        {
+          "offset_s": 0.0,
+          "share_ball_moving_away": 0.018473895582329317,
+          "n": 2490
+        },
+        {
+          "offset_s": 0.1,
+          "share_ball_moving_away": 0.022459078797106968,
+          "n": 2627
+        },
+        {
+          "offset_s": 0.2,
+          "share_ball_moving_away": 0.016244805440120892,
+          "n": 2647
+        },
+        {
+          "offset_s": 0.3,
+          "share_ball_moving_away": 0.01662259161314696,
+          "n": 2647
+        },
+        {
+          "offset_s": 0.4,
+          "share_ball_moving_away": 0.01399394856278366,
+          "n": 2644
+        },
+        {
+          "offset_s": 0.6,
+          "share_ball_moving_away": 0.018525519848771266,
+          "n": 2645
+        }
+      ]
+    },
+    "skillcorner": {
+      "n_matches": 20,
+      "by_offset": [
+        {
+          "offset_s": 0.0,
+          "share_ball_moving_away": 0.6266835330009674,
+          "n": 13439
+        },
+        {
+          "offset_s": 0.1,
+          "share_ball_moving_away": 0.26882120783379254,
+          "n": 13429
+        },
+        {
+          "offset_s": 0.2,
+          "share_ball_moving_away": 0.15560026827632462,
+          "n": 13419
+        },
+        {
+          "offset_s": 0.3,
+          "share_ball_moving_away": 0.1550849985087981,
+          "n": 13412
+        },
+        {
+          "offset_s": 0.4,
+          "share_ball_moving_away": 0.18067885117493473,
+          "n": 13405
+        },
+        {
+          "offset_s": 0.6,
+          "share_ball_moving_away": 0.19015609828964075,
+          "n": 13389
+        }
+      ]
+    }
+  },
+  "runtime_s": 13.7
+}

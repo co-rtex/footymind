@@ -28,6 +28,7 @@ for c in pass_outcome_v1 pass_outcome_v1_ablation pass_outcome_v1_sens_no_ball_o
   run uv run footymind experiment "experiments/configs/$c.json"
 done
 run uv run python -m footymind.research.failure_modes pass_outcome_v3
+run uv run python -m footymind.research.guard_calibration
 for c in temporal_v1 temporal_guard_v1_02s temporal_guard_v1_04s; do
   run uv run footymind experiment "experiments/configs/$c.json"
 done

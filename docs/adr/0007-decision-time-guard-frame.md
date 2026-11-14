@@ -27,6 +27,13 @@ because the contaminating frame is the decision frame itself.
 * Time-on-ball is censored (NaN) when an unobserved ball, rather than the ball leaving the
   passer's reach, ends the count.
 
+## Calibration
+`research/guard_calibration.py` (C38). On SkillCorner, the share of passes with the ball
+already moving away from the passer is 0.627 at the start frame, 0.269 at −0.1 s and 0.156
+at −0.2 s. It then stays at a 0.155–0.190 floor out to −0.6 s, which is noise plus dribble
+touches. On Metrica it is flat at about 0.02. A 0.2 s guard reaches the floor, and going
+further back buys nothing.
+
 ## Consequences
 * Guarded rows can differ slightly from release-frame rows. Rows whose guarded frame has no
   defender positions are skipped.
