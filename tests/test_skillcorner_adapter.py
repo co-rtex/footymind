@@ -120,3 +120,59 @@ def test_event_mapping(tmp_path: Path) -> None:
     assert len(got) == 6  # passing_option rows and offside passes are skipped
     # event positions are attacking-frame metres rotated by the attack sign (home attacks +x in P1)
     assert ev["start_x"][1] == pytest.approx(10.0) and ev["start_y"][1] == pytest.approx(5.0)
+
+
+def test_end_frame_never_crosses_into_next_period(tmp_path: Path) -> None:
+    """The last possession of a half must not end at the next half's first possession.
+
+    Regression (release review): ``end_frame`` was the next row's ``frame_start`` even when
+    that row was in the next period, so possessions spanned half-time.
+    """
+    from footymind.tracking.possessions import assign_possessions
+
+    fx = _fixture(tmp_path)
+    td, meta = load_tracking("skillcorner-syn", fx["trk"], fx["meta"], None)
+    ev = load_events(fx["ev"], meta, td)
+    theft = ev.filter(ev["subtype"] == "THEFT").row(0, named=True)
+    assert theft["period"] == 1 and theft["start_frame"] == 13
+    assert theft["end_frame"] is None  # the next possession is in period 2: the end is unknown
+    last = {int(p): int(td.frame[td.period == p].max()) for p in np.unique(td.period)}
+    for per, end in ev.select("period", "end_frame").drop_nulls().iter_rows():
+        assert end <= last[per]
+    _, pos = assign_possessions(ev, "skillcorner-syn", last)
+    assert pos.height >= 3
+    for per, start, end in pos.select("period", "start_frame", "end_frame").iter_rows():
+        assert start <= end <= last[per]
+
+
+def test_possession_end_is_clipped_to_its_period() -> None:
+    """A provider end past the period's last tracked frame is clipped (SYNTHETIC events)."""
+    import polars as pl
+
+    from footymind.tracking.metrica import EVENT_SCHEMA
+    from footymind.tracking.possessions import assign_possessions
+
+    base = {"subtype": None, "start_time_s": 0.0, "end_time_s": None, "to_player_id": None}
+    base |= {"start_x": 0.0, "start_y": 0.0, "end_x": np.nan, "end_y": np.nan}
+
+    def row(i: int, team: str, period: int, start: int, end: int) -> dict[str, object]:
+        return {
+            "event_id": i,
+            "team": team,
+            "type": "PASS",
+            "period": period,
+            "start_frame": start,
+            "end_frame": end,
+            "from_player_id": f"{team}_1",
+            **base,
+        }
+
+    # event 1's provider end (frame 25) lies in the next period
+    ev = pl.DataFrame(
+        [row(0, "home", 1, 10, 12), row(1, "home", 1, 12, 25), row(2, "away", 2, 20, 22)],
+        schema=EVENT_SCHEMA,
+    )
+    _, unclipped = assign_possessions(ev, "syn")
+    assert unclipped["end_frame"].to_list() == [25, 22]  # without period bounds: unchanged
+    _, pos = assign_possessions(ev, "syn", {1: 13, 2: 23})
+    assert pos["end_frame"].to_list() == [13, 22]

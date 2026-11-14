@@ -7,6 +7,7 @@ import pytest
 from footymind.data.store import available_matches, load_match
 from footymind.spatial.state import frame_state
 from footymind.tracking.model import Provenance
+from tests.conftest import assert_ends_within_periods
 
 SC = [m for m in available_matches() if m.startswith("skillcorner-")]
 pytestmark = pytest.mark.skipif(not SC, reason="SkillCorner data not ingested")
@@ -72,3 +73,9 @@ def test_match_summary_has_public_match_facts_but_no_player_names() -> None:
     text = json.dumps(s)
     names = [p.get("last_name") for p in meta["players"] if p.get("last_name")]
     assert names and not any(n in text for n in names)  # no player names are served
+
+
+@pytest.mark.parametrize("match_id", SC)
+def test_no_event_or_possession_ends_past_its_period(match_id: str) -> None:
+    """Regression (release review): SkillCorner ends crossed half-time (pipeline v3 fix)."""
+    assert_ends_within_periods(load_match(match_id))

@@ -16,6 +16,7 @@ jobs:
   python:
     name: Python lint, types, unit tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -32,6 +33,7 @@ jobs:
   data:
     name: Real-data ingestion and tests (Metrica sample)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: python
     steps:
       - uses: actions/checkout@v4
@@ -53,17 +55,23 @@ jobs:
   legacy:
     name: Legacy v1 predictor (historical reproduction)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install pandas numpy scikit-learn joblib fastapi pytest matplotlib seaborn
+      # Pinned to the set verified with the legacy tests (Python 3.12, 2026-11-14). The historical
+      # pins in legacy/requirements.txt do not install on current Python (legacy README).
+      - run: >-
+          pip install pandas==3.1.1 numpy==2.5.4 scikit-learn==1.9.1 joblib==1.6.0
+          fastapi==0.162.7 pytest==9.2.0 matplotlib==3.11.2 seaborn==0.13.2
       - run: cd legacy/match_outcome_predictor && PYTHONPATH=. pytest -q tests
 
   web:
     name: Web typecheck, lint, unit tests, build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: web
@@ -84,6 +92,7 @@ jobs:
   docker:
     name: Docker image builds, starts and serves (Metrica sample)
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     needs: [python, web]
     steps:
       - uses: actions/checkout@v4
@@ -104,9 +113,22 @@ jobs:
         run: |
           docker run -d --name fm -p 127.0.0.1:8000:8000 -v fm-data:/data \
             -e FOOTYMIND_SOURCES="metrica-sample-1 metrica-sample-2" footymind:ci
+      # Fails fast if the container exits (e.g. a failed download or ingest), instead of
+      # polling a dead port until the timeout.
+      - name: Wait for the API
+        run: |
+          deadline=$((SECONDS + 900))
+          until curl -sf http://127.0.0.1:8000/api/health >/dev/null; do
+            if [ "$(docker inspect -f '{{.State.Running}}' fm)" != true ]; then
+              echo "container exited: $(docker inspect -f '{{.State.Status}} (exit {{.State.ExitCode}})' fm)"
+              exit 1
+            fi
+            [ "$SECONDS" -lt "$deadline" ] || { echo "no health after 900 s"; exit 1; }
+            sleep 3
+          done
       - name: Smoke-check the running container
         run: |
-          python3 scripts/smoke_api.py http://127.0.0.1:8000 --wait 900 \
+          python3 scripts/smoke_api.py http://127.0.0.1:8000 --wait 60 \
             --expect-matches metrica-sample-1 metrica-sample-2 --require-similar
       - name: Docker HEALTHCHECK reports healthy
         run: |

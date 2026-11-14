@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass, field, replace
-from functools import lru_cache
 
 import numpy as np
 import numpy.typing as npt
 import polars as pl
 
-from footymind.data.store import MatchBundle, load_match
+from footymind.data.store import MatchBundle, cached, load_match
 from footymind.tracking.kinematics import clean_velocity
 from footymind.tracking.model import Provenance, TeamSide, TrackingData
 
@@ -19,14 +18,14 @@ F = npt.NDArray[np.float64]
 CARRIER_RADIUS_M = 1.5  # ball within this distance of a player -> that player carries it
 
 
-@lru_cache(maxsize=4)
+@cached  # invalidated when the bundle is re-ingested
 def causal_velocities(match_id: str) -> npt.NDArray[np.float32]:
     """Causal (backward 0.2 s) velocities for every frame, cleaned of artefacts."""
     td = load_match(match_id).tracking
     return clean_velocity(td.xy, td.fps, "causal", 0.2, td.period)
 
 
-@lru_cache(maxsize=4)
+@cached
 def goalkeepers(match_id: str) -> dict[tuple[int, TeamSide], int]:
     """Player index of each team's goalkeeper per period (deepest median position)."""
     td = load_match(match_id).tracking

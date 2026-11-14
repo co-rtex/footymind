@@ -386,8 +386,8 @@ def test_option_model_resources_are_per_provider() -> None:
     assert len(set(res.values())) == len(res), "two providers share a model file"
     for provider in res:
         m = option_model.load_default(f"{provider}-x")
-        if m is not None and m.meta.get("provider") is not None:
-            assert m.meta["provider"] == provider
+        if m is not None:  # every packaged model names its provider (a null one is refused)
+            assert m.meta.get("provider") == provider
     assert option_model.load_default("statsbomb-1") is None  # unknown provider: no model
 
 

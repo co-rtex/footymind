@@ -10,6 +10,8 @@ from __future__ import annotations
 from itertools import chain
 from pathlib import Path
 
+import numpy as np
+import polars as pl
 import pytest
 
 from footymind.paths import PROCESSED_DIR, RAW_DIR
@@ -83,3 +85,19 @@ def synthetic_metrica(tmp_path: Path) -> dict[str, Path]:
 @pytest.fixture(scope="session")
 def processed_root() -> Path:
     return PROCESSED_DIR
+
+
+def assert_ends_within_periods(bundle: object) -> None:
+    """No event and no possession of a processed bundle ends past its period's last frame."""
+    td = bundle.tracking  # type: ignore[attr-defined]
+    last = {int(p): int(td.frame[td.period == p].max()) for p in np.unique(td.period)}
+    for name, df in (("event", bundle.events), ("possession", bundle.possessions)):  # type: ignore[attr-defined]
+        bad = [
+            (per, end)
+            for per, end in df.select("period", "end_frame").drop_nulls().iter_rows()
+            if end > last[int(per)]
+        ]
+        assert not bad, f"{td.match_id}: {len(bad)} {name}(s) end past their period: {bad[:5]}"
+    pos = bundle.possessions  # type: ignore[attr-defined]
+    assert (pos["end_frame"] >= pos["start_frame"]).all()
+    assert pos.filter(pl.col("end_frame").is_null()).is_empty()

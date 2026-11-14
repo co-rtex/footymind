@@ -118,6 +118,7 @@
   "meta": {
     "name": "option_model_v2",
     "dataset_rules": "v2",
+    "provider": "metrica",
     "trained_utc": "2026-11-13T22:06:01+00:00",
     "code_revision": "28bbaed5350d390e37c91083441e073d6c1f0ea2",
     "training_matches": [

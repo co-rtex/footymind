@@ -1,4 +1,4 @@
-# path: requirements.txt
+# path: legacy/requirements.txt (moved from the repository root; historical v1 stack, not installed by CI or the Docker image)
 # Core language version: Python 3.11 (3.10+ should also work)
 
 # Web framework and API server

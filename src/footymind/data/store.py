@@ -11,29 +11,43 @@ Layout per match (``data/processed/<match_id>/``)::
 ``PIPELINE_VERSION`` must be bumped when the processed representation changes
 meaning. Loaders refuse bundles from a different pipeline version, so stale
 caches are not silently used.
+
+Freshness: in-process caches of a bundle (or of anything derived from it) are keyed on
+``bundle_token``, the manifest file's modification time. ``ingest`` writes the manifest
+last, so a re-ingest while a server runs is picked up on the next call, including a
+pipeline-version change (the reload then refuses the bundle). The data root is resolved
+at call time (``footymind.paths.PROCESSED_DIR``), not at import time.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import subprocess
+from collections.abc import Callable
 from dataclasses import asdict
 from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 import numpy as np
 import polars as pl
 
+from footymind import paths
 from footymind.data import sources
 from footymind.data.quality import validate
-from footymind.paths import PROCESSED_DIR, RAW_DIR, REPO_ROOT
+from footymind.paths import REPO_ROOT
 from footymind.tracking import metrica, metrica_epts, skillcorner
 from footymind.tracking.model import DatasetProvenance, PitchSpec, PlayerInfo, TrackingData
 from footymind.tracking.possessions import assign_possessions
 
-PIPELINE_VERSION = "2"  # 2: SkillCorner adapter v2 events (restarts, recoveries, ball-outs)
+# 2: SkillCorner adapter v2 events (restarts, recoveries, ball-outs).
+# 3: event and possession end frames never leave their period. A SkillCorner event's end was
+#    the next possession's start even across half-time, so a few possessions spanned the break
+#    (release review, 2026-11-14). Such ends are now null, and possession ends are clipped to
+#    the period's last tracked frame. Bundles from v2 carry those cross-period ends.
+PIPELINE_VERSION = "3"
 
 
 def git_revision() -> str:
@@ -53,7 +67,12 @@ def git_revision() -> str:
         return "unknown"
 
 
-def ingest(match_id: str, raw_root: Path = RAW_DIR, out_root: Path = PROCESSED_DIR) -> Path:
+def _processed(root: Path | None) -> Path:
+    return paths.PROCESSED_DIR if root is None else root
+
+
+def ingest(match_id: str, raw_root: Path | None = None, out_root: Path | None = None) -> Path:
+    raw_root = paths.RAW_DIR if raw_root is None else raw_root
     src = sources.SOURCES[match_id]
     hashes = sources.verify(src, raw_root)
     d = src.local_dir(raw_root)
@@ -101,10 +120,23 @@ def ingest(match_id: str, raw_root: Path = RAW_DIR, out_root: Path = PROCESSED_D
         events = metrica_epts.load_events(d / f"Sample_Game_{game}_events.json", meta)
     else:
         raise NotImplementedError(f"format {src.fmt}")
-    report = validate(td, events, sync_gate)
-    events, possessions = assign_possessions(events, match_id)
+    return write_bundle(match_id, td, events, prov, sync_gate, out_root)
 
-    out = out_root / match_id
+
+def write_bundle(
+    match_id: str,
+    td: TrackingData,
+    events: pl.DataFrame,
+    prov: DatasetProvenance,
+    sync_gate: float = 1.5,
+    out_root: Path | None = None,
+) -> Path:
+    """Validate, segment possessions and write one bundle (the manifest is written last)."""
+    report = validate(td, events, sync_gate)
+    period_last = {int(p): int(td.frame[td.period == p].max()) for p in np.unique(td.period)}
+    events, possessions = assign_possessions(events, match_id, period_last)
+
+    out = _processed(out_root) / match_id
     out.mkdir(parents=True, exist_ok=True)
     arrays: dict[str, np.ndarray] = {
         "frame": td.frame,
@@ -134,7 +166,11 @@ def ingest(match_id: str, raw_root: Path = RAW_DIR, out_root: Path = PROCESSED_D
         "counts": {"events": events.height, "possessions": possessions.height},
         "quality": report,
     }
-    (out / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True))
+    # Written last and atomically: readers key their caches on this file (bundle_token), and
+    # a reader never sees a half-written manifest.
+    tmp = out / "manifest.json.tmp"
+    tmp.write_text(json.dumps(manifest, indent=2, sort_keys=True))
+    os.replace(tmp, out / "manifest.json")
     return out
 
 
@@ -142,8 +178,70 @@ class StaleBundleError(RuntimeError):
     pass
 
 
+def bundle_token(match_id: str, root: Path | None = None) -> tuple[int, int, int] | None:
+    """Cheap freshness token: the manifest's (mtime_ns, size, inode); None if it is absent.
+
+    ``write_bundle`` replaces the manifest atomically (a new inode), so even two writes within
+    one file-system timestamp tick give different tokens.
+    """
+    try:
+        st = os.stat(_processed(root) / match_id / "manifest.json")
+    except OSError:
+        return None
+    return (st.st_mtime_ns, st.st_size, st.st_ino)
+
+
+@lru_cache(maxsize=256)
+def _read_manifest(path: Path, token: tuple[int, int, int] | None) -> dict[str, Any]:
+    out: dict[str, Any] = json.loads(path.read_text())
+    return out
+
+
+def read_manifest(match_id: str, root: Path | None = None) -> dict[str, Any]:
+    """The bundle's manifest, cached until the file changes. Raises if it is missing.
+
+    The returned dict is shared between callers: do not mutate it.
+    """
+    root = _processed(root)
+    return _read_manifest(root / match_id / "manifest.json", bundle_token(match_id, root))
+
+
+def load_match(match_id: str, root: Path | None = None) -> MatchBundle:
+    """Load a processed bundle. Cached per manifest version (see ``bundle_token``)."""
+    root = _processed(root)
+    return _load_match(match_id, root, bundle_token(match_id, root))
+
+
+def _clear_caches() -> None:
+    _load_match.cache_clear()
+    _read_manifest.cache_clear()
+
+
+# kept for callers that used the former ``functools.lru_cache`` API
+load_match.cache_clear = _clear_caches  # type: ignore[attr-defined]
+
+
+T = TypeVar("T")
+
+
+def cached(fn: Callable[[str], T]) -> Callable[[str], T]:
+    """Memoise a per-match function of a bundle, invalidated when the bundle changes."""
+
+    @lru_cache(maxsize=4)
+    def inner(match_id: str, _token: tuple[int, int, int] | None) -> T:
+        return fn(match_id)
+
+    def wrapper(match_id: str) -> T:
+        return inner(match_id, bundle_token(match_id))
+
+    wrapper.__doc__ = fn.__doc__
+    wrapper.__name__ = fn.__name__
+    wrapper.cache_clear = inner.cache_clear  # type: ignore[attr-defined]
+    return wrapper
+
+
 @lru_cache(maxsize=4)
-def load_match(match_id: str, root: Path = PROCESSED_DIR) -> MatchBundle:
+def _load_match(match_id: str, root: Path, token: tuple[int, int, int] | None) -> MatchBundle:
     d = root / match_id
     manifest = json.loads((d / "manifest.json").read_text())
     if manifest["pipeline_version"] != PIPELINE_VERSION:
@@ -179,10 +277,39 @@ def load_match(match_id: str, root: Path = PROCESSED_DIR) -> MatchBundle:
     )
 
 
-def available_matches(root: Path = PROCESSED_DIR) -> list[str]:
+def available_matches(root: Path | None = None) -> list[str]:
+    root = _processed(root)
     if not root.exists():
         return []
     return sorted(p.name for p in root.iterdir() if (p / "manifest.json").exists())
+
+
+def pending_ingest(wanted: list[str] | None = None, root: Path | None = None) -> list[str]:
+    """Registered sources to (re)ingest so that every bundle can be served.
+
+    These are the bundles built by another pipeline version (or with an unreadable manifest)
+    and the ``wanted`` sources that have no bundle yet. Ids that are not registered sources
+    cannot be ingested; they are reported on stderr and skipped. Used by the Docker
+    entrypoint after an image upgrade.
+    """
+    import sys
+
+    have = available_matches(root)
+    todo = set()
+    for m in have:
+        try:
+            if read_manifest(m, root).get("pipeline_version") != PIPELINE_VERSION:
+                todo.add(m)
+        except (OSError, ValueError):
+            todo.add(m)
+    todo |= {m for m in wanted or [] if m not in have}
+    unknown = sorted(m for m in todo if m not in sources.SOURCES)
+    if unknown:
+        print(
+            f"footymind: not registered sources, cannot ingest: {' '.join(unknown)}",
+            file=sys.stderr,
+        )
+    return sorted(todo - set(unknown))
 
 
 class MatchBundle:

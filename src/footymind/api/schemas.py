@@ -455,7 +455,9 @@ class DefensiveShadowOut(BaseModel):
     noise_floor: float = Field(description="|shadow_sum| below this is within tracking noise")
     horizon_s: float
     alt_radius_m: float
-    status: str = (
-        "experimental: partly validated (2x chance at ranking the eventual interceptor, but not "
-        "better than nearest-defender; docs/RESEARCH.md). Not a defender rating."
+    provider: str
+    status: str = Field(description="validation status for this match's provider")
+    validation_claim: str | None = Field(
+        description="claims-ledger id behind the status (docs/CLAIMS_LEDGER.md); null if none"
     )
+    validation_ref: str | None = Field(description="committed results file behind the claim")
