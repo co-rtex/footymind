@@ -29,6 +29,13 @@ def main(argv: list[str] | None = None) -> int:
     p_opt.add_argument("match_ids", nargs="*", help="default: all processed matches of --provider")
     p_opt.add_argument("--provider", default="metrica", choices=["metrica", "skillcorner"])
 
+    p_rsp = sub.add_parser(
+        "train-response-model",
+        help="export the learned defender-response model (run response_validation first)",
+    )
+    p_rsp.add_argument("match_ids", nargs="*", help="default: all processed matches of --provider")
+    p_rsp.add_argument("--provider", default="metrica", choices=["metrica", "skillcorner"])
+
     args = parser.parse_args(argv)
 
     if args.cmd == "download":
@@ -68,6 +75,11 @@ def main(argv: list[str] | None = None) -> int:
         ]
         m = train(ids)
         print(json.dumps({k: m.meta[k] for k in ("n_train", "lomo_pooled", "code_revision")}))
+    elif args.cmd == "train-response-model":
+        from footymind.research.train_response_model import train as train_response
+
+        rm = train_response(args.provider, args.match_ids or None)
+        print(json.dumps({k: rm.meta[k] for k in ("n_train", "validation", "code_revision")}))
     return 0
 
 

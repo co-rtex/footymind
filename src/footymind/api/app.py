@@ -19,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 
 from footymind import __version__
 from footymind.api import schemas as S
+from footymind.counterfactual.response import POLICY_NAMES, PolicyInfo, policy_info
 from footymind.counterfactual.scenario import REACH_SPEED_MPS, Intervention, run_scenario
 from footymind.data.store import (
     PIPELINE_VERSION,
@@ -31,7 +32,7 @@ from footymind.ghost.defensive_shadow import NOISE_FLOOR as SHADOW_NOISE_FLOOR
 from footymind.ghost.defensive_shadow import defensive_shadow
 from footymind.paths import PROCESSED_DIR, REPO_ROOT
 from footymind.spatial.analysis import FrameAnalysis, analyze
-from footymind.spatial.option_model import load_default
+from footymind.spatial.option_model import load_default, provider_of
 from footymind.spatial.pitch_control import DEFAULT_GRID, DEFAULT_PARAMS
 from footymind.spatial.state import attacking_team_at, frame_state
 from footymind.tracking.model import TrackingData
@@ -501,6 +502,32 @@ def frame_defensive_shadow(
     )
 
 
+def _policy_out(p: PolicyInfo) -> S.ResponsePolicyOut:
+    return S.ResponsePolicyOut(
+        name=p.name,  # type: ignore[arg-type]
+        description=p.description,
+        assumptions=p.assumptions,
+        validated=p.validated,
+        validation_ref=p.validation_ref,
+        status=p.status,
+    )
+
+
+@app.get("/api/response-policies", response_model=list[S.ResponsePolicyOut])
+def response_policies(match_id: str | None = None) -> list[S.ResponsePolicyOut]:
+    """Opponent response policies for scenarios.
+
+    With ``match_id``, ``validated`` refers to that match's provider. Without it, a policy
+    counts as validated only if it is validated for every provider.
+    """
+    provider = None
+    if match_id is not None:
+        if match_id not in available_matches():
+            raise HTTPException(404, f"unknown match {match_id!r}")
+        provider = provider_of(match_id)
+    return [_policy_out(policy_info(n, provider)) for n in POLICY_NAMES]
+
+
 DISCLAIMER = (
     "Model-based counterfactual under stated assumptions. It shows how the spatial model's "
     "estimates change, not what would have happened in the match."
@@ -546,6 +573,7 @@ def scenario(req: S.ScenarioRequest) -> S.ScenarioResponse:
                 min_separation_m=round(f.min_separation_m, 2),
                 supported=f.supported,
                 kind=f.kind,  # type: ignore[arg-type]
+                kinematic_reachable=f.kinematic_reachable,
                 notes=f.notes,
             )
             for f in r.feasibility
@@ -584,6 +612,7 @@ def scenario(req: S.ScenarioRequest) -> S.ScenarioResponse:
         assumptions=r.assumptions,
         disclaimer=DISCLAIMER,
         value_model=r.value_model,
+        policy=_policy_out(r.policy),
     )
 
 

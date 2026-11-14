@@ -16,6 +16,9 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 ProvenanceLabel = Literal["observed", "derived", "estimated", "hypothetical", "simulated"]
+ResponsePolicyName = Literal[
+    "none", "marker_follows", "press_carrier", "zonal_shift", "lane_cover", "learned"
+]
 Team = Literal["home", "away"]
 
 
@@ -236,7 +239,7 @@ class ScenarioRequest(BaseModel):
     match_id: str
     frame: int
     interventions: list[InterventionIn] = Field(min_length=1, max_length=4)
-    response_policy: Literal["none", "marker_follows"] = "none"
+    response_policy: ResponsePolicyName = "none"
     follow_fraction: float = Field(0.5, ge=0.0, le=1.0)
     velocity_mode: Literal["keep", "zero"] = "keep"
     horizon_s: float = Field(1.5, gt=0.0, le=5.0)
@@ -257,6 +260,33 @@ class FeasibilityOut(BaseModel):
     supported: bool
     notes: list[str]
     kind: Literal["user", "simulated"] = "user"
+    kinematic_reachable: bool | None = Field(
+        None,
+        description=(
+            "inside the kinematic envelope (reaction delay, acceleration and speed limits) "
+            "from the observed position and velocity horizon_s earlier; null if that origin "
+            "is unobserved. Diagnostic only: the a priori envelope is tight and excludes a "
+            "sizeable share of real defender positions (docs/RESEARCH.md, response policies), "
+            "so it does not change 'supported'"
+        ),
+    )
+
+
+class ResponsePolicyOut(BaseModel):
+    name: ResponsePolicyName
+    description: str
+    assumptions: list[str]
+    validated: bool = Field(
+        description=(
+            "true only if the policy's short-horizon forecasts of real defender movement beat "
+            "constant velocity on held-out matches of this provider. Never a validation of "
+            "responses to hypothetical interventions (no ground truth exists)"
+        )
+    )
+    validation_ref: str | None = Field(
+        description="committed results.json of the validation run, or null if never validated"
+    )
+    status: str = Field(description="'validated: ...', 'experimental: ...' or 'no response'")
 
 
 class MovementOut(BaseModel):
@@ -299,6 +329,7 @@ class ScenarioResponse(BaseModel):
     value_model: Literal["option_model", "physics"] = Field(
         description="which per-option probability the deltas use"
     )
+    policy: ResponsePolicyOut = Field(description="the opponent response policy that was applied")
 
 
 class DefenderShadowOut(BaseModel):
