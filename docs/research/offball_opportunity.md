@@ -94,8 +94,8 @@ Samples (complete cases; no row had an unknown innovation):
 | SkillCorner, detected at `t` and `t − 1 s` | 2,000 | 1,677 | 10,042 (of 15,704) | 1,163 | 20 |
 
 Most skipped frames are passes whose possession, per the possession table, still belonged to
-the other team 0.2 s earlier (86 of the 100 skipped on Metrica; most of the rest had no observed
-ball), so the first pass after a regain is under-represented.
+the other team 0.2 s earlier, or had no observed ball (a diagnostic from the first analysis; the
+reason counts are not recorded in `results.json`, which has 100 skipped frames on Metrica), so the first pass after a regain is under-represented.
 
 ### Modelled opportunity change, primary measure (best progressive option)
 Mean change, possession-clustered 95% CI. SkillCorner match-level CIs in the text below.
@@ -111,7 +111,8 @@ Mean change, possession-clustered 95% CI. SkillCorner match-level CIs in the tex
 | learned_innovation (control, not pre-registered) | +0.0039 [+0.0022, +0.0057] | −0.0002 [−0.0006, +0.0001] | | +0.0027 [+0.0018, +0.0036] | +0.0000 [−0.0001, +0.0002] | |
 
 Distribution (static; the others are alike): the median change is 0 on both providers and only
-19% (Metrica) / 23% (SkillCorner) of attackers change the best progressive option at all
+19% (Metrica) / 23% (SkillCorner) of attackers raise the best progressive option (30% / 37%
+change it at all)
 (p90 +0.0000 / +0.0005). Runners (≥ 3 m in the second) carry most of it: static +0.0121
 [+0.0063, +0.0186] (810 rows) and +0.0076 [+0.0049, +0.0102] (2,844 rows).
 
@@ -188,7 +189,7 @@ On the primary measure many attackers tie at 0, so top-1 agreement there is part
   but tiny and in the opposite direction to the one expected.** With the C70-supported
   innovation attribution, putting the `marker_follows` response back changes the mean change by
   at most 0.0002 and the CIs include 0. Under envelope v2, `lane_cover` lowers it by 0.0003
-  (Metrica, 7% of the static mean) and 0.0001 (SkillCorner, 4%; the match-level CI includes 0).
+  (Metrica, 7% of the static mean) and 0.0001 (SkillCorner, 5%; the match-level CI includes 0).
   The expected positive "drag credit" is not seen for either rule. (Under envelope v1 neither
   rule was non-zero.)
 * **H-R2 supported, but not because of the responses.** The between-assumption range is about
@@ -203,8 +204,11 @@ On the primary measure many attackers tie at 0, so top-1 agreement there is part
   each provider).
 * **O1, O2: response-adjusted is not better than static on either provider.** On SkillCorner it
   is slightly worse for receiver identification (marker_follows −0.013, constant velocity
-  −0.022). Static itself is at chance for the receiver (as `run_value` was), and the only
-  non-null progress association is static on SkillCorner (+0.056, small).
+  −0.022, possession-clustered; the match-level CIs include 0: [−0.031, +0.005] and
+  [−0.043, 0.000]). Static itself is at chance for the receiver (as `run_value` was). On
+  SkillCorner, static, `marker_follows` and `lane_cover` are weakly associated with possession
+  progress (Spearman +0.05 to +0.06 under possession clustering, e.g. lane_cover +0.059
+  [+0.014, +0.107]); none survives match-level resampling (static [−0.026, +0.135]).
 
 ## Interpretation
 * Off-ball movement in the second before a pass is purposeful in the model's eyes: real runs

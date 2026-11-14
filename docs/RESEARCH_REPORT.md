@@ -284,16 +284,18 @@ four defender assumptions:
 * **Runs are purposeful in the model's eyes.** Real runs beat randomly directed ones of the
   same size on both providers: +0.0042 Metrica, +0.0037 SkillCorner (match-level
   [+0.0021, +0.0055]). The effect is tiny on average and zero for most attackers (C45).
-* **Defenders' reactions barely change the credit.**
+* **Defenders' reactions barely change the credit** (best progressive option).
   * `marker_follows` changes it by at most 0.0002.
-  * Under envelope v2, `lane_cover` lowers it by 0.0003 / 0.0001. That is non-zero, but in the
-    opposite direction to the hypothesised "drag credit" (C46).
+  * Under envelope v2, `lane_cover` lowers it by 0.0003 / 0.0001. That is non-zero (except in
+    SkillCorner's match-level CI), but in the opposite direction to the hypothesised "drag
+    credit" (C46).
   * A post-review positive control removes a fitted response that moves 8–9 defenders. It
-    changes nothing either (C47). The null is therefore not an artefact of single-defender rules.
+    does not change the primary measure either (C47; on SkillCorner's secondary measures it
+    adds at most 0.001). The null is therefore not an artefact of single-defender rules.
   * It is not a strict positive control: no condition shows the measure detecting a known large
     effect.
 * **The convention is what matters.** The spread across assumptions is about 0.65 of the static
-  change, almost all from the constant-velocity background. The attacker ranking is not robust
+  change, most of it (about two thirds or more) from the constant-velocity background. The attacker ranking is not robust
   to it (C48).
 * **No adjusted variant tracks outcomes better.** None identifies the receiver or tracks
   possession progress better than static (C49).
@@ -310,7 +312,7 @@ convention, not by defender reactions.
 | Defensive Shadow | not better than nearest defender; at chance on broadcast data | C17, C29 |
 | Run value (off-ball credit, defenders fixed) | near chance as a receiver ranking, far below simple baselines | C22, C25 |
 | Off-ball interaction | mostly model non-additivity (placebo) | C31, C32 |
-| Response-adjusted off-ball credit | reactions change it by ≤ 0.0003 (a fitted whole-block response too); credit depends on the background convention; no better on outcome checks | C46–C49 |
+| Response-adjusted off-ball credit | reactions change the primary measure by ≤ 0.0003 on average (a fitted whole-block response too); credit depends on the background convention; no better on outcome checks | C46–C49 |
 | Learned response model as an intervention model | inert under edits | C44 |
 | `zonal_shift` response rule | overshoots real block movement | C37, C64 |
 | `press_carrier` response rule | not supported under envelope v2 | C64 |

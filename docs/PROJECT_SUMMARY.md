@@ -43,8 +43,8 @@ opponent-response assumptions.
 * **Similar-moment retrieval is validated held-out:** −0.057 and −0.051 log loss over the base
   rate (C36).
 * **Per-provider calibrated option models:** held-out log loss 0.414, AUC 0.796, ECE 0.019
-  (Metrica, C21) and 0.354 / 0.811 / 0.024 (SkillCorner, C24). Retrained with every feature
-  read 0.2 s before the release: 0.419 / 0.790 / 0.028 and 0.354 / 0.810 / 0.021 (C71).
+  (Metrica, C21) and 0.354 / 0.811 / 0.024 (SkillCorner, C24). Re-evaluated held-out with every
+  feature read 0.2 s before the release: 0.419 / 0.790 / 0.028 and 0.354 / 0.810 / 0.021 (C71).
 * **Opponent-response rules checked against real defender movement:** `marker_follows` and
   `lane_cover` beat constant velocity and a size-matched rotation placebo on both providers in a
   paired, possession-clustered test; `press_carrier` and `zonal_shift` do not, and the product

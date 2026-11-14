@@ -94,7 +94,7 @@ indexes on start.
   "not supported".
 * **Off-ball value under reactive defenders (C45–C49, re-run under envelope v2 at a3c88d2).**
   Real runs beat randomly directed ones (+0.0042 Metrica, +0.0037 SkillCorner). Putting back
-  defenders' reactions changes the credit by at most 0.0003 on average (`lane_cover` non-zero
+  defenders' reactions changes the credit (best progressive option) by at most 0.0003 on average (`lane_cover` non-zero
   but negative); a fitted response moving 8–9 defenders changes nothing either (positive
   control, post-review). The credit depends on the constant-velocity vs observed background,
   and no adjusted variant beats static on the outcome checks. Not exposed in the product
