@@ -37,6 +37,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_PROJECT_ENVIRONMENT=/opt/venv \
     FOOTYMIND_DATA_DIR=/data \
     FOOTYMIND_WEB_DIST=/app/web/dist \
+    FOOTYMIND_EXPERIMENTS_DIR=/app/experiments \
     PATH=/opt/venv/bin:$PATH
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
@@ -49,6 +50,9 @@ RUN --mount=type=secret,id=ca_bundle,required=false \
     if [ -f /run/secrets/ca_bundle ]; then export SSL_CERT_FILE=/run/secrets/ca_bundle; fi; \
     uv sync --frozen --no-dev --no-editable
 COPY --from=web /app/web/dist ./web/dist
+# committed results.json files: validation summaries served by the API (out-of-fold parquet files
+# are excluded by .dockerignore)
+COPY experiments/results ./experiments/results
 COPY docker/entrypoint.sh /usr/local/bin/footymind-entrypoint
 RUN chmod +x /usr/local/bin/footymind-entrypoint && useradd --create-home --uid 10001 app \
     && mkdir -p /data && chown app /data
