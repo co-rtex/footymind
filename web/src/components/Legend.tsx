@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { Team } from "../api/types";
 import type { ScenarioView } from "../render/renderer";
+import { DEFAULT_TEAMS, type TeamNames } from "../lib/teams";
 
 interface Props {
   attackingTeam: Team | null;
@@ -10,6 +11,7 @@ interface Props {
   showShadow?: boolean;
   /** the replay contains provider-extrapolated (off-camera) positions */
   showEstimated?: boolean;
+  teams?: TeamNames;
 }
 
 const Disc = ({ fill, stroke, dash, opacity = 1 }: { fill: string; stroke?: string; dash?: string; opacity?: number }) => (
@@ -25,6 +27,7 @@ export const Legend = memo(function Legend({
   view,
   showShadow = false,
   showEstimated = false,
+  teams = DEFAULT_TEAMS,
 }: Props) {
   const att = attackingTeam === "away" ? "var(--c-away)" : "var(--c-home)";
   const def = attackingTeam === "away" ? "var(--c-home)" : "var(--c-away)";
@@ -32,10 +35,10 @@ export const Legend = memo(function Legend({
     <div className="legend" aria-label="Legend" role="group">
       <ul className="legend-row">
         <li>
-          <Disc fill="var(--c-home)" /> Home
+          <Disc fill="var(--c-home)" /> {teams.home}
         </li>
         <li>
-          <Disc fill="var(--c-away)" /> Away
+          <Disc fill="var(--c-away)" /> {teams.away}
         </li>
         <li>
           <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">

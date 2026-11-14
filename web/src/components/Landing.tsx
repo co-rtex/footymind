@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { api } from "../api/client";
 import type { MatchSummary, PossessionSummary, Team } from "../api/types";
-import { fmtClock, matchClockSeconds, teamLabel, titleCase } from "../lib/format";
+import { fmtClock, matchClockSeconds, titleCase } from "../lib/format";
+import { hasTeamNames, matchFacts, matchTeams, matchTitle, teamName } from "../lib/teams";
 import { routeHash, useAsync } from "../lib/hooks";
 import { groupByProvider, splitCommonName } from "../lib/providers";
 import { Segmented } from "./Segmented";
@@ -32,6 +33,7 @@ const FEATURED = {
 };
 
 const FEATURED_BROADCAST = {
+  matchId: "skillcorner-1899585",
   href: routeHash({
     name: "at",
     matchId: "skillcorner-1899585",
@@ -53,6 +55,9 @@ function revealPossessions(): void {
 }
 
 export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Props) {
+  // The broadcast example names its teams when the backend provides them (falls back to Home/Away).
+  const bMatch = matches.find((m) => m.match_id === FEATURED_BROADCAST.matchId) ?? null;
+  const bTeams = matchTeams(bMatch);
   return (
     <div className="landing">
       <section className="hero" aria-labelledby="hero-title">
@@ -98,13 +103,15 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
 
       <section className="panel featured" aria-labelledby="featured-broadcast-title">
         <div className="featured-body">
-          <p className="eyebrow">Featured scenario · SkillCorner broadcast tracking · A-League 2024/25 · P2</p>
+          <p className="eyebrow">
+            Featured scenario · SkillCorner broadcast tracking · {bMatch && hasTeamNames(bTeams) ? matchTitle(bMatch) : "A-League 2024/25"} · P2
+          </p>
           <h2 id="featured-broadcast-title" className="h-section">
             The same question on broadcast data
           </h2>
           <p className="muted">
-            Away #27 passes to #14 (completed). Home #25&apos;s position is the most suppressive here (Defensive Shadow
-            0.21). Moved within his reachable region, the option model&apos;s estimate for that pass rises from about 0.60
+            {bTeams.away} #27 passes to #14 (completed). {bTeams.home} #25&apos;s position is the most suppressive here
+            (Defensive Shadow 0.21). Moved within his reachable region, the option model&apos;s estimate for that pass rises from about 0.60
             to 0.80, with every ensemble member agreeing. Passer, receiver and #25 are all camera-detected; 9 of 22
             positions, away from the ball, are provider extrapolations and are drawn as estimates.
           </p>
@@ -146,6 +153,10 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
               <div className={`match-cards${compact ? " match-cards--compact" : ""}`}>
                 {g.matches.map((m, i) => {
                   const selected = m.match_id === match?.match_id;
+                  // Real team names when the provider publishes them; anonymised matches keep the source name.
+                  const named = hasTeamNames(matchTeams(m));
+                  const name = named ? `${m.home_label} vs ${m.away_label}` : (split?.labels[i] ?? m.source.name);
+                  const facts = matchFacts(m);
                   return (
                     <button
                       key={m.match_id}
@@ -158,9 +169,11 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
                         revealPossessions();
                       }}
                       title={m.source.name}
-                      aria-label={`${m.source.name}, ${m.fps} Hz, ${m.n_possessions} possessions`}
+                      aria-label={`${named ? matchTitle(m) : m.source.name}, ${m.fps} Hz, ${m.n_possessions} possessions`}
+                      data-testid={`match-card-${m.match_id}`}
                     >
-                      <span className="match-card-name">{split?.labels[i] ?? m.source.name}</span>
+                      <span className="match-card-name">{name}</span>
+                      {facts ? <span className="match-card-facts">{facts}</span> : null}
                       <span className="match-card-meta">
                         {m.fps} Hz · {m.n_possessions} possessions · {m.n_events} events
                       </span>
@@ -182,6 +195,7 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
 function PossessionList({ match, onOpen }: { match: MatchSummary; onOpen: (pid: string) => void }) {
   const [team, setTeam] = useState<TeamFilter>("all");
   const [shotsOnly, setShotsOnly] = useState(false);
+  const teams = matchTeams(match);
   const poss = useAsync<PossessionSummary[]>(`poss:${match.match_id}`, (signal) =>
     api.possessions(match.match_id, 3, signal),
   );
@@ -199,6 +213,9 @@ function PossessionList({ match, onOpen }: { match: MatchSummary; onOpen: (pid: 
           <h2 id="poss-title" className="h-section">
             Possessions
           </h2>
+          <p className="small" data-testid="possessions-match">
+            {matchTitle(match)}
+          </p>
           <p className="muted small">
             Open-play sequences with at least three passes.{" "}
             {poss.data ? (
@@ -215,8 +232,8 @@ function PossessionList({ match, onOpen }: { match: MatchSummary; onOpen: (pid: 
             onChange={setTeam}
             options={[
               { value: "all", label: "All" },
-              { value: "home", label: "Home" },
-              { value: "away", label: "Away" },
+              { value: "home", label: teamName("home", teams) },
+              { value: "away", label: teamName("away", teams) },
             ]}
           />
           <label className="check">
@@ -235,7 +252,7 @@ function PossessionList({ match, onOpen }: { match: MatchSummary; onOpen: (pid: 
       ) : (
         <div className="table-wrap">
           <table className="table possession-table" data-testid="possession-table">
-            <caption className="sr-only">Possessions in {match.source.name}</caption>
+            <caption className="sr-only">Possessions in {matchTitle(match)}</caption>
             <thead>
               <tr>
                 <th scope="col">Team</th>
@@ -275,7 +292,8 @@ function PossessionRow({ p, match, onOpen }: { p: PossessionSummary; match: Matc
   const clock = fmtClock(matchClockSeconds(p.start_time_s, p.period, match.periods, match.fps));
   const first = titleCase(p.first_type);
   const last = [titleCase(p.last_type), p.last_subtype ? `(${titleCase(p.last_subtype)})` : ""].filter(Boolean).join(" ");
-  const label = `${teamLabel(p.team)} possession, period ${p.period}, ${clock}, ${p.n_passes} ${p.n_passes === 1 ? "pass" : "passes"}${p.has_goal ? ", goal" : p.has_shot ? ", shot" : ""}`;
+  const teams = matchTeams(match);
+  const label = `${teamName(p.team, teams)} possession, period ${p.period}, ${clock}, ${p.n_passes} ${p.n_passes === 1 ? "pass" : "passes"}${p.has_goal ? ", goal" : p.has_shot ? ", shot" : ""}`;
   return (
     <tr className="row-link" onClick={() => onOpen(p.possession_id)}>
       <td>
@@ -285,7 +303,7 @@ function PossessionRow({ p, match, onOpen }: { p: PossessionSummary; match: Matc
           aria-label={`Open ${label}`}
           onClick={(e) => e.stopPropagation()}
         >
-          <span className={`team-chip team-chip--${p.team}`}>{teamLabel(p.team)}</span>
+          <span className={`team-chip team-chip--${p.team}`}>{teamName(p.team, teams)}</span>
         </a>
       </td>
       <td className="col-period">P{p.period}</td>

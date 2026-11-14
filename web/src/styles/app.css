@@ -2041,3 +2041,15 @@ h3 {
 .card--why {
   align-content: start;
 }
+.lab-match {
+  color: var(--c-text-muted);
+  margin: 0 0 2px;
+}
+.match-card-facts {
+  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+}
+.similar-validation,
+.similar-validation code {
+  overflow-wrap: anywhere;
+}

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { PlayerOut, ProvenanceLabel } from "../api/types";
 import { INTERVENTION_BOUNDS } from "../api/types";
-import { fmtMetres, teamLabel } from "../lib/format";
+import { fmtMetres } from "../lib/format";
+import { DEFAULT_TEAMS, teamName, type TeamNames } from "../lib/teams";
 import { ProvBadge } from "./ProvBadge";
 
 export interface InspectedPlayer {
@@ -23,9 +24,10 @@ interface Props {
   onClose: () => void;
   /** incremented when the user picks this player from the Player menu to move them */
   focusMove?: number;
+  teams?: TeamNames;
 }
 
-export function PlayerInspector({ info, playing, editable, onMove, onClose, focusMove = 0 }: Props) {
+export function PlayerInspector({ info, playing, editable, onMove, onClose, focusMove = 0, teams = DEFAULT_TEAMS }: Props) {
   const { player } = info;
   const xRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -50,7 +52,7 @@ export function PlayerInspector({ info, playing, editable, onMove, onClose, focu
     <section className="card card--inspector" aria-labelledby="pi-title" data-testid="player-inspector">
       <div className="card-head">
         <h2 id="pi-title" className="h-card">
-          <span className={`jersey jersey--${player.team}`}>{player.jersey}</span> {teamLabel(player.team)} #{player.jersey}
+          <span className={`jersey jersey--${player.team}`}>{player.jersey}</span> {teamName(player.team, teams)} #{player.jersey}
           {info.isGk ? <span className="muted small"> · goalkeeper</span> : null}
         </h2>
         <button type="button" className="icon-btn icon-btn--sm" onClick={onClose} aria-label="Close player card">
@@ -91,7 +93,7 @@ export function PlayerInspector({ info, playing, editable, onMove, onClose, focu
         </dd>
       </dl>
       {editable && !playing && info.x !== null ? (
-        <form className="move-form" onSubmit={submit} aria-label={`Move ${teamLabel(player.team)} #${player.jersey}`}>
+        <form className="move-form" onSubmit={submit} aria-label={`Move ${teamName(player.team, teams)} #${player.jersey}`}>
           <label>
             x (m)
             <input

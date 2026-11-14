@@ -1,4 +1,5 @@
 import type { PeriodInfo, PlayerOut, ProvenanceLabel, Team } from "../api/types";
+import type { LabelledPlayer } from "./teams";
 
 /** Football match clock: P1 counts from 0:00 and P2 from 45:00, P3 from 90:00 and so on. */
 export function matchClockSeconds(timeS: number, period: number, periods: PeriodInfo[], fps: number): number {
@@ -59,11 +60,14 @@ export const PROVENANCE_TEXT: Record<ProvenanceLabel, string> = {
   simulated: "Simulated: moved by a defender response model (a rule or a learned model), not observed",
 };
 
-/** "#10 Home" style label for a player id, falling back to the raw id. */
+/**
+ * "#10 Home" style label for a player id, falling back to the raw id. With a map built by
+ * labelledPlayers() the team's display name is used ("#10 Brisbane FC").
+ */
 export function playerLabel(id: string | null | undefined, players: Map<string, PlayerOut>): string {
   if (!id) return "n/a";
-  const p = players.get(id);
-  return p ? `#${p.jersey} ${teamLabel(p.team)}` : id;
+  const p = players.get(id) as LabelledPlayer | undefined;
+  return p ? `#${p.jersey} ${p.team_label ?? teamLabel(p.team)}` : id;
 }
 
 export function speedOf(vx: number | null, vy: number | null): number | null {

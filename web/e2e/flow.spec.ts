@@ -347,16 +347,24 @@ test("similar moments: on demand, observed outcomes with links, quiet empty stat
     await expect(page.getByTestId("similar-headline")).toContainText(`In ${n} similar`);
     await expect(page.getByTestId("similar-headline")).toContainText(`${m} ${m === 1 ? "pass was" : "passes were"} completed`);
     await expect(page.getByTestId("similar-disclaimer")).toContainText("not a prediction");
-    await expect(page.getByTestId("similar-unvalidated")).toHaveCount(res.validation?.knn_beats_base_rate === true ? 0 : 1);
+    const validated = res.validation?.knn_beats_base_rate === true;
+    await expect(page.getByTestId("similar-unvalidated")).toHaveCount(validated ? 0 : 1);
+    await expect(page.getByTestId("similar-validated-pill")).toHaveCount(validated ? 1 : 0);
+    if (validated) await expect(page.getByTestId("similar-validated")).toContainText("Validated on held-out matches");
     const items = page.getByTestId("similar-item");
     await expect(items).toHaveCount(n);
     await expect(items.first()).toContainText("observed");
+    // Each row carries the neighbour's match clock; opening it lands on the same clock in the lab.
+    const context = items.first().getByTestId("similar-context");
+    await expect(context).toHaveText(/^P\d \d\d:\d\d/);
+    const rowClock = /^P\d (\d\d:\d\d)/.exec((await context.textContent()) ?? "")?.[1];
     const link = items.first().getByRole("link", { name: /^Open / });
     await expect(link).toHaveAttribute("href", /^#\/at\/metrica-sample-[23]\?f=\d+$/);
     const href = (await link.getAttribute("href"))!;
     await link.click();
     await expect(page).toHaveURL(new RegExp(href.replace(/[?]/g, "\\?") + "$"));
     await expect(page.getByTestId("pitch-canvas")).toBeVisible();
+    await expect(page.getByTestId("clock")).toHaveText(rowClock!);
     await expect(page.getByTestId("source-attribution")).toContainText("Metrica Sports");
 
     // A frame with no pass decision within 2 s: a quiet empty state, not an error.
@@ -366,5 +374,51 @@ test("similar moments: on demand, observed outcomes with links, quiet empty stat
     await expect(page.getByTestId("similar-empty-no-decision")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("similar-panel").getByRole("alert")).toHaveCount(0);
   }
+  expect(errors).toEqual([]);
+});
+
+test("team names: SkillCorner matches are named, Metrica stays anonymised", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const sc = (await (await page.request.get("/api/matches/skillcorner-1874553")).json()) as {
+    home_label: string;
+    away_label: string;
+    competition: string | null;
+    date: string | null;
+  };
+  const named = sc.home_label !== "Home" || sc.away_label !== "Away";
+  const title = [named ? `${sc.home_label} vs ${sc.away_label}` : null, sc.competition, sc.date].filter(Boolean).join(" · ");
+
+  await page.goto("/");
+  const card = page.getByTestId("match-card-skillcorner-1874553");
+  if (named) {
+    await expect(card).toContainText(`${sc.home_label} vs ${sc.away_label}`);
+    if (sc.competition) await expect(card).toContainText(sc.competition);
+  }
+  await card.click();
+  const rows = page.getByTestId("possession-table").locator("tbody tr");
+  await expect(rows.first()).toBeVisible();
+  if (named) {
+    await expect(page.getByTestId("possessions-match")).toHaveText(title);
+    await expect(page.getByRole("radio", { name: sc.home_label, exact: true })).toBeVisible();
+    await expect(rows.first().locator(".team-chip")).toHaveText(new RegExp(`^(${sc.home_label}|${sc.away_label})$`));
+  }
+
+  await rows.first().getByRole("link").click();
+  await expect(page.getByTestId("pitch-canvas")).toBeVisible();
+  if (named) {
+    await expect(page.getByTestId("match-title")).toHaveText(title);
+    await expect(page.locator(".h-page .team-chip")).toHaveText(new RegExp(`^(${sc.home_label}|${sc.away_label})$`));
+    await expect(page.getByRole("group", { name: "Legend" })).toContainText(sc.home_label);
+    await expect(page.getByRole("group", { name: "Legend" })).toContainText(sc.away_label);
+    await waitForAnalysis(page);
+    await expect(page.getByTestId("analysis-panel")).toContainText(new RegExp(`#\\d+ (${sc.home_label}|${sc.away_label})`));
+  }
+
+  // Metrica is anonymised: Home/Away only, titled by its source name.
+  await page.goto("/#/lab/metrica-sample-1%3Ap0163?f=53708");
+  await expect(page.getByTestId("match-title")).toHaveText("Metrica Sports Sample Game 1");
+  await expect(page.locator(".h-page .team-chip")).toHaveText("Away");
+  await expect(page.getByRole("group", { name: "Legend" })).toContainText("Home");
   expect(errors).toEqual([]);
 });
