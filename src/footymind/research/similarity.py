@@ -134,8 +134,11 @@ def build_index(provider: str, match_ids: list[str]) -> Path:
 
     if any(not m.startswith(provider + "-") for m in match_ids):
         raise ValueError("an index must contain a single provider's matches")
+    # recorded before reading the bundles: if one is re-ingested during the build, the index
+    # keeps the older timestamp and is reported stale, never stored as fresh
+    meta = index_metadata(provider, match_ids)
     df = build(match_ids, similarity_dataset_config())
-    return write_index(df, provider, match_ids)
+    return write_index(df, provider, match_ids, meta)
 
 
 def index_metadata(provider: str, match_ids: list[str]) -> dict[str, str]:
@@ -148,11 +151,17 @@ def index_metadata(provider: str, match_ids: list[str]) -> dict[str, str]:
     }
 
 
-def write_index(df: pl.DataFrame, provider: str, match_ids: list[str]) -> Path:
+def write_index(
+    df: pl.DataFrame,
+    provider: str,
+    match_ids: list[str],
+    meta: dict[str, str] | None = None,
+) -> Path:
     out = index_path(provider)
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_name(out.name + ".tmp")
-    df.select(STORED_COLUMNS).write_parquet(tmp, metadata=index_metadata(provider, match_ids))
+    meta = meta if meta is not None else index_metadata(provider, match_ids)
+    df.select(STORED_COLUMNS).write_parquet(tmp, metadata=meta)
     os.replace(tmp, out)  # atomic: a running server never reads a half-written index
     return out
 

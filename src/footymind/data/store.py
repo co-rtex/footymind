@@ -149,10 +149,20 @@ def write_bundle(
         arrays["detected"] = td.detected
     if td.ball_detected is not None:
         arrays["ball_detected"] = td.ball_detected
-    np.savez_compressed(out / "tracking.npz", **arrays)  # type: ignore[arg-type]
-    pl.DataFrame([asdict(p) for p in td.players]).write_parquet(out / "players.parquet")
-    events.write_parquet(out / "events.parquet")
-    possessions.write_parquet(out / "possessions.parquet")
+
+    # Each file is written to a temporary name and renamed into place, so a server reading the
+    # bundle during a re-ingest sees either the old or the new file, never a truncated one.
+    def _atomic(name: str, write: Callable[[Path], object]) -> None:
+        tmp_path = out / f".{name}.tmp"
+        write(tmp_path)
+        os.replace(tmp_path, out / name)
+
+    with open(out / ".tracking.npz.tmp", "wb") as fh:
+        np.savez_compressed(fh, **arrays)  # type: ignore[arg-type]
+    os.replace(out / ".tracking.npz.tmp", out / "tracking.npz")
+    _atomic("players.parquet", pl.DataFrame([asdict(p) for p in td.players]).write_parquet)
+    _atomic("events.parquet", events.write_parquet)
+    _atomic("possessions.parquet", possessions.write_parquet)
     manifest = {
         "match_id": match_id,
         "pipeline_version": PIPELINE_VERSION,

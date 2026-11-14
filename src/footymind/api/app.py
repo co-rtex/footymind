@@ -6,6 +6,7 @@ import json
 import math
 import os
 import time
+import zipfile
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -164,6 +165,19 @@ def _bundle(match_id: str) -> MatchBundle:
         return load_match(match_id)
     except StaleBundleError as e:
         raise HTTPException(503, str(e)) from e
+    except (OSError, EOFError, ValueError, zipfile.BadZipFile, pl.exceptions.PolarsError) as e:
+        # unreadable files, e.g. read while an older ingest was rewriting the bundle
+        raise HTTPException(
+            503, f"{match_id}: bundle could not be read; re-run `footymind ingest {match_id}`"
+        ) from e
+
+
+def _servable(match_id: str) -> bool:
+    """A bundle with a readable manifest from this pipeline version (one cached read)."""
+    try:
+        return read_manifest(match_id)["pipeline_version"] == PIPELINE_VERSION
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
 
 
 def _source(b: MatchBundle) -> S.SourceInfo:
@@ -198,12 +212,22 @@ def _possession_out(r: dict[str, Any], fps: float) -> S.PossessionSummary:
 
 @app.get("/api/health")
 def health() -> dict[str, Any]:
-    return {"status": "ok", "version": __version__, "matches": available_matches()}
+    ids = available_matches()
+    ok = [m for m in ids if _servable(m)]
+    # bundles that need `footymind ingest` (another pipeline version or unreadable): listed
+    # here, left out of /api/matches, and 503 on their own endpoints
+    return {
+        "status": "ok",
+        "version": __version__,
+        "matches": ok,
+        "unavailable": [m for m in ids if m not in ok],
+    }
 
 
 @app.get("/api/matches", response_model=list[S.MatchSummary])
 def list_matches() -> list[S.MatchSummary]:
-    return [match_summary(m) for m in available_matches()]
+    # one stale or unreadable bundle must not take the whole list down
+    return [match_summary(m) for m in available_matches() if _servable(m)]
 
 
 @app.get("/api/matches/{match_id}", response_model=S.MatchSummary)

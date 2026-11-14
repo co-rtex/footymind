@@ -98,6 +98,40 @@ def test_pipeline_version_change_is_not_served_from_cache(
         store.load_match(MID)
 
 
+def test_one_stale_bundle_does_not_take_the_match_list_down(
+    data_dir: Path, synthetic_metrica: dict[str, Path]
+) -> None:
+    """Release review: a stale bundle is left out of /api/matches (and listed as unavailable in
+    /api/health) instead of turning the whole list into a 503."""
+    from footymind.api.app import app
+
+    _write(synthetic_metrica)
+    _write(synthetic_metrica, mid="metrica-syn2")
+    c = TestClient(app, raise_server_exceptions=False)
+    assert {m["match_id"] for m in c.get("/api/matches").json()} == {MID, "metrica-syn2"}
+    _rewrite_manifest(data_dir, pipeline_version="0")
+    r = c.get("/api/matches")
+    assert r.status_code == 200 and [m["match_id"] for m in r.json()] == ["metrica-syn2"]
+    h = c.get("/api/health").json()
+    assert h["matches"] == ["metrica-syn2"] and h["unavailable"] == [MID]
+    assert c.get(f"/api/matches/{MID}").status_code == 503
+
+
+def test_unreadable_bundle_file_is_503_not_500(
+    data_dir: Path, synthetic_metrica: dict[str, Path]
+) -> None:
+    from footymind.api.app import app
+
+    _write(synthetic_metrica)
+    store.load_match.cache_clear()
+    (data_dir / MID / "tracking.npz").write_bytes(b"truncated")  # SYNTHETIC corruption
+    _touch(data_dir / MID / "manifest.json")
+    c = TestClient(app, raise_server_exceptions=False)
+    r = c.get(f"/api/matches/{MID}/possessions")
+    assert r.status_code == 503 and "footymind ingest" in r.json()["detail"]
+    assert not list((data_dir / MID).glob(".*.tmp"))  # atomic writes leave no temporaries
+
+
 def test_reingest_refreshes_derived_caches(
     data_dir: Path, synthetic_metrica: dict[str, Path]
 ) -> None:

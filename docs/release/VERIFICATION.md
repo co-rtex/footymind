@@ -57,7 +57,13 @@ A running server does not need a restart after `footymind ingest` or
 manifest, match facts, causal velocities and goalkeepers) is keyed on the manifest file's
 `(mtime_ns, size, inode)`, checked with one `os.stat` per call; `ingest` writes the manifest
 last and replaces it atomically. A bundle re-ingested by another pipeline version is refused
-(503 naming `footymind ingest <id>`), never served from a cache. A similarity index records the
+(503 naming `footymind ingest <id>`), never served from a cache. Such a bundle (or one whose files cannot be
+read) is left out of `/api/matches` and listed under `unavailable` in `/api/health`, so one stale
+match never takes the list down. Bundle files are written to temporary names and renamed into
+place, and a similarity index records its bundles' timestamps *before* it reads them, so an
+ingest during a build leaves the index reported stale rather than wrongly fresh. On an existing
+volume the entrypoint applies the same default `FOOTYMIND_SOURCES` as on first start (a first
+start that failed part-way is completed on the next) and ingests one source at a time. A similarity index records the
 pipeline version and every bundle's `created_utc` in its parquet metadata; an index that no
 longer matches the served bundles, or one built before this metadata existed, answers 503 naming
 `footymind build-similarity-index --provider <provider>`. A rebuilt index file is re-read on

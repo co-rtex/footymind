@@ -20,9 +20,11 @@ export function ringText(altRadiusM: number | null | undefined): string {
  */
 export function shadowCaveat(
   altRadiusM: number | null | undefined,
-  served?: { status?: string | null; validation_claim?: string | null } | null,
+  served?: { status?: string | null; validation_claim?: string | null; provider?: string | null } | null,
 ): string {
-  const status = served?.status?.trim();
+  // only a provider-specific status (newer backends send `provider` with it); an older backend's
+  // pooled status would overstate validation on SkillCorner (C29), so the summary is kept then
+  const status = served?.provider ? served.status?.trim() : undefined;
   if (status) {
     const id = served?.validation_claim;
     const claim = id && !status.includes(id) ? ` (claims ledger ${id})` : "";
