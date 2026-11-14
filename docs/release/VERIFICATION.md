@@ -81,6 +81,31 @@ Startup cost: the server starts only after the index build (measured here on 4 s
 matches). The `HEALTHCHECK` start period is 300 s so that a full 23-match volume is not
 reported unhealthy while it indexes.
 
+## Entrypoint recovery on existing volumes (`scripts/container_recovery.py`)
+
+The script runs the real `docker/entrypoint.sh` followed by `footymind serve`, four times in a
+row on one data volume, damaging the volume between starts. Every check reads the real API.
+
+```bash
+python3 scripts/container_recovery.py docker --image footymind:ci   # in the image, on a Docker volume
+python3 scripts/container_recovery.py local                         # the same script as a process
+```
+
+| Scenario | Damage before the start | Checked |
+|---|---|---|
+| A, healthy restart | none (after a first start on an empty volume with games 1–2) | no re-ingest, no index rebuild, every bundle and index file unchanged (`ls -l` before/after), same matches, replay and similar moments served |
+| B, outdated bundle | game 2's manifest rewritten to pipeline version `2` | the entrypoint logs and re-ingests game 2, rebuilds the stale index, the bundle is at the current version and the API serves it |
+| C, interrupted first start | game 2's directory replaced by a partial one (no manifest), index deleted, `FOOTYMIND_SOURCES` unset | the default sources (games 1–3) are completed and indexed; all three serve replays and similar moments |
+| D, bad inputs | an unregistered id in `FOOTYMIND_SOURCES`; then game 3's `tracking.npz` truncated while serving | the unknown id is logged and skipped; the server starts; game 3 answers 503 naming `footymind ingest`; health and games 1–2 keep working; no traceback |
+
+CI runs `docker` mode in the `docker` job after the empty-volume smoke check. `local` mode needs
+the Metrica raw files in `data/raw/metrica` (it links them, so nothing is downloaded); it passed
+43/43 checks on 2026-11-14. A truncated data file under a valid manifest is not repaired
+automatically on the next start: it keeps answering 503 with the command that fixes it.
+
+In-process freshness (a bundle or index replaced while the server runs, a stale bundle never
+served silently, healthy matches staying available) is covered by `tests/test_freshness.py`.
+
 ## Clean-setup findings (fresh clone, README commands as written)
 
 | Step | Finding | Fix |

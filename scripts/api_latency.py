@@ -46,7 +46,7 @@ def _stats(ms: list[float]) -> dict[str, float | int]:
         "n": int(a.size),
         "p50_ms": round(float(np.percentile(a, 50)), 1),
         "p95_ms": round(float(np.percentile(a, 95)), 1),
-        "max_ms": round(float(a.max()), 1),
+        "max_ms": round(float(np.max(a)), 1),
         "mean_ms": round(float(a.mean()), 1),
     }
 

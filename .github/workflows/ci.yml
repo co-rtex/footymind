@@ -24,9 +24,10 @@ jobs:
           python-version: "3.12"
           enable-cache: true
       - run: uv sync --frozen
-      - run: uv run ruff check src tests
-      - run: uv run ruff format --check src tests
+      - run: uv run ruff check src tests scripts
+      - run: uv run ruff format --check src tests scripts
       - run: uv run mypy
+      - run: uv run mypy scripts
       # Real-data tests skip automatically when data is absent.
       - run: uv run pytest -q
 
@@ -92,7 +93,7 @@ jobs:
   docker:
     name: Docker image builds, starts and serves (Metrica sample)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     needs: [python, web]
     steps:
       - uses: actions/checkout@v4
@@ -133,6 +134,12 @@ jobs:
       - name: Docker HEALTHCHECK reports healthy
         run: |
           timeout 120 sh -c 'until [ "$(docker inspect -f "{{.State.Health.Status}}" fm)" = healthy ]; do sleep 3; done'
+      # The entrypoint's recovery paths on a second, separate volume, through the real image:
+      # restart on a healthy volume (no re-ingest), an outdated pipeline-version bundle, an
+      # interrupted first start (partial bundle, no index) and an unknown source id plus an
+      # unreadable bundle file. Every check reads the real API (scripts/container_recovery.py).
+      - name: Entrypoint recovery on existing volumes
+        run: python3 scripts/container_recovery.py docker --image footymind:ci --port 8011
       - name: Container logs
         if: always()
         run: docker logs fm 2>&1 | tail -n 100; docker rm -f fm || true

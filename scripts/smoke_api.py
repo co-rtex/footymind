@@ -20,6 +20,7 @@ import re
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Any
 
@@ -97,7 +98,7 @@ def pick_analysis(c: Client, match_id: str) -> tuple[dict[str, Any], dict[str, A
     poss = c.json(f"/api/matches/{match_id}/possessions?min_passes=3")
     check(len(poss) > 0, f"{match_id}: no possessions with >= 3 passes")
     for p in poss[len(poss) // 2 :][:10]:  # mid-match, not the kick-off
-        pid = urllib.request.quote(p["possession_id"], safe="")
+        pid = urllib.parse.quote(p["possession_id"], safe="")
         rep = c.json(f"/api/possessions/{pid}/replay")
         nf, npl = len(rep["frame"]), len(rep["players"])
         check(len(rep["players_xy"]) == nf * npl * 2, "replay players_xy has the wrong length")

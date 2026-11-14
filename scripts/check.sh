@@ -6,9 +6,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 what="${1:-all}"
 if [[ "$what" == "all" || "$what" == "python" ]]; then
-  uv run ruff check src tests
-  uv run ruff format --check src tests
+  uv run ruff check src tests scripts
+  uv run ruff format --check src tests scripts
   uv run mypy
+  uv run mypy scripts
   uv run pytest -q
 fi
 if [[ "$what" == "all" || "$what" == "web" ]]; then
