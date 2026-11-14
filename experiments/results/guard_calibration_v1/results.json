@@ -1,6 +1,6 @@
 {
   "name": "guard_calibration_v1",
-  "code_revision": "39527225cab33cc176f9b13aa6b5cf6099280157",
+  "code_revision": "6b9fd6d79fd1b02459cf2272f5132f7108e84da0",
   "away_mps": 3.0,
   "providers": {
     "metrica": {
@@ -36,7 +36,13 @@
           "share_ball_moving_away": 0.018525519848771266,
           "n": 2645
         }
-      ]
+      ],
+      "guard_ball_fallback": {
+        "pass_rows": 3656,
+        "ball_unobserved_at_guard": 295,
+        "of_which_restarts": 227,
+        "open_play_fallbacks": 68
+      }
     },
     "skillcorner": {
       "n_matches": 20,
@@ -71,8 +77,14 @@
           "share_ball_moving_away": 0.19015609828964075,
           "n": 13389
         }
-      ]
+      ],
+      "guard_ball_fallback": {
+        "pass_rows": 16006,
+        "ball_unobserved_at_guard": 26,
+        "of_which_restarts": 11,
+        "open_play_fallbacks": 15
+      }
     }
   },
-  "runtime_s": 13.7
+  "runtime_s": 19.5
 }

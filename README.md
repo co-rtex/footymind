@@ -42,9 +42,12 @@ committed result.
     positive ones.
 * **Leakage control beyond "no future frames".**
   * On broadcast tracking the event frame often already contains the kick, in 62.7% of passes.
-    Decision-time features are therefore read 0.2 s earlier, at an empirically calibrated
+    Decision-time features are therefore read 0.2 s earlier, a guard frame chosen after a pilot
+    and then checked against the pre-kick floor
     guard frame (C38, ADR-0007).
-  * Frame-rate unit bugs between 25 Hz and 10 fps were found and fixed.
+  * Frame-rate unit bugs between 25 Hz and 10 fps were found and fixed: the shadow recovery
+    window and the event-carrier tolerance. Two short frame-count rules in the pass dataset
+    (a 2-frame restart window and a 2-frame minimum duration) remain and are documented.
 * **Two providers, never pooled.** Every experiment is replicated separately on optical and
   broadcast tracking.
 * **Counterfactuals with stated, tested assumptions.**
@@ -63,7 +66,7 @@ committed result.
 | Interactive lab (web) | Guided first-visit tour over three featured real situations, Canvas replay at 60 fps, overlays, keyboard- and drag-based scenario editing, observed/hypothetical/difference views, evidence panel; responsive and axe-checked | ✅ |
 | Research: does spatial context matter? | Leakage-audited attempted-pass outcome study with event-only, spatial and interaction model families, ablations and sensitivity analyses | ✅ v1 |
 | Ghost Value: Defensive Shadow | Per-defender suppression of passing value against nearby alternative positions | 🧪 experimental (API + UI layer; not better than nearest-defender, at chance on SkillCorner) |
-| Opponent response policies | Defender reactions to a scenario edit (`marker_follows`, `lane_cover`, `press_carrier`, `zonal_shift`, `learned`, `learned_innovation`) limited by a pre-registered kinematic envelope v2, with a static-vs-response comparison in the lab | ✅ learned models validated as forecasts of real play (observational); rules 🧪 experimental, with their observational-check result shown |
+| Opponent response policies | Defender reactions to a scenario edit (`marker_follows`, `lane_cover`, `press_carrier`, `zonal_shift`, `learned`, `learned_innovation`) limited by a pre-registered kinematic envelope v2, with a static-vs-response comparison in the lab | `learned`: validated forecaster of real play, nearly inert under edits. `learned_innovation`: observational co-movement model (needs attackers' real movement; user edits extrapolate). Rules: 🧪 experimental, each with its observational-check result |
 | Temporal context | Causal time-on-ball and last-second movement history at a guard frame before the release (ADR-0007), served with the frame analysis | ✅ research study RQ2 (see findings) |
 | Why this moment | Deterministic, evidence-grounded statements: each sentence is tied to one computed metric, its provenance and the players it mentions | ✅ |
 | Similar moments | The most similar pass decisions from *other* matches of the same provider, with observed outcomes and deep links | ✅ validated held-out (beats the base rate on both providers) |
@@ -81,9 +84,10 @@ Metrica (3 matches, optical, 25 Hz) and SkillCorner (20 A-League matches, broadc
 * **Given the executed kick** (action-conditioned: release direction and speed known):
   Δ −0.071 on Metrica and −0.046 on SkillCorner. This is provider-dependent, because much of it
   is where the ball was actually played relative to teammates, which is partly execution quality.
-* **Defender-only** information adds a small but consistent improvement (Δ −0.015 / −0.018).
+* **Defender-only** information (action-conditioned comparison) adds a small but consistent
+  improvement (Δ −0.014 / −0.018; C12, C28).
   Interaction features add nothing on 3 matches and a small, significant amount (−0.004) on 20.
-* **Negative results:** the literature physics model is poorly calibrated (ECE 0.17), and
+* **Negative results:** the literature physics model is poorly calibrated (ECE 0.18, C7), and
   fitting its parameters drives them to implausible bounds, so it is structurally
   misspecified. The experimental *Defensive Shadow* metric is robust to tracking noise and
   finds interceptors at 2× chance on Metrica, but it is **not** better than "nearest defender", and

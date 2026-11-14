@@ -47,7 +47,7 @@ opponent-response assumptions.
 * **Rigorous negative results:**
   * physics pitch-control probabilities are miscalibrated (C7, C15);
   * the Defensive Shadow metric is no better than the nearest defender (C17, C29);
-  * a simple off-ball run value is at chance (C22, C25);
+  * a simple off-ball run value ranks receivers near chance, far below simple baselines (C22, C25);
   * the off-ball interaction is mostly model non-additivity (C31, C32).
 
 ## Engineering scope

@@ -263,13 +263,18 @@ starts, carrier moved 5 m in four directions, 1.5 s horizon; Metrica / SkillCorn
 `press_carrier` largest move 3.27 / 3.32 m (1.56 / 1.59 under v1), `lane_cover` 1.39 / 1.27 m
 (0.96 / 0.87); `zonal_shift` and `marker_follows` are unchanged.
 
-**Rule check under envelope v2** (`rule_response_check_v3[_skillcorner]`, rev 6b9308d;
-innovation design, Δ FDE in m, β): `lane_cover` still passes on both providers (Metrica −0.038
-[−0.051, −0.024], β 0.77; SkillCorner −0.049 [−0.058, −0.040], β 0.80; placebo +0.015 /
-−0.017). `press_carrier` no longer passes anywhere (Metrica −0.035 [−0.091, +0.022], β 0.57;
+**Rule check under envelope v2** (`rule_response_check_v3[_skillcorner]`; Metrica re-run at
+rev ea79068 after the event-carrier fix, SkillCorner rev 6b9308d; innovation design, Δ FDE in
+m, β). `lane_cover` still passes on both providers (Metrica −0.040 [−0.052, −0.028], β 0.77;
+SkillCorner −0.049 [−0.058, −0.040], β 0.80; permutation placebo −0.001 / −0.017).
+`press_carrier` no longer passes anywhere (Metrica −0.029 [−0.083, +0.025], β 0.54;
 SkillCorner +0.045 [+0.013, +0.079], β 0.30): with the tighter v1 envelope its moves happened
-to be the right size on Metrica. `zonal_shift` still overshoots (+0.085 / +0.088, β 0.21 /
-0.13); `marker_follows` is unclipped and unchanged. The served per-policy text follows v3.
+to be the right size on Metrica. `zonal_shift` still overshoots (+0.082 / +0.088, β 0.25 /
+0.13). `marker_follows` is unclipped and unchanged. The served per-policy text follows v3. The
+release review then found that the permutation placebo also meets the v3 criterion and is not
+size-matched for carrier policies, so the decision moved to a paired, size-matched rotation
+placebo in v4 (RESEARCH.md, C70). `learned_innovation` has been served by the API since
+333d358.
 
 ## What changed in defaults, and what did not
 

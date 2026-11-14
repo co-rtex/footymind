@@ -42,3 +42,10 @@ further back buys nothing.
 * "Decision time" now means "0.2 s before the event's start frame" for broadcast data. For
   a real decision made earlier than that, all features remain causal.
 * Future features must be tested at the guarded frame, not only for "no later frame read".
+* Where the guard-frame ball is unobserved, the guarded dataset uses the start-frame ball
+  (Metrica 295 of 3,656 passes, 227 of them restarts with a placed ball; SkillCorner 26 of
+  16,006; C38). Two 2-frame rules in `pass_dataset` (the restart window and the minimum
+  duration) remain frame counts. They are documented and kept so that committed results
+  reproduce.
+* The 0.2 s value was fixed after an outcome pilot and checked afterwards by the calibration.
+  It was not derived from it.

@@ -21,7 +21,7 @@ smaller gain on both providers (−0.014 and −0.009). Several more ambitious i
 survive evaluation, and they are reported as negative results:
 * a literature physics model of pitch control is structurally miscalibrated;
 * a defender "shadow" metric is no better than the nearest defender;
-* a simple off-ball "run value" ranks receivers at chance.
+* a simple off-ball "run value" ranks receivers near chance, far below simple baselines.
 
 The counterfactual simulator ("Possession Multiverse") is therefore presented as a
 model-based comparison with explicit, partly validated opponent-response assumptions, never
@@ -145,7 +145,15 @@ so it is never used as a label.
 * double counting in the first response-policy check;
 * a served similar-moments statistic that differed from the validated one.
 
-All were fixed or reported as revisions (see the "revised" ledger rows).
+All were fixed or reported as revisions (see the "revised" ledger rows). Two more independent
+reviews in session 4 covered release methodology and engineering. They led to:
+* a size-matched, paired placebo for the rule-policy check (v4);
+* guarded held-out metrics for the serving option model;
+* corrected wording on what each response model is validated for;
+* period-safe SkillCorner event ends;
+* cache freshness checks.
+
+The session-3 reviews prompted the guard frame itself.
 
 ## 5. Results
 
@@ -180,8 +188,9 @@ plus time-on-ball (H-T2), at the guard frame:
 | H-T2 | **−0.014** [−0.021, −0.007] (C33) | **−0.009** [−0.011, −0.007], 20/20 matches, match-level CI [−0.012, −0.006] (C35) |
 | time-on-ball over the event baseline (H-T1) | −0.002 [−0.005, +0.001] (C34) | −0.002 [−0.003, −0.001] (C35) |
 
-The movement gain is mainly in discrimination (AUC rises), not calibration. It holds with a gradient-boosting model and with header/cross
-annotations added to both sides. On Metrica it shrinks when read 0.4 s before the release,
+The movement gain is mainly in discrimination (AUC rises), not calibration. At the guard frame
+it holds with a gradient-boosting model (Metrica −0.013). At the release frame it also holds
+with header/cross annotations added to both sides (−0.013). On Metrica it shrinks when read 0.4 s before the release,
 consistent with information ageing. On SkillCorner, the guard removes about half of the
 release-frame time-on-ball gain and about a fifth of the movement gain, but none of the
 spatial gain. Kick information had inflated only the temporal features.
@@ -214,7 +223,7 @@ product shows this validated estimate, separately from the short list of example
   * `marker_follows` and `lane_cover` reduce forecast error on both providers. The fitted size
     slope is about 1, and the gain is several times larger than a permuted placebo's.
   * `press_carrier` passed only on Metrica under the v1 envelope, and passes nowhere under v2 (C64).
-  * `zonal_shift` overshoots: real blocks shift 0.13–0.22 of its move.
+  * `zonal_shift` overshoots: real blocks shift a fraction of its move (β 0.25 / 0.13, C64).
   * A first version of this check concluded that every rule was wrong. That was a
     double-counting artefact, corrected after review.
 
@@ -243,7 +252,8 @@ pass the rule check; `press_carrier` no longer does (C64).
   nearest-defender in 18/20 (C29).
 * **Run value** (an attacker's availability gain from their last second of movement, with
   defenders held fixed) shows a tiny positive association with being chosen. As a ranking it is
-  at chance on both providers (C22, C25).
+  near chance on both providers (Metrica top-1 0.134 against 0.100 chance; SkillCorner at
+  chance) and far below current availability or speed (C22, C25).
 * **Why off-ball credit is hard** (C31, C32). A Shapley decomposition of the change in team
   opportunity over the second before a pass shows two things. On average, attacking movement
   creates progressive options and defensive movement removes about as many. The interaction
@@ -261,7 +271,7 @@ _See §5.8–5.9, filled in from session-4 results._
 |---|---|---|
 | Literature pitch-control probabilities | miscalibrated; fitting drives parameters to implausible bounds | C7, C15 |
 | Defensive Shadow | not better than nearest defender; at chance on broadcast data | C17, C29 |
-| Run value (off-ball credit, defenders fixed) | at chance as a receiver ranking on both providers | C22, C25 |
+| Run value (off-ball credit, defenders fixed) | near chance as a receiver ranking, far below simple baselines | C22, C25 |
 | Off-ball interaction | mostly model non-additivity (placebo) | C31, C32 |
 | Learned response model as an intervention model | inert under edits | C44 |
 | `zonal_shift` response rule | overshoots real block movement | C37, C64 |
@@ -285,26 +295,50 @@ _See §5.8–5.9, filled in from session-4 results._
   depend on documented mapping rules for each provider.
 * **Model-based counterfactuals.** Scenario outputs compare model estimates under stated
   assumptions. The response policies are validated, at most, as forecasts of real play.
-* **Researcher degrees of freedom.** Pre-registration, two independent reviews and the dated
+* **Researcher degrees of freedom.** Pre-registration, four independent reviews and the dated
   amendments reduce, but do not remove, analytic flexibility. All superseded analyses remain in
   `RESEARCH.md`.
+* **Multiplicity.** Many comparisons are reported. No correction for multiple testing is applied,
+  and only C18 discusses it explicitly. Borderline results should be read as fragile:
+  * the run-value association (C22);
+  * the decomposition real−placebo difference on Metrica (C31, lower bound +0.017);
+  * Metrica time-on-ball (C34);
+  * `press_carrier` (C64);
+  * the off-ball secondary measures.
+* **What the CIs cover.** The bootstrap CIs resample possessions (and, where stated, matches)
+  for a fixed set of out-of-fold predictions. They do not include the variance from refitting
+  the models.
+* **Guard frame.** The 0.2 s guard was chosen after an outcome pilot and then checked against
+  the pre-kick floor (C38). Where the guard-frame ball is unobserved, the guarded datasets use
+  the start-frame ball. On Metrica that is 295 of 3,656 passes, 227 of them restarts where the
+  ball is placed (C38). Two 2-frame rules in the pass dataset (a restart window and a minimum
+  duration) are frame-count rules, so they mean 0.08 s on Metrica and 0.2 s on SkillCorner.
+  They are documented, not converted, to keep committed results reproducible.
+* **Envelope v2 coverage** was close to known in advance. A session-3 sensitivity grid had
+  already shown that removing the reaction delay gives near-full coverage, so the coverage
+  result is confirmatory. Discrimination is reported against a 5 m shift and a defender
+  permutation only. Smaller shifts are mostly accepted.
 
 ## 8. Reproducibility
 
 * `scripts/reproduce.sh --dry-run` lists every committed research artefact in dependency
   order. The script refuses to run with uncommitted source changes.
 * Every results file records its `code_revision` and the input data hashes.
-* The checksum-pinned data download, the deterministic ingestion (pipeline version 2) and the
-  fixed seeds make every number regenerable from public data.
+* The checksum-pinned data download, the deterministic ingestion and the fixed seeds make every
+  number regenerable from public data. Session-4 results that predate the pipeline version 3
+  fix (period-safe SkillCorner event ends) were produced on version 2 bundles. The difference
+  is about one event per SkillCorner match.
 
 ## 9. Future work (not done)
 
 * Off-ball valuation against a possession-value target, with response models identified from
   natural experiments.
-* Richer response models (multi-agent, conditioned on attacker innovations) evaluated against
-  placebo designs.
+* Response models that react strongly enough to matter for off-ball credit. The current
+  innovation model is a co-movement forecaster. Applying it to user edits extrapolates beyond
+  the real innovations it was fitted on.
 * More leagues and providers, to test generalisation beyond one season.
-* A data-driven, provider-specific kinematic envelope with a measurement-error model.
+* A tighter, pre-registered envelope evaluated on fresh frames (not pass starts), with a
+  shift-size curve against a size-matched disc.
 
 ## References
 
