@@ -284,6 +284,34 @@ def available_matches(root: Path | None = None) -> list[str]:
     return sorted(p.name for p in root.iterdir() if (p / "manifest.json").exists())
 
 
+def pending_ingest(wanted: list[str] | None = None, root: Path | None = None) -> list[str]:
+    """Registered sources to (re)ingest so that every bundle can be served.
+
+    These are the bundles built by another pipeline version (or with an unreadable manifest)
+    and the ``wanted`` sources that have no bundle yet. Ids that are not registered sources
+    cannot be ingested; they are reported on stderr and skipped. Used by the Docker
+    entrypoint after an image upgrade.
+    """
+    import sys
+
+    have = available_matches(root)
+    todo = set()
+    for m in have:
+        try:
+            if read_manifest(m, root).get("pipeline_version") != PIPELINE_VERSION:
+                todo.add(m)
+        except (OSError, ValueError):
+            todo.add(m)
+    todo |= {m for m in wanted or [] if m not in have}
+    unknown = sorted(m for m in todo if m not in sources.SOURCES)
+    if unknown:
+        print(
+            f"footymind: not registered sources, cannot ingest: {' '.join(unknown)}",
+            file=sys.stderr,
+        )
+    return sorted(todo - set(unknown))
+
+
 class MatchBundle:
     __slots__ = ("events", "manifest", "possessions", "tracking")
 

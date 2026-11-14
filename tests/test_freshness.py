@@ -43,10 +43,11 @@ def _tracking(fx: dict[str, Path]) -> TrackingData:
     return metrica.load_tracking(MID, fx["home"], fx["away"], PROV)
 
 
-def _write(fx: dict[str, Path], td: TrackingData | None = None) -> Path:
+def _write(fx: dict[str, Path], td: TrackingData | None = None, mid: str = MID) -> Path:
     # the hand-made fixture is not synchronised like real data: the sync gate is opened
     ev = metrica.load_events(fx["events"])
-    return store.write_bundle(MID, td or _tracking(fx), ev, PROV, sync_gate=1e3)
+    td = replace(td or _tracking(fx), match_id=mid)
+    return store.write_bundle(mid, td, ev, PROV, sync_gate=1e3)
 
 
 def _touch(p: Path) -> None:
@@ -172,3 +173,26 @@ def test_index_without_build_metadata_is_refused(
     _index_rows().select(similarity.STORED_COLUMNS).write_parquet(p)  # a pre-v3 index file
     with pytest.raises(similarity.StaleIndexError, match="no build metadata"):
         similarity.load_index("metrica")
+
+
+def test_pending_ingest_lists_outdated_and_missing_sources(
+    data_dir: Path, synthetic_metrica: dict[str, Path], capsys: pytest.CaptureFixture[str]
+) -> None:
+    """What the Docker entrypoint re-ingests on an existing volume (synthetic bundles)."""
+    _write(synthetic_metrica, mid="metrica-sample-1")
+    _write(synthetic_metrica, mid="metrica-sample-2")
+    _write(synthetic_metrica)  # MID is not a registered source
+    assert store.pending_ingest() == []
+    assert store.pending_ingest(["metrica-sample-1", "metrica-sample-3"]) == ["metrica-sample-3"]
+    p = data_dir / "metrica-sample-2" / "manifest.json"
+    p.write_text(
+        p.read_text().replace(
+            f'"pipeline_version": "{store.PIPELINE_VERSION}"', '"pipeline_version": "1"'
+        )
+    )
+    _touch(p)
+    assert store.pending_ingest() == ["metrica-sample-2"]
+    _rewrite_manifest(data_dir, pipeline_version="1")  # unregistered: reported, not returned
+    assert store.pending_ingest(["nope-1"]) == ["metrica-sample-2"]
+    err = capsys.readouterr().err
+    assert MID in err and "nope-1" in err
