@@ -1,0 +1,47 @@
+{
+  "name": "temporal_guard_v1_02s",
+  "description": "Leakage guard for RQ2 (pre-specified after seeing temporal_v1, before running this): every temporal feature (time-on-ball and movement history) is computed 0.2 s BEFORE the release frame, so no frame near the kick can enter it. Static decision-time spatial features are unchanged. If the H-T2 gain is kick leakage it should vanish here.",
+  "matches": [
+    "metrica-sample-1",
+    "metrica-sample-2",
+    "metrica-sample-3"
+  ],
+  "seed": 0,
+  "dataset": {
+    "rules": "v2",
+    "include_ball_out": true,
+    "temporal_offset_s": 0.2
+  },
+  "n_boot": 2000,
+  "models": [
+    "base_rate",
+    "Adt_logreg",
+    "Adt_tob_logreg",
+    "Bdt_logreg",
+    "Bdt_tob_logreg",
+    "Bdt_tt_logreg",
+    "Bdt_tob_gbm",
+    "Bdt_tt_gbm"
+  ],
+  "comparisons": [
+    [
+      "Adt_logreg",
+      "Adt_tob_logreg"
+    ],
+    [
+      "Bdt_tob_logreg",
+      "Bdt_tt_logreg"
+    ],
+    [
+      "Bdt_tob_gbm",
+      "Bdt_tt_gbm"
+    ],
+    [
+      "Adt_tob_logreg",
+      "Bdt_tob_logreg"
+    ]
+  ],
+  "importances": [
+    "Bdt_tt_logreg"
+  ]
+}

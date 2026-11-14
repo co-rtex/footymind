@@ -176,6 +176,15 @@ TEMPORAL_TRACK_FEATURES = track_feature_names(TEMPORAL_LOOKBACK_S)
 TEMPORAL_TRACK_FEATURES_L05 = track_feature_names(LOOKBACK_SENSITIVITY_S[0])
 TEMPORAL_TRACK_FEATURES_L20 = track_feature_names(LOOKBACK_SENSITIVITY_S[1])
 
+_TEMPORAL_COLS = frozenset(
+    [
+        *TIME_ON_BALL_FEATURES,
+        *TEMPORAL_TRACK_FEATURES,
+        *TEMPORAL_TRACK_FEATURES_L05,
+        *TEMPORAL_TRACK_FEATURES_L20,
+    ]
+)
+
 INTERACTION_FEATURES = [
     "cand2_p_success_physics",
     "cand3_p_success_physics",
@@ -207,6 +216,9 @@ class DatasetConfig:
     include_ball_out: bool = True
     min_release_speed: float = 1.0  # m/s; below this the release is not observable
     cone_half_angle_deg: float = 15.0
+    # Leakage guard (session 3): compute the temporal features this many seconds BEFORE the
+    # release frame, so no frame near the kick can enter them. 0 = at the release frame.
+    temporal_offset_s: float = 0.0
     ray_length_m: float = 40.0
 
 
@@ -404,11 +416,13 @@ def _features_for(
         ),
     }
 
-    row.update(
-        temporal_context(
-            td, i0, team, passer, s.is_gk, (TEMPORAL_LOOKBACK_S, *LOOKBACK_SENSITIVITY_S)
-        )
-    )
+    i_t = i0 - round(cfg.temporal_offset_s * td.fps)
+    lookbacks = (TEMPORAL_LOOKBACK_S, *LOOKBACK_SENSITIVITY_S)
+    if i_t < 0 or td.period[i_t] != td.period[i0]:
+        row.update(temporal_context(td, i0, team, passer, s.is_gk, lookbacks))
+        row.update({k: np.nan for k in row if k in _TEMPORAL_COLS})
+    else:
+        row.update(temporal_context(td, i_t, team, passer, s.is_gk, lookbacks))
     # tracking-quality metadata for stratified analysis (never a feature)
     row["history_detected_frac"] = history_detected_fraction(td, i0)
 
