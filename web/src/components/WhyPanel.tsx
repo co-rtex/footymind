@@ -104,7 +104,7 @@ export const WhyPanel = memo(function WhyPanel({ analysis, frame, playing, loadi
       data-frame={analysis?.frame}
     >
       <div className="card-head">
-        <h2 id="why-title" className="h-card">
+        <h2 id="why-title" className="h-card" tabIndex={-1}>
           Why this moment
         </h2>
         <span className="muted small tabular" data-testid="why-frame">

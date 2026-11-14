@@ -15,17 +15,23 @@ import type {
 } from "../api/types";
 import { MAX_INTERVENTIONS } from "../api/types";
 import { fmtSigned, playerLabel, speedOf, titleCase } from "../lib/format";
-import { matchTeams, matchTitle, labelledPlayers, teamName } from "../lib/teams";
+import { matchTeams, matchTitle, labelledPlayers, teamName, type TeamNames } from "../lib/teams";
 import { matchOfPossession, useAsync } from "../lib/hooks";
 import { finiteDiffSpeed, valueAt } from "../lib/interp";
 import { isNegligible } from "../lib/agreement";
 import { FALLBACK_POLICIES, orderPolicies, STATIC_POLICY } from "../lib/policies";
 import { providerInfo } from "../lib/providers";
+import { featuredById } from "../lib/featured";
+import { describeZone, pitchZone } from "../lib/zones";
 import { Playback } from "../lib/playback";
+import { scenarioRequest, SHADOW_OPTS } from "../lib/scenario";
 import { clockAt, eventLabel, indexOfFrame, periodAt } from "../lib/replayIndex";
 import type { DrawnPlayer, Layers, PitchRenderer, ScenarioView } from "../render/renderer";
 import { AnalysisPanel, PASS_TABLE_ID } from "./AnalysisPanel";
-import { Legend } from "./Legend";
+import { GuideBar, type TourStep } from "./GuideBar";
+import { SideNav, type SideNavItem } from "./SideNav";
+import { revealSection } from "../lib/reveal";
+import { Legend, PitchKey } from "./Legend";
 import { PitchCanvas, type DragInit } from "./PitchCanvas";
 import { PlayerInspector, type InspectedPlayer } from "./PlayerInspector";
 import { ScenarioPanel } from "./ScenarioPanel";
@@ -44,9 +50,11 @@ interface Props {
   initialFrame?: number;
   /** Deep link: scenario moves to apply on open (opens in edit mode, difference view). */
   initialMoves?: InterventionIn[];
+  /** Deep link: id of a featured situation whose guided tour is shown */
+  tour?: string;
 }
 
-export function Lab({ possessionId, match, onBack, initialFrame, initialMoves }: Props) {
+export function Lab({ possessionId, match, onBack, initialFrame, initialMoves, tour }: Props) {
   const replay = useAsync<ReplayData>(`replay:${possessionId}`, (signal) => api.possessionReplay(possessionId, signal));
   // The match clock needs period start frames. Fetch this match's summary directly (milliseconds)
   // rather than waiting for the full match list, and never show a provider-time clock in its place.
@@ -87,6 +95,7 @@ export function Lab({ possessionId, match, onBack, initialFrame, initialMoves }:
       onBack={onBack}
       initialFrame={initialFrame}
       initialMoves={initialMoves}
+      tour={tour}
     />
   );
 }
@@ -144,9 +153,9 @@ function useScenarioRequest(
   }, [key, cache, set, nonce, keepStale]);
 }
 const ANALYSIS_DEBOUNCE_MS = 160;
+/** Wide layout: pitch and analysis column side by side, the column scrolling on its own. */
+const wide = () => typeof window !== "undefined" && !!window.matchMedia?.("(min-width: 1181px)").matches;
 const SHADOW_DEBOUNCE_MS = 250;
-const HORIZON_S = 1.5;
-const ENSEMBLE = 24;
 const NO_PENDING: ReadonlyMap<string, { x: number; y: number }> = new Map();
 const NO_TRACE: readonly string[] = [];
 const SCENARIO_CACHE_MAX = 24;
@@ -168,24 +177,6 @@ function loadPolicies(matchId: string): Promise<PolicyInfo[]> {
   return p;
 }
 
-function scenarioRequest(
-  matchId: string,
-  frame: number,
-  interventions: InterventionIn[],
-  policy: ResponsePolicy,
-  valueModel: ValueModel,
-): ScenarioRequest {
-  return {
-    match_id: matchId,
-    frame,
-    interventions,
-    response_policy: policy,
-    horizon_s: HORIZON_S,
-    ensemble: ENSEMBLE,
-    value_model: valueModel,
-  };
-}
-
 /** Scenario results keyed by request, so switching policy or view never recomputes a known edit. */
 function cachePut(cache: Map<string, ScenarioResponse>, key: string, v: ScenarioResponse): void {
   cache.set(key, v);
@@ -202,12 +193,14 @@ function LabView({
   onBack,
   initialFrame,
   initialMoves,
+  tour,
 }: {
   replay: ReplayData;
   match: MatchSummary | null;
   onBack: () => void;
   initialFrame?: number;
   initialMoves?: InterventionIn[];
+  tour?: string;
 }) {
   // Team display names (real names for SkillCorner, Home/Away for anonymised Metrica).
   const teams = useMemo(() => matchTeams(match), [match]);
@@ -241,6 +234,15 @@ function LabView({
   const [layers, setLayers] = useState<Layers>({ control: true, passes: true, pressure: true, trails: true, shadow: false });
   const [view, setView] = useState<ScenarioView>(linkedMoves.length ? "difference" : "observed");
   const [selected, setSelected] = useState<string | null>(null);
+  // Guided tour of a featured situation (only when this replay contains its frame).
+  const featured = useMemo(() => {
+    const f = featuredById(tour);
+    return f && f.matchId === replay.matchId && replay.frame.includes(f.frame) ? f : null;
+  }, [tour, replay]);
+  const [tourOn, setTourOn] = useState(true);
+  const [tourStep, setTourStep] = useState<TourStep>(1);
+  const sideRef = useRef<HTMLElement>(null);
+  const pitchRef = useRef<HTMLDivElement>(null);
   /** bumped when a player is chosen from the Player menu in edit mode, to focus the move form */
   const [focusMove, setFocusMove] = useState(0);
   const [highlight, setHighlight] = useState<string | null>(null);
@@ -328,7 +330,7 @@ function LabView({
     setSh((s) => ({ status: "loading", data: s.data, error: null, unavailable: null }));
     const ac = new AbortController();
     const timer = setTimeout(() => {
-      api.defensiveShadow(replay.matchId, frame, { horizonS: 1.0, valueModel: "option_model" }, ac.signal).then(
+      api.defensiveShadow(replay.matchId, frame, SHADOW_OPTS, ac.signal).then(
         (d) => {
           shadowCache.current.set(frame, { data: d });
           if (!ac.signal.aborted) setSh({ status: "success", data: d, error: null, unavailable: null });
@@ -450,6 +452,69 @@ function LabView({
     setView("observed");
     setNotice(null);
   }, []);
+
+  // ---- guided tour: each step drives the lab's own controls ----
+  /** On wide screens the analysis column scrolls on its own; bring its top into view. */
+  const sideToTop = useCallback(() => {
+    if (wide()) requestAnimationFrame(() => sideRef.current?.scrollTo({ top: 0 }));
+  }, []);
+  /** Stacked layouts: the guide sits above the pitch, so bring the pitch into view when a step changes it. */
+  const pitchIntoView = useCallback(() => {
+    if (!wide()) requestAnimationFrame(() => pitchRef.current?.scrollIntoView({ block: "start" }));
+  }, []);
+  const tourWatch = useCallback(() => {
+    if (mode === "edit") exitEdit();
+    setSelected(null);
+    pitchIntoView();
+    if (playback.playing) return;
+    playback.seek(0);
+    playback.play();
+  }, [mode, exitEdit, playback, pitchIntoView]);
+  const tourStepTo = useCallback(
+    (s: TourStep) => {
+      setTourStep(s);
+      if (!featured) return;
+      const at = indexOfFrame(replay.frame, featured.frame);
+      if (s === 1) {
+        if (mode === "edit") exitEdit();
+        return;
+      }
+      playback.pause();
+      playback.seek(at);
+      if (s === 2) {
+        if (mode === "edit") exitEdit();
+        sideToTop();
+        pitchIntoView();
+        return;
+      }
+      // step 3: apply the curated move (a hypothetical edit, exactly as if dragged)
+      const moves = featured.moves.filter((m) => replay.players.some((p) => p.player_id === m.player_id));
+      setMode("edit");
+      setPolicy(STATIC_POLICY);
+      setInterventions(moves);
+      setView("difference");
+      setNotice(null);
+      setSelected(null);
+      sideToTop();
+      pitchIntoView();
+    },
+    [featured, replay, mode, exitEdit, playback, sideToTop, pitchIntoView],
+  );
+  const tourJump = useCallback((target: "why" | "evidence" | "similar" | "response" | "result") => {
+    if (target === "response") {
+      const sel = document.querySelector<HTMLSelectElement>('[data-testid="policy-select"]');
+      sel?.scrollIntoView({ block: "center" });
+      sel?.focus({ preventScroll: true });
+      return;
+    }
+    const ids = { why: "why-title", evidence: "an-title", similar: "similar-title", result: "sc-title" } as const;
+    revealSection(ids[target]);
+  }, []);
+
+  // On wide screens, a newly selected player's card (first in the analysis column) is brought into view.
+  useEffect(() => {
+    if (selected) sideToTop();
+  }, [selected, sideToTop]);
 
   // ---- editing ----
   const observedAt = useCallback(
@@ -589,10 +654,13 @@ function LabView({
     const ps = src?.players.find((q) => q.player_id === selected);
     if (ps) {
       const pend = pending.get(selected);
+      const x = pend ? pend.x : ps.x;
+      const y = pend ? pend.y : ps.y;
       return {
         player: pl,
-        x: pend ? pend.x : ps.x,
-        y: pend ? pend.y : ps.y,
+        x,
+        y,
+        zone: pitchZone(x, y, replay.attackSign.get(periodAt(replay, index))?.[pl.team], replay.pitch),
         speed: speedOf(ps.vx, ps.vy),
         speedSource: "(from the analysis velocity)",
         positionProv: pend ? "hypothetical" : ps.position_provenance,
@@ -606,6 +674,7 @@ function LabView({
       player: pl,
       x: v?.x ?? null,
       y: v?.y ?? null,
+      zone: pitchZone(v?.x ?? null, v?.y ?? null, replay.attackSign.get(periodAt(replay, index))?.[pl.team], replay.pitch),
       speed: k >= 0 ? finiteDiffSpeed(replay.xy, replay.nPlayers, replay.nFrames, index, k, replay.step / replay.fps) : null,
       speedSource: "(finite difference of tracking)",
       // broadcast tracking: off-camera positions are provider extrapolations
@@ -699,13 +768,27 @@ function LabView({
           onChange={(m) => (m === "edit" ? enterEdit() : exitEdit())}
           testId="mode"
           options={[
-            { value: "analyse", label: "Replay & analyse" },
-            { value: "edit", label: "Edit scenario" },
+            { value: "analyse", label: "Replay & analyse", title: "Replay the tracking and read the model's estimates for any paused frame" },
+            { value: "edit", label: "Edit scenario", title: "What if: move players and compare the estimates with what was observed" },
           ]}
         />
       </div>
 
-      <div className="lab-grid">
+      <div className={`lab-grid${featured && tourOn ? " lab-grid--guided" : ""}`}>
+        {featured && tourOn ? (
+          <GuideBar
+            featured={featured}
+            teams={teams}
+            step={tourStep}
+            playing={playing}
+            defender={playerLabel(featured.defender, players)}
+            moved={mode === "edit" && interventions.length > 0}
+            onStep={tourStepTo}
+            onWatch={tourWatch}
+            onJump={tourJump}
+            onExit={() => setTourOn(false)}
+          />
+        ) : null}
         <section className="stage" aria-label="Pitch">
           <div className="stage-toolbar">
             <fieldset className="layer-toggles">
@@ -785,7 +868,7 @@ function LabView({
             ) : null}
           </div>
 
-          <div className="pitch-frame">
+          <div className="pitch-frame" ref={pitchRef}>
             <PitchCanvas
               replay={replay}
               editable={mode === "edit"}
@@ -797,6 +880,9 @@ function LabView({
               onDragOutsideChange={onDragOutsideChange}
               onDrop={onDrop}
             />
+            {layers.control && !playing && (shownAnalysis?.pitch_control || scenario) ? (
+              <PitchKey attackingTeam={shownAnalysis?.attacking_team ?? poss?.team ?? null} view={scenario ? view : "observed"} />
+            ) : null}
             {pitchStatus ? (
               <span className={`pitch-status${mode === "edit" ? " pitch-status--edit" : ""}`} data-testid="pitch-status">
                 {pitchStatus}
@@ -834,16 +920,18 @@ function LabView({
           ) : (
             <p className="small muted transport-note transport-note--keys">
               <kbd>Space</kbd> play/pause · <kbd>←</kbd> <kbd>→</kbd> step one frame (<kbd>Shift</kbd> for 1 s) · click a
-              player to inspect
+              player to inspect · <em>Edit scenario</em> to move one
             </p>
           )}
 
           {scenario && mode === "edit" ? <ScenarioJump scenario={scenario} players={players} /> : null}
+          {inspected && mode !== "edit" && !playing ? <PlayerJump info={inspected} teams={teams} /> : null}
 
           <Legend
             attackingTeam={shownAnalysis?.attacking_team ?? poss?.team ?? null}
             showHeat={layers.control && !playing}
             showEstimated={replay.nEstimated > 0}
+            showEstimatedBall={replay.nBallEstimated > 0 || shownAnalysis?.ball_provenance === "estimated"}
             showShadow={layers.shadow && !!shadow && shadowAvailable}
             scenarioLayer={mode === "edit"}
             view={scenario ? view : "observed"}
@@ -851,7 +939,8 @@ function LabView({
           />
         </section>
 
-        <aside className="side" aria-label="Analysis">
+        <aside className="side" aria-label="Analysis" ref={sideRef}>
+          <SideNav label="Analysis sections" items={mode === "edit" ? EDIT_NAV : ANALYSE_NAV} />
           {inspected ? (
             <PlayerInspector
               info={inspected}
@@ -935,6 +1024,45 @@ function LabView({
   );
 }
 
+const ANALYSE_NAV: SideNavItem[] = [
+  { target: "why-title", label: "Why this moment" },
+  { target: "an-title", label: "Pass options" },
+  { target: "similar-title", label: "Similar moments" },
+  { target: "ev-list-title", label: "Events" },
+  { target: "labels-key", label: "Labels" },
+];
+const EDIT_NAV: SideNavItem[] = [
+  { target: "sc-title", label: "What-if result" },
+  { target: "policy-select", label: "Defender response" },
+  { target: "ev-title", label: "Evidence & assumptions" },
+  { target: "labels-key", label: "Labels" },
+];
+
+/**
+ * Stacked layouts: a selected player's card is below the pitch and the transport, out of sight.
+ * This one-line summary links down to it. Hidden on wide screens, where the card is beside the pitch.
+ */
+function PlayerJump({ info, teams }: { info: InspectedPlayer; teams: TeamNames }) {
+  const go = () => {
+    const el = document.getElementById("pi-title");
+    el?.scrollIntoView({ block: "start" });
+    el?.focus({ preventScroll: true });
+  };
+  return (
+    <button type="button" className="scenario-jump" onClick={go} data-testid="player-jump">
+      <span>
+        <strong>
+          #{info.player.jersey} {teamName(info.player.team, teams)}
+        </strong>
+        {info.zone ? ` · ${describeZone(info.zone)}` : ""}
+      </span>
+      <span className="scenario-jump-cta">
+        Player card <span aria-hidden="true">↓</span>
+      </span>
+    </button>
+  );
+}
+
 /**
  * Stacked layouts (tablet, phone) put the scenario panel below the pitch, out of sight after a
  * drag. This one-line result links down to it. Hidden on wide screens, where the panel is beside
@@ -981,7 +1109,7 @@ const EventsCard = memo(function EventsCard({
   if (replay.events.length === 0) return null;
   return (
     <section className="card" aria-labelledby="ev-list-title">
-      <h2 id="ev-list-title" className="h-card">
+      <h2 id="ev-list-title" className="h-card" tabIndex={-1}>
         Events <span className="prov prov--observed">observed</span>
       </h2>
       <ol className="events">

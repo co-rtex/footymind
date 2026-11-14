@@ -1,10 +1,14 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 import { api } from "../api/client";
 import type { MatchSummary, PossessionSummary, Team } from "../api/types";
+import { FEATURED, featuredHref } from "../lib/featured";
 import { fmtClock, matchClockSeconds, titleCase } from "../lib/format";
 import { hasTeamNames, matchFacts, matchTeams, matchTitle, teamName } from "../lib/teams";
 import { routeHash, useAsync } from "../lib/hooks";
 import { groupByProvider, splitCommonName } from "../lib/providers";
+import { FeaturedCard } from "./FeaturedCard";
+import { ProvBadge } from "./ProvBadge";
+import { ProvenanceKey } from "./ProvenanceKey";
 import { Segmented } from "./Segmented";
 import { StatusBlock } from "./StatusBlock";
 
@@ -17,30 +21,8 @@ interface Props {
 
 type TeamFilter = "all" | Team;
 
-/**
- * Curated, verified examples (docs/RESEARCH.md, "Featured Possession Multiverse example").
- * Numbers quoted in the cards are from the provider's option model v2 and are recomputed live
- * when a link is opened.
- */
-const FEATURED = {
-  matchId: "metrica-sample-1",
-  href: routeHash({
-    name: "at",
-    matchId: "metrica-sample-1",
-    frame: 53708,
-    moves: [{ player_id: "home_9", x: 50.7, y: -8.75 }],
-  }),
-};
-
-const FEATURED_BROADCAST = {
-  matchId: "skillcorner-1899585",
-  href: routeHash({
-    name: "at",
-    matchId: "skillcorner-1899585",
-    frame: 39177,
-    moves: [{ player_id: "home_25", x: 22.46, y: -5.77 }],
-  }),
-};
+/** Possessions listed before "Show all". */
+export const POSSESSION_PAGE = 20;
 
 /**
  * On a phone the possession list starts far below the match cards, so choosing a match would
@@ -54,134 +36,186 @@ function revealPossessions(): void {
   });
 }
 
+const PILLARS: { title: string; text: string; prov: "estimated" | "derived" | "hypothetical" }[] = [
+  { title: "Space", text: "Which team would win a ball played to each spot on the pitch.", prov: "estimated" },
+  { title: "Pressure", text: "How close the defenders are to the ball, and whether they are closing in.", prov: "derived" },
+  { title: "Passing options", text: "Every teammate the ball could go to, with an estimated chance it arrives.", prov: "estimated" },
+  { title: "What if?", text: "Move a player where they could have been, and compare the estimates.", prov: "hypothetical" },
+];
+
 export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Props) {
-  // The broadcast example names its teams when the backend provides them (falls back to Home/Away).
-  const bMatch = matches.find((m) => m.match_id === FEATURED_BROADCAST.matchId) ?? null;
-  const bTeams = matchTeams(bMatch);
+  const tour = FEATURED[0]!;
+  const summaries = useMemo(() => new Map(matches.map((m) => [m.match_id, m])), [matches]);
+  const tourTeams = matchTeams(summaries.get(tour.matchId) ?? null);
+  const steps = tour.steps(tourTeams);
   return (
     <div className="landing">
       <section className="hero" aria-labelledby="hero-title">
-        <p className="eyebrow">Tracking analytics lab</p>
-        <h1 id="hero-title">Quantify the invisible game.</h1>
-        <p className="lede">
-          Space, passing options and defensive influence from real tracking data. Replay a possession, pause to see what
-          the spatial model estimates, then move a player to test a constrained what-if.
-        </p>
-        <ol className="steps" aria-label="How to start">
-          <li>
-            <span className="step-n">1</span>Choose a match
-          </li>
-          <li>
-            <span className="step-n">2</span>Open a possession
-          </li>
-          <li>
-            <span className="step-n">3</span>Pause to analyse, then edit a scenario
-          </li>
-        </ol>
+        <div className="hero-copy">
+          <p className="eyebrow">Football tracking analytics lab</p>
+          <h1 id="hero-title">The Invisible Game</h1>
+          <p className="hero-sub">
+            Event data says a pass went from #17 to #18. It cannot say how much space #18 had, who was pressing, or which
+            other passes were on.
+          </p>
+          <p className="lede">
+            FootyMind reads the positions of all 22 players from real tracking data and estimates that invisible layer.
+            Then it lets you ask <em>what if</em>: move a player and compare the model&apos;s estimates with what was
+            observed.
+          </p>
+          {/* stacked layouts only: the tour card is further down there */}
+          <a className="btn btn--primary btn--lg hero-cta" href={featuredHref(tour, "tour")} data-testid="tour-link-hero">
+            Start the guided tour <span aria-hidden="true">→</span>
+          </a>
+          <dl className="pillars" aria-label="What FootyMind shows">
+            {PILLARS.map((p) => (
+              <div key={p.title} className={`pillar pillar--${p.prov}`}>
+                <dt>
+                  {p.title} <ProvBadge prov={p.prov} />
+                </dt>
+                <dd>{p.text}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+
+        <section className="tour-card" aria-labelledby="tour-title" data-testid="tour-card">
+          <p className="eyebrow">New here? Start with one real moment</p>
+          <h2 id="tour-title" className="h-section">
+            A three-step guided tour
+          </h2>
+          <p className="small muted">{tour.title}</p>
+          <ol className="tour-steps">
+            <li>
+              <span className="step-n" aria-hidden="true">
+                1
+              </span>
+              <span>
+                <strong>Watch</strong> {steps.watch}
+              </span>
+            </li>
+            <li>
+              <span className="step-n" aria-hidden="true">
+                2
+              </span>
+              <span>
+                <strong>Understand</strong> {steps.why}
+              </span>
+            </li>
+            <li>
+              <span className="step-n" aria-hidden="true">
+                3
+              </span>
+              <span>
+                <strong>Test a what-if</strong> {steps.move}
+              </span>
+            </li>
+          </ol>
+          <a className="btn btn--primary btn--lg" href={featuredHref(tour, "tour")} data-testid="tour-link">
+            Start the guided tour <span aria-hidden="true">→</span>
+          </a>
+          <a className="small tour-skip" href="#explore" onClick={skipToExplore}>
+            Or browse every match and possession
+          </a>
+        </section>
       </section>
 
-      <section className="panel featured" aria-labelledby="featured-title">
-        <div className="featured-body">
-          <p className="eyebrow">Featured scenario · Game 1 · P1 35:48</p>
+      <section className="section" aria-labelledby="featured-title">
+        <div className="section-head">
           <h2 id="featured-title" className="h-section">
-            One pressing position, one risky pass
+            Featured situations
           </h2>
-          <p className="muted">
-            Away build up from deep under a high press. Home #9&apos;s position suppresses by far the most passing value
-            here (Defensive Shadow 0.27; no other defender above 0.03). Moving him 3.5 m, within the region he could
-            have reached, raises the option model&apos;s estimate for the pass that was actually played (#17 → #18) from
-            about 0.45 to 0.76. All 24 ensemble members agree on the direction.
-          </p>
           <p className="small muted">
-            A model-based what-if under stated assumptions, not a claim about what would have happened in the match.
+            Two real passes picked by a documented search for robust model changes. The numbers are computed live from
+            the tracking data when this page loads. Each what-if is a model-based comparison, not a claim about what
+            would have happened in the match.
           </p>
         </div>
-        <a className="btn btn--primary featured-cta" href={FEATURED.href} data-testid="featured-link">
-          Open this scenario
-        </a>
+        <div className="feature-grid">
+          {FEATURED.map((f) => (
+            <FeaturedCard
+              key={f.id}
+              f={f}
+              match={summaries.get(f.matchId) ?? null}
+              testId={f.id === "press" ? "featured-link" : "featured-broadcast-link"}
+            />
+          ))}
+        </div>
       </section>
 
-      <section className="panel featured" aria-labelledby="featured-broadcast-title">
-        <div className="featured-body">
-          <p className="eyebrow">
-            Featured scenario · SkillCorner broadcast tracking · {bMatch && hasTeamNames(bTeams) ? matchTitle(bMatch) : "A-League 2024/25"} · P2
-          </p>
-          <h2 id="featured-broadcast-title" className="h-section">
-            The same question on broadcast data
+      <section className="section" aria-labelledby="labels-title">
+        <div className="section-head">
+          <h2 id="labels-title" className="h-section">
+            How to read what you see
           </h2>
-          <p className="muted">
-            {bTeams.away} #27 passes to #14 (completed). {bTeams.home} #25&apos;s position is the most suppressive here
-            (Defensive Shadow 0.21). Moved within his reachable region, the option model&apos;s estimate for that pass rises from about 0.60
-            to 0.80, with every ensemble member agreeing. Passer, receiver and #25 are all camera-detected; 9 of 22
-            positions, away from the ball, are provider extrapolations and are drawn as estimates.
-          </p>
           <p className="small muted">
-            Broadcast tracking has its own option model (trained only on SkillCorner matches). Model-based what-if, not a
-            claim about the match.
+            Every value and every player on the pitch carries one of five labels, so you can always tell what was measured
+            from what a model or you supplied.
           </p>
         </div>
-        <a className="btn btn--primary featured-cta" href={FEATURED_BROADCAST.href} data-testid="featured-broadcast-link">
-          Open this scenario
-        </a>
+        <ProvenanceKey headingId="labels-title" />
       </section>
 
-      <section className="panel" aria-labelledby="match-title">
+      <section className="panel" aria-labelledby="match-title" id="explore">
         <div className="panel-head">
-          <h2 id="match-title" className="h-section">
-            Match
-          </h2>
+          <div>
+            <h2 id="match-title" className="h-section" tabIndex={-1}>
+              Explore any possession
+            </h2>
+            <p className="small muted">Choose a match, then open a possession to replay and analyse it.</p>
+          </div>
         </div>
         <div className="match-groups" role="radiogroup" aria-label="Match" data-testid="match-groups">
           {groupByProvider(matches).map((g) => {
             const compact = g.matches.length > 4;
             const split = compact ? splitCommonName(g.matches.map((m) => m.source.name)) : null;
             return (
-            <div key={g.info.id} className="match-group" role="group" aria-labelledby={`grp-${g.info.id}`}>
-              <div className="match-group-head">
-                <h3 id={`grp-${g.info.id}`} className="h-sub">
-                  {g.info.label} <span className="match-group-count">{g.matches.length}</span>
-                </h3>
-                {split ? <p className="match-group-series">{split.prefix}</p> : null}
-                <p className="small muted" data-testid={`provider-note-${g.info.id}`}>
-                  {g.info.kind} Source:{" "}
-                  <a href={g.url} target="_blank" rel="noreferrer">
-                    {g.url.replace(/^https?:\/\//, "")}
-                  </a>
-                  .
-                </p>
+              <div key={g.info.id} className="match-group" role="group" aria-labelledby={`grp-${g.info.id}`}>
+                <div className="match-group-head">
+                  <h3 id={`grp-${g.info.id}`} className="h-sub">
+                    {g.info.label} <span className="match-group-count">{g.matches.length}</span>
+                  </h3>
+                  {split ? <p className="match-group-series">{split.prefix}</p> : null}
+                  <p className="small muted" data-testid={`provider-note-${g.info.id}`}>
+                    {g.info.kind} Source:{" "}
+                    <a href={g.url} target="_blank" rel="noreferrer">
+                      {g.url.replace(/^https?:\/\//, "")}
+                    </a>
+                    .
+                  </p>
+                </div>
+                <div className={`match-cards${compact ? " match-cards--compact" : ""}`}>
+                  {g.matches.map((m, i) => {
+                    const selected = m.match_id === match?.match_id;
+                    // Real team names when the provider publishes them; anonymised matches keep the source name.
+                    const named = hasTeamNames(matchTeams(m));
+                    const name = named ? `${m.home_label} vs ${m.away_label}` : (split?.labels[i] ?? m.source.name);
+                    const facts = matchFacts(m);
+                    return (
+                      <button
+                        key={m.match_id}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        className={`match-card${selected ? " is-selected" : ""}`}
+                        onClick={() => {
+                          onSelectMatch(m.match_id);
+                          revealPossessions();
+                        }}
+                        title={m.source.name}
+                        aria-label={`${named ? matchTitle(m) : m.source.name}, ${m.fps} Hz, ${m.n_possessions} possessions`}
+                        data-testid={`match-card-${m.match_id}`}
+                      >
+                        <span className="match-card-name">{name}</span>
+                        {facts ? <span className="match-card-facts">{facts}</span> : null}
+                        <span className="match-card-meta">
+                          {m.fps} Hz · {m.n_possessions} possessions · {m.n_events} events
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className={`match-cards${compact ? " match-cards--compact" : ""}`}>
-                {g.matches.map((m, i) => {
-                  const selected = m.match_id === match?.match_id;
-                  // Real team names when the provider publishes them; anonymised matches keep the source name.
-                  const named = hasTeamNames(matchTeams(m));
-                  const name = named ? `${m.home_label} vs ${m.away_label}` : (split?.labels[i] ?? m.source.name);
-                  const facts = matchFacts(m);
-                  return (
-                    <button
-                      key={m.match_id}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      className={`match-card${selected ? " is-selected" : ""}`}
-                      onClick={() => {
-                        onSelectMatch(m.match_id);
-                        revealPossessions();
-                      }}
-                      title={m.source.name}
-                      aria-label={`${named ? matchTitle(m) : m.source.name}, ${m.fps} Hz, ${m.n_possessions} possessions`}
-                      data-testid={`match-card-${m.match_id}`}
-                    >
-                      <span className="match-card-name">{name}</span>
-                      {facts ? <span className="match-card-facts">{facts}</span> : null}
-                      <span className="match-card-meta">
-                        {m.fps} Hz · {m.n_possessions} possessions · {m.n_events} events
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
             );
           })}
         </div>
@@ -192,9 +226,19 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
   );
 }
 
+/** In-page link to the match browser: scroll there and move focus to its heading. */
+function skipToExplore(e: MouseEvent<HTMLAnchorElement>): void {
+  // keep the hash router on the current route; "#explore" is not a route
+  e.preventDefault();
+  const h = document.getElementById("match-title");
+  h?.scrollIntoView({ block: "start" });
+  h?.focus({ preventScroll: true });
+}
+
 function PossessionList({ match, onOpen }: { match: MatchSummary; onOpen: (pid: string) => void }) {
   const [team, setTeam] = useState<TeamFilter>("all");
   const [shotsOnly, setShotsOnly] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const teams = matchTeams(match);
   const poss = useAsync<PossessionSummary[]>(`poss:${match.match_id}`, (signal) =>
     api.possessions(match.match_id, 3, signal),
@@ -205,6 +249,7 @@ function PossessionList({ match, onOpen }: { match: MatchSummary; onOpen: (pid: 
       (poss.data ?? []).filter((p) => (team === "all" || p.team === team) && (!shotsOnly || p.has_shot)),
     [poss.data, team, shotsOnly],
   );
+  const visible = showAll ? rows : rows.slice(0, POSSESSION_PAGE);
 
   return (
     <section className="panel" aria-labelledby="poss-title">
@@ -219,8 +264,8 @@ function PossessionList({ match, onOpen }: { match: MatchSummary; onOpen: (pid: 
           <p className="muted small">
             Open-play sequences with at least three passes.{" "}
             {poss.data ? (
-              <span aria-live="polite">
-                Showing {rows.length} of {poss.data.length}.
+              <span aria-live="polite" data-testid="possessions-count">
+                {rows.length} of {poss.data.length} match the filters.
               </span>
             ) : null}
           </p>
@@ -248,41 +293,65 @@ function PossessionList({ match, onOpen }: { match: MatchSummary; onOpen: (pid: 
       ) : !poss.data ? (
         <StatusBlock kind="loading" title="Loading possessions" />
       ) : rows.length === 0 ? (
-        <StatusBlock kind="empty" title="No possessions match these filters" />
+        <StatusBlock
+          kind="empty"
+          title="No possessions match these filters"
+          action={
+            <button
+              type="button"
+              className="btn btn--sm"
+              onClick={() => {
+                setTeam("all");
+                setShotsOnly(false);
+              }}
+            >
+              Clear filters
+            </button>
+          }
+        />
       ) : (
-        <div className="table-wrap">
-          <table className="table possession-table" data-testid="possession-table">
-            <caption className="sr-only">Possessions in {matchTitle(match)}</caption>
-            <thead>
-              <tr>
-                <th scope="col">Team</th>
-                <th scope="col" className="col-period">
-                  Period
-                </th>
-                <th scope="col" className="num">
-                  Clock
-                </th>
-                <th scope="col" className="num">
-                  Duration
-                </th>
-                <th scope="col" className="num">
-                  Passes
-                </th>
-                <th scope="col" className="col-seq">
-                  Sequence
-                </th>
-                <th scope="col">
-                  <span className="sr-only">Outcome</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((p) => (
-                <PossessionRow key={p.possession_id} p={p} match={match} onOpen={onOpen} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <div className="table-wrap">
+            <table className="table possession-table" data-testid="possession-table">
+              <caption className="sr-only">Possessions in {matchTitle(match)}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Team</th>
+                  <th scope="col" className="col-period">
+                    Period
+                  </th>
+                  <th scope="col" className="num">
+                    Clock
+                  </th>
+                  <th scope="col" className="num">
+                    Duration
+                  </th>
+                  <th scope="col" className="num">
+                    Passes
+                  </th>
+                  <th scope="col" className="col-seq">
+                    Sequence
+                  </th>
+                  <th scope="col">
+                    <span className="sr-only">Outcome</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((p) => (
+                  <PossessionRow key={p.possession_id} p={p} match={match} onOpen={onOpen} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {rows.length > visible.length ? (
+            <div className="list-more">
+              <button type="button" className="btn btn--ghost" onClick={() => setShowAll(true)} data-testid="possessions-more">
+                Show all {rows.length} possessions
+              </button>
+            </div>
+          ) : null}
+        </>
       )}
     </section>
   );

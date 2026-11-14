@@ -3,12 +3,15 @@ import type { PlayerOut, ProvenanceLabel } from "../api/types";
 import { INTERVENTION_BOUNDS } from "../api/types";
 import { fmtMetres } from "../lib/format";
 import { DEFAULT_TEAMS, teamName, type TeamNames } from "../lib/teams";
+import { describeZone, type PitchZone } from "../lib/zones";
 import { ProvBadge } from "./ProvBadge";
 
 export interface InspectedPlayer {
   player: PlayerOut;
   x: number | null;
   y: number | null;
+  /** football description of (x, y) from this player's team's point of view, or null */
+  zone: PitchZone | null;
   speed: number | null;
   speedSource: string;
   positionProv: ProvenanceLabel;
@@ -47,12 +50,16 @@ export function PlayerInspector({ info, playing, editable, onMove, onClose, focu
     if (!Number.isFinite(x) || !Number.isFinite(y)) return;
     onMove(Math.max(-INTERVENTION_BOUNDS.x, Math.min(INTERVENTION_BOUNDS.x, x)), Math.max(-INTERVENTION_BOUNDS.y, Math.min(INTERVENTION_BOUNDS.y, y)));
   };
+  const known = info.x !== null && info.y !== null;
 
   return (
     <section className="card card--inspector" aria-labelledby="pi-title" data-testid="player-inspector">
       <div className="card-head">
-        <h2 id="pi-title" className="h-card">
-          <span className={`jersey jersey--${player.team}`}>{player.jersey}</span> {teamName(player.team, teams)} #{player.jersey}
+        <h2 id="pi-title" className="h-card" tabIndex={-1}>
+          <span className={`jersey jersey--${player.team}`} aria-hidden="true">
+            {player.jersey}
+          </span>{" "}
+          #{player.jersey} {teamName(player.team, teams)}
           {info.isGk ? <span className="muted small"> · goalkeeper</span> : null}
         </h2>
         <button type="button" className="icon-btn icon-btn--sm" onClick={onClose} aria-label="Close player card">
@@ -62,22 +69,27 @@ export function PlayerInspector({ info, playing, editable, onMove, onClose, focu
         </button>
       </div>
       <dl className="kv">
-        <dt>Player id</dt>
-        <dd>
-          <code>{player.player_id}</code>
-        </dd>
-        <dt>Position</dt>
-        <dd>
+        <dt>Where</dt>
+        <dd data-testid="player-zone">
           {playing ? (
             <span className="muted">pause to inspect</span>
-          ) : info.x !== null && info.y !== null ? (
+          ) : known ? (
             <>
-              ({info.x.toFixed(1)}, {info.y.toFixed(1)}) m <ProvBadge prov={info.positionProv} />
+              {info.zone ? describeZone(info.zone) : <span className="muted">direction of play unknown</span>}{" "}
+              <ProvBadge prov={info.positionProv} />
             </>
           ) : (
             <span className="muted">not observed at this frame</span>
           )}
         </dd>
+        {!playing && known && info.zone ? (
+          <>
+            <dt>To goal</dt>
+            <dd>
+              {fmtMetres(info.zone.toGoal, 0)} <span className="muted small">from the centre of the goal they attack</span>
+            </dd>
+          </>
+        ) : null}
         <dt>Speed</dt>
         <dd>
           {playing ? (
@@ -129,6 +141,14 @@ export function PlayerInspector({ info, playing, editable, onMove, onClose, focu
           Coordinates in metres from the centre spot: x along the pitch ({fmtMetres(52.5, 1)} to each goal line), y across it
           (positive is towards the top touchline).
         </p>
+      ) : !playing && known ? (
+        <details className="model-note">
+          <summary>Pitch coordinates</summary>
+          <p className="small muted tabular" data-testid="player-coords">
+            x {info.x!.toFixed(1)} m, y {info.y!.toFixed(1)} m from the centre spot (x along the pitch, y towards the top
+            touchline). Zones: thirds of the pitch; channels split at the six-yard box and the penalty area.
+          </p>
+        </details>
       ) : null}
     </section>
   );

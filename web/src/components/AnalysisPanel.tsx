@@ -38,7 +38,7 @@ export const AnalysisPanel = memo(function AnalysisPanel({
   if (playing) {
     return (
       <section className="card" aria-labelledby="an-title">
-        <h2 id="an-title" className="h-card">
+        <h2 id="an-title" className="h-card" tabIndex={-1}>
           Frame analysis
         </h2>
         <p className="muted">
@@ -51,7 +51,7 @@ export const AnalysisPanel = memo(function AnalysisPanel({
   if (status === "error" && error) {
     return (
       <section className="card" aria-labelledby="an-title">
-        <h2 id="an-title" className="h-card">
+        <h2 id="an-title" className="h-card" tabIndex={-1}>
           Frame analysis
         </h2>
         <StatusBlock kind="error" title="Analysis failed" error={error} subject="this frame" onRetry={onRetry} compact />
@@ -61,7 +61,7 @@ export const AnalysisPanel = memo(function AnalysisPanel({
   if (!analysis) {
     return (
       <section className="card" aria-labelledby="an-title" aria-busy="true">
-        <h2 id="an-title" className="h-card">
+        <h2 id="an-title" className="h-card" tabIndex={-1}>
           Frame analysis
         </h2>
         <StatusBlock kind="loading" title="Computing frame analysis" compact />
@@ -74,7 +74,7 @@ export const AnalysisPanel = memo(function AnalysisPanel({
   return (
     <section className="card" aria-labelledby="an-title" aria-busy={status === "loading"} data-testid="analysis-panel" data-frame={a.frame}>
       <div className="card-head">
-        <h2 id="an-title" className="h-card">
+        <h2 id="an-title" className="h-card" tabIndex={-1}>
           Frame analysis
         </h2>
         <span className="muted small tabular">
@@ -169,6 +169,13 @@ export const AnalysisPanel = memo(function AnalysisPanel({
           {a.players.filter((q) => q.position_provenance === "estimated" && q.x !== null).length} players are off camera at
           this frame; their positions are provider extrapolations, so model outputs that use them inherit that
           uncertainty.
+        </p>
+      ) : null}
+
+      {a.ball_provenance === "estimated" && a.ball_x !== null ? (
+        <p className="small muted" data-testid="ball-estimated-note">
+          <ProvBadge prov="estimated">est. ball</ProvBadge> The ball is not detected at this frame: its position is a
+          provider extrapolation, so every estimate that starts from the ball inherits that uncertainty.
         </p>
       ) : null}
 

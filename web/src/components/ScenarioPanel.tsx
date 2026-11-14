@@ -1,4 +1,3 @@
-import { useId } from "react";
 import type {
   FeasibilityOut,
   InterventionIn,
@@ -77,6 +76,19 @@ function fmtSummaryDelta(o: SummaryDict, h: SummaryDict, key: string, kind: stri
   return d === 0 ? "±0" : `${d > 0 ? "+" : "−"}${Math.abs(d)}`;
 }
 
+/** True when every moved player belongs to the defending team (known attacking team only). */
+function onlyDefendersMoved(
+  moves: InterventionIn[],
+  players: Map<string, PlayerOut>,
+  attacking: string | null,
+): boolean {
+  if (!attacking || moves.length === 0) return false;
+  return moves.every((m) => {
+    const t = players.get(m.player_id)?.team;
+    return t !== undefined && t !== attacking;
+  });
+}
+
 function FeasibilityLine({ f, players }: { f: FeasibilityOut; players: Map<string, PlayerOut> }) {
   return (
     <li className={f.supported ? "feas feas--ok" : "feas feas--bad"}>
@@ -111,7 +123,7 @@ function PolicyPicker({
   info: PolicyInfo | null;
   onPolicy: (p: ResponsePolicy) => void;
 }) {
-  const id = useId();
+  const id = "policy-select";
   const options = policies.some((q) => q.name === policy)
     ? policies
     : [...policies, { name: policy, description: "", assumptions: [], validated: false, validation_ref: null }];
@@ -248,8 +260,15 @@ export function ScenarioPanel(p: Props) {
             </li>
           ))}
           {fresh && scenario && p.policy !== STATIC_POLICY && simulated.length === 0 ? (
-            <li className="small muted" data-testid="no-simulated-moves">
+            <li className="small muted moves-note" data-testid="no-simulated-moves">
               The {policyLabel(p.policy)} response moved no defender for this edit.
+              {onlyDefendersMoved(p.interventions, players, scenario.observed.attacking_team) ? (
+                <span data-testid="response-hint">
+                  {" "}
+                  You moved only defenders; the response models react to a moved attacker or ball carrier (see the
+                  description above). Move an attacker to see one respond.
+                </span>
+              ) : null}
             </li>
           ) : null}
         </ul>
@@ -356,7 +375,7 @@ export function ScenarioPanel(p: Props) {
           )}
 
           <section className="evidence" aria-labelledby="ev-title" data-testid="evidence">
-            <h3 id="ev-title" className="h-sub">
+            <h3 id="ev-title" className="h-sub" tabIndex={-1}>
               Evidence &amp; assumptions
             </h3>
             <ul className="feas-list">

@@ -183,7 +183,7 @@ export const SimilarPanel = memo(function SimilarPanel({ matchId, frame, provide
   return (
     <section className="card card--similar" aria-labelledby="similar-title" data-testid="similar-panel" data-status={res?.status ?? "idle"}>
       <div className="card-head">
-        <h2 id="similar-title" className="h-card">
+        <h2 id="similar-title" className="h-card" tabIndex={-1}>
           Similar moments
         </h2>
         {res?.status === "success" && isUnvalidated(res.data) ? (

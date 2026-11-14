@@ -35,6 +35,44 @@ describe("parseReplay players_detected (synthetic)", () => {
   });
 });
 
+// SYNTHETIC ball mask for the 3-frame fixture (ball_xy: f0 and f1 present, f2 null):
+// f0 detected, f1 extrapolated, f2 flagged false but not drawn (null position).
+const BALL_DETECTED = [true, false, false];
+
+describe("parseReplay ball_detected (synthetic)", () => {
+  it("keeps the current behaviour when the field is absent or null", () => {
+    for (const r of [parseReplay(syntheticReplay()), parseReplay(syntheticReplay({ ball_detected: null }))]) {
+      expect(r.ballDetected).toBeNull();
+      expect(r.nBallEstimated).toBe(0);
+      const v = { x: 0, y: 0 };
+      expect(sampleTrack(r.ball, 1, r.nFrames, 1, 0, v, r.period, r.ballDetected)).toBe(OBSERVED);
+    }
+  });
+
+  it("becomes a per-frame Uint8Array and counts drawn extrapolated balls only", () => {
+    const r = parseReplay(syntheticReplay({ ball_detected: BALL_DETECTED }));
+    expect(Array.from(r.ballDetected!)).toEqual([1, 0, 0]);
+    expect(r.nBallEstimated).toBe(1); // f2 is null, so it is not drawn and not counted
+  });
+
+  it("marks the ball estimated on extrapolated frames and when blended with one", () => {
+    const r = parseReplay(syntheticReplay({ ball_detected: BALL_DETECTED }));
+    const at = (t: number) => sampleTrack(r.ball, 1, r.nFrames, t, 0, { x: 0, y: 0 }, r.period, r.ballDetected);
+    expect(at(0)).toBe(OBSERVED);
+    expect(at(1)).toBe(ESTIMATED);
+    expect(at(0.5)).toBe(ESTIMATED);
+    expect(at(2)).toBe(NOT_DRAWN);
+  });
+
+  it("rejects a mask with the wrong length or non-boolean values", () => {
+    expect(() => parseReplay(syntheticReplay({ ball_detected: [true, false] }))).toThrow(/ball_detected has 2 values, expected 3/);
+    expect(() => parseReplay(syntheticReplay({ ball_detected: [1, 0, 1] as unknown as boolean[] }))).toThrow(
+      /ball_detected contains a non-boolean/,
+    );
+    expect(() => parseReplay(syntheticReplay({ ball_detected: "yes" as unknown as boolean[] }))).toThrow(ContractError);
+  });
+});
+
 describe("sampleTrack provenance", () => {
   const r = parseReplay(syntheticReplay({ players_detected: DETECTED }));
   const at = (t: number, k: number) => sampleTrack(r.xy, r.nPlayers, r.nFrames, t, k, { x: 0, y: 0 }, r.period, r.detected);
