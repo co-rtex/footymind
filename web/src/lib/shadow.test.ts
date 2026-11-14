@@ -99,6 +99,15 @@ describe("shadow ring wording follows the API's alt_radius_m", () => {
     expect(shadowCaveat(4)).toContain("nearby positions on a 4 m ring around the defender");
     expect(shadowCaveat(null)).toContain("nearby positions on a ring around the defender");
     expect(shadowCaveat(null)).not.toMatch(/\d m ring/);
+    // SYNTHETIC status text: once served, the provider's own status replaces the two-provider summary
+    const served = { status: "experimental: synthetic status. Not a defender rating.", validation_claim: "C99" };
+    expect(shadowCaveat(4, served)).toContain("Validation for this match's provider (claims ledger C99): experimental: synthetic status");
+    expect(shadowCaveat(4, served)).not.toContain("SkillCorner");
+    // no second reference when the status already cites its claim
+    expect(shadowCaveat(4, { status: "experimental: synthetic (C99).", validation_claim: "C99" })).toContain(
+      "Validation for this match's provider: experimental: synthetic (C99).",
+    );
+    expect(shadowCaveat(4, { status: "  " })).toContain("on SkillCorner broadcast data");
   });
 });
 

@@ -41,7 +41,7 @@ export function ShadowPanel({ playing, status, shadow, unavailable, error, onRet
         <ProvBadge prov="estimated">experimental estimate</ProvBadge>
       </div>
       <p className="small shadow-caveat" data-testid="shadow-caveat">
-        {shadowCaveat(shadow?.alt_radius_m)}
+        {shadowCaveat(shadow?.alt_radius_m, shadow)}
       </p>
 
       {playing ? (

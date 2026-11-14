@@ -13,8 +13,21 @@ export function ringText(altRadiusM: number | null | undefined): string {
   return typeof altRadiusM === "number" && Number.isFinite(altRadiusM) && altRadiusM > 0 ? `a ${altRadiusM} m ring` : "a ring";
 }
 
-/** The panel's caveat, with the ring radius the API sent (DefensiveShadowOut.alt_radius_m) once it has arrived. */
-export function shadowCaveat(altRadiusM: number | null | undefined): string {
+/**
+ * The panel's caveat, with the ring radius the API sent (DefensiveShadowOut.alt_radius_m) once it has arrived.
+ * Once the API has answered for a frame, the validation sentence is the API's own status for that match's
+ * provider (DefensiveShadowOut.status, with its ledger claim); before that, the summary for both providers.
+ */
+export function shadowCaveat(
+  altRadiusM: number | null | undefined,
+  served?: { status?: string | null; validation_claim?: string | null } | null,
+): string {
+  const status = served?.status?.trim();
+  if (status) {
+    const id = served?.validation_claim;
+    const claim = id && !status.includes(id) ? ` (claims ledger ${id})` : "";
+    return `Experimental model-based sensitivity: how much passing value (option model) this position removes compared with nearby positions on ${ringText(altRadiusM)} around the defender (not checked for reachability). Validation for this match's provider${claim}: ${status}`;
+  }
   return `Experimental model-based sensitivity: how much passing value (option model) this position removes compared with nearby positions on ${ringText(altRadiusM)} around the defender (not checked for reachability). Validated only partly: on Metrica data it ranks the eventual interceptor first about 2× more often than chance, but not better than simply 'nearest defender to the ball'; on SkillCorner broadcast data it does no better than chance. Not a defender rating.`;
 }
 

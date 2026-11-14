@@ -139,6 +139,9 @@ test("defensive shadow layer ranks the suppressive defender at the featured fram
   const panel = page.getByTestId("shadow-panel");
   await expect(panel).toHaveAttribute("data-frame", "53708", { timeout: 30_000 });
   await expect(page.getByTestId("shadow-caveat")).toContainText("Not a defender rating.");
+  // the served, provider-specific status (Metrica: claim C17), not the two-provider summary
+  await expect(page.getByTestId("shadow-caveat")).toContainText("Validation for this match's provider");
+  await expect(page.getByTestId("shadow-caveat")).toContainText("(C17)");
   const rows = page.getByTestId("shadow-row");
   const first = rows.first();
   await expect(first).toContainText("#9 Home");
