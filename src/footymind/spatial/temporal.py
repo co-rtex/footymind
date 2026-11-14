@@ -66,7 +66,11 @@ def control_duration_s(passer_xy: F, ball_xy: F, fps: float) -> float:
 
     ``passer_xy`` and ``ball_xy`` are (T, 2) histories that END at the decision frame.
     The count stops at the first frame (going back) that is out of reach or unobserved.
+    NaN if the passer or the ball is unobserved at the decision frame itself: time-on-ball
+    is then unknown, not zero.
     """
+    if np.isnan(passer_xy[-1]).any() or np.isnan(ball_xy[-1]).any():
+        return np.nan
     d = np.linalg.norm(ball_xy - passer_xy, axis=1)
     ok = np.isfinite(d) & (d <= CONTROL_RADIUS_M)
     if not ok[-1]:
@@ -183,7 +187,8 @@ def temporal_context(
     out: dict[str, float] = {
         "passer_control_s": control_duration_s(hist_xy[:, passer], hist_ball, td.fps),
     }
-    out["quick_release"] = float(out["passer_control_s"] < QUICK_RELEASE_S)
+    tob = out["passer_control_s"]
+    out["quick_release"] = float(tob < QUICK_RELEASE_S) if np.isfinite(tob) else np.nan
     for lb in lookbacks_s:
         k = round(lb * td.fps)
         if i0 - k < lo:  # not enough same-period history

@@ -3,6 +3,7 @@
 import copy
 
 import numpy as np
+import polars as pl
 import pytest
 
 from footymind.data.store import available_matches, load_match
@@ -36,6 +37,13 @@ def test_control_duration_counts_back_and_stops() -> None:
     ball[-1] = [0.5, 0.0]
     ball[-5] = np.nan  # an unobserved ball breaks the run (lower bound)
     assert control_duration_s(passer, ball, FPS) == pytest.approx(4 / FPS)
+    # unobserved passer or ball at the decision frame: unknown, never a fabricated 0
+    gone = passer.copy()
+    gone[-1] = np.nan
+    assert np.isnan(control_duration_s(gone, ball, FPS))
+    ball_gone = ball.copy()
+    ball_gone[-1] = np.nan
+    assert np.isnan(control_duration_s(passer, ball_gone, FPS))
     long_p, long_b = np.zeros((400, 2)), np.zeros((400, 2))
     assert control_duration_s(long_p, long_b, FPS) == MAX_CONTROL_S
 
@@ -133,5 +141,7 @@ def test_dataset_rows_match_direct_computation() -> None:
         for k, v in direct.items():
             assert r[k] == pytest.approx(v, nan_ok=True), k
     # time on ball is non-negative and bounded; quick_release agrees with it
-    assert (df["passer_control_s"] >= 0).all() and (df["passer_control_s"] <= MAX_CONTROL_S).all()
-    assert ((df["passer_control_s"] < 1.0).cast(int) == df["quick_release"].cast(int)).all()
+    tob = df["passer_control_s"].drop_nans()
+    assert (tob >= 0).all() and (tob <= MAX_CONTROL_S).all()
+    ok = df.filter(pl.col("passer_control_s").is_not_nan())
+    assert ((ok["passer_control_s"] < 1.0).cast(int) == ok["quick_release"].cast(int)).all()
