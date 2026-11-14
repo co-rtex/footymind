@@ -14,8 +14,8 @@ A-League matches (broadcast, 10 fps). In the web lab you can:
 * move a player and see how the model's picture changes under explicit, partly validated
   assumptions about how the defence would respond.
 
-Behind the lab is a research pipeline with pre-registered, leakage-audited, leave-one-match-out
-experiments. Every number quoted here is traced in a [claims ledger](docs/CLAIMS_LEDGER.md) to a
+Behind the lab is a research pipeline of leakage-audited, leave-one-match-out experiments,
+pre-registered from the temporal study (RQ2) onwards. Every number quoted here is traced in a [claims ledger](docs/CLAIMS_LEDGER.md) to a
 committed result.
 
 > **Status: 1.0 release candidate (2026-11-14).** All five pillars run end to end on real data:
@@ -48,8 +48,8 @@ committed result.
   * Frame-rate unit bugs between 25 Hz and 10 fps were found and fixed: the shadow recovery
     window and the event-carrier tolerance. Two short frame-count rules in the pass dataset
     (a 2-frame restart window and a 2-frame minimum duration) remain and are documented.
-* **Two providers, never pooled.** Every experiment is replicated separately on optical and
-  broadcast tracking.
+* **Two providers, never pooled.** Every headline experiment is run separately on optical and
+  broadcast tracking; a few early diagnostics are Metrica-only and say so.
 * **Counterfactuals with stated, tested assumptions.**
   * Opponent-response rules are checked against how real defenders react to unexpected
     attacker movement, with a placebo design.
@@ -62,8 +62,8 @@ committed result.
 | Real tracking ingestion | Metrica Sports sample games 1–3 (CSV and EPTS) and 20 SkillCorner A-League matches (broadcast, off-camera extrapolations labelled as estimates): player and ball positions (25 Hz / 10 Hz) with synchronised events. Checksum-pinned downloads, data-quality gates, versioned bundles | ✅ |
 | Spatial analytics | Pitch control (Spearman 2018 time-to-intercept model), passing-lane geometry and interception heuristic, pressure on the ball carrier | ✅ (uncalibrated estimates, labelled as such) |
 | Possession Multiverse | Relocate players at a real frame → reachability check → recompute options → compare with observed → parameter-sensitivity ensemble → explicit assumptions | ✅ |
-| Calibrated option model | Logistic model over per-option features incl. lead-pass targets, evaluated leave-one-match-out (v2: log loss 0.414, AUC 0.796, ECE 0.019), served as plain-JSON coefficients with bootstrap uncertainty | ✅ |
-| Interactive lab (web) | Guided first-visit tour over three featured real situations, Canvas replay at 60 fps, overlays, keyboard- and drag-based scenario editing, observed/hypothetical/difference views, evidence panel; responsive and axe-checked | ✅ |
+| Calibrated option model | Logistic model over per-option features incl. lead-pass targets, evaluated leave-one-match-out per provider (Metrica: log loss 0.414, AUC 0.796, ECE 0.019; SkillCorner 0.354 / 0.811 / 0.024), served as plain-JSON coefficients with bootstrap uncertainty | ✅ |
+| Interactive lab (web) | Guided first-visit tour over three featured real situations, Canvas replay, overlays, keyboard- and drag-based scenario editing, observed/hypothetical/difference views, evidence panel; responsive and axe-checked | ✅ |
 | Research: does spatial context matter? | Leakage-audited attempted-pass outcome study with event-only, spatial and interaction model families, ablations and sensitivity analyses | ✅ v1 |
 | Ghost Value: Defensive Shadow | Per-defender suppression of passing value against nearby alternative positions | 🧪 experimental (API + UI layer; not better than nearest-defender, at chance on SkillCorner) |
 | Opponent response policies | Defender reactions to a scenario edit (`marker_follows`, `lane_cover`, `press_carrier`, `zonal_shift`, `learned`, `learned_innovation`) limited by a pre-registered kinematic envelope v2, with a static-vs-response comparison in the lab | `learned`: validated forecaster of real play, nearly inert under edits. `learned_innovation`: observational co-movement model (needs attackers' real movement; user edits extrapolate). Rules: 🧪 experimental, each with its observational-check result |
@@ -79,20 +79,22 @@ Metrica (3 matches, optical, 25 Hz) and SkillCorner (20 A-League matches, broadc
 
 * **Before the pass is played** (decision-time: no release direction or speed): adding tracking-derived
   spatial context reduces log loss by **Δ −0.026 [−0.034, −0.018]** on Metrica (AUC 0.65 → 0.72)
-  and by **Δ −0.021 [−0.025, −0.018]** on SkillCorner (15,914 passes; with matches resampled too,
-  and every feature read 0.2 s before the kick: −0.021 [−0.026, −0.017], C35). The gain holds in every
-  held-out match of both providers (3/3 and 20/20).
+  and by **Δ −0.021 [−0.025, −0.018]** on SkillCorner, with every feature read 0.2 s before the
+  kick (15,893 passes; with matches resampled too: [−0.026, −0.017]; C35; the start-frame
+  analysis on 15,914 passes gives the same value, C28). The gain holds in every held-out match
+  of both providers (3/3 and 20/20).
 * **Given the executed kick** (action-conditioned: release direction and speed known):
   Δ −0.071 on Metrica and −0.046 on SkillCorner. This is provider-dependent, because much of it
   is where the ball was actually played relative to teammates, which is partly execution quality.
 * **Defender-only** information (action-conditioned comparison) adds a small but consistent
-  improvement (Δ −0.014 / −0.018; C12, C28).
+  improvement (Δ −0.015 / −0.018; C20, C28).
   Interaction features add nothing on 3 matches and a small, significant amount (−0.004) on 20.
 * **Negative results:** the literature physics model is poorly calibrated (ECE 0.18, C7), and
   fitting its parameters drives them to implausible bounds, so it is structurally
   misspecified. The experimental *Defensive Shadow* metric is robust to tracking noise and
-  finds interceptors at 2× chance on Metrica, but it is **not** better than "nearest defender", and
-  on SkillCorner it is at chance (the 2× signal does not replicate).
+  ranks the interceptor first at 2× chance on Metrica, exactly as often as "nearest defender",
+  and is **worse** than it at top-3; on SkillCorner it is at chance (the 2× signal does not
+  replicate).
 * **The last second matters (session 3, RQ2).** Adding 1 s of movement history (pressure
   building, ball travel, team and defensive-line movement) to decision-time spatial context
   improves held-out prediction on both providers: **Δ −0.014** on Metrica and **Δ −0.009** on
@@ -110,8 +112,8 @@ Metrica (3 matches, optical, 25 Hz) and SkillCorner (20 A-League matches, broadc
 * **Opponent responses.** A learned position model forecasts real defender movement better than
   constant velocity but is inert under edits. Positions barely predict how defenders deviate
   from their own motion (C61). A model of *co-movement* with attackers' unexpected movement
-  beats constant velocity and a placebo on both providers and is served as an observational
-  response (C62). Of the interpretable rules, `marker_follows` and `lane_cover` beat constant
+  beats constant velocity and a placebo on both providers (on rows with complete attacker data,
+  about 63% Metrica / 20% SkillCorner) and is served as an observational response (C62). Of the interpretable rules, `marker_follows` and `lane_cover` beat constant
   velocity and size-matched placebos at forecasting how real defenders react to unexpected
   attacker movement, on both providers. `press_carrier` and `zonal_shift` do not (C70).
 * **Similar moments are informative.** The completion rate among the 50 most similar decisions
@@ -136,7 +138,7 @@ and the [claims ledger](docs/CLAIMS_LEDGER.md).
   labelled *estimated* and drawn hollow, never presented as observed.
 * **Providers are never pooled.** Metrica and SkillCorner differ in frame rate, visibility and
   labels, so each is evaluated separately and has its own option model.
-* **No leakage.** Decision-time features use causal velocities only. Failed-pass end
+* **Leakage controls.** Decision-time features use causal velocities only. Failed-pass end
   locations, which are the *loss location* in Metrica, are excluded.
 * **Counterfactuals are not causal claims.** Scenarios are model-based comparisons with
   feasibility checks, stated assumptions and a parameter ensemble showing whether the

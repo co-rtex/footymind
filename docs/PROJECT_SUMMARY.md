@@ -38,8 +38,8 @@ unknown rather than be filled in.
   kick information hidden in broadcast event frames (a 0.2 s guard frame, calibrated
   empirically), censored unobserved inputs instead of filling them, and fixed frame-rate unit
   bugs between the 25 Hz and 10 fps providers.
-* **Cross-provider replication.** Every experiment is run separately on optical and broadcast
-  tracking, and never pooled.
+* **Cross-provider replication.** Every headline experiment is run separately on optical and
+  broadcast tracking, and providers are never pooled.
 * **Counterfactuals with stated assumptions.** Opponent-response rules are checked against
   real defender movement with a placebo design. The product labels which rules pass that check
   and which do not.
@@ -48,9 +48,10 @@ unknown rather than be filled in.
 
 * **Spatial context improves decision-time pass prediction on two providers:**
   * Metrica, 3 matches: Δ log loss −0.026 [−0.034, −0.018], AUC 0.648 → 0.721 (C20);
-  * SkillCorner, 20 matches, 15,914 passes: −0.021 [−0.025, −0.018], better in 20/20
-    held-out matches (C28);
-  * unchanged when every feature is read 0.2 s before the release (C34, C35).
+  * SkillCorner, 20 matches, every feature read 0.2 s before the release (15,893 passes):
+    −0.021 [−0.025, −0.018], better in 20/20 held-out matches (C35; the same at the event start
+    frame, C28);
+  * Metrica unchanged under the same guard (C34).
 * **The last second of movement adds a further gain:** −0.014 (Metrica) and −0.009
   (SkillCorner, 20/20 matches) at the guard frame (C33, C35).
 * **Similar-moment retrieval is validated held-out:** −0.057 and −0.051 log loss over the base
@@ -119,6 +120,7 @@ the nearest defender on Metrica and at chance on broadcast data.
   spatial context improves decision-time pass-outcome prediction on both optical and broadcast
   tracking (Δ log loss −0.026 and −0.021; better in 20/20 held-out broadcast matches). Also
   found and corrected kick information hidden in broadcast event frames.
-* Ran pre-registered experiments with independent methodology reviews, and published negative
-  results (miscalibrated physics probabilities, a defender metric no better than a nearest-
-  defender baseline) alongside positive ones in a claims ledger tied to committed results.
+* Ran leakage-audited experiments (pre-registered from the temporal study on) with independent
+  methodology reviews, and published negative results (miscalibrated physics probabilities, a
+  defender metric no better than a nearest-defender baseline) alongside positive ones in a
+  claims ledger tied to committed results.

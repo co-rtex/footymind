@@ -598,3 +598,25 @@ def test_f_rounding_never_emits_non_finite() -> None:
     assert _json_safe({"a": [float("nan"), 1.0, {"b": float("-inf")}]}) == {
         "a": ["nan", 1.0, {"b": "-inf"}]
     }
+
+
+def test_response_models_labelled_for_another_provider_are_not_used(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """C69 for the response models (data-free): a packaged file labelled for Metrica, mapped to
+    SkillCorner by mistake, is treated as absent instead of being served."""
+    from footymind.counterfactual import response_innovation, response_model
+
+    for mod, resources_name, load in (
+        (response_model, "PROVIDER_RESOURCES", response_model.load_response_model),
+        (response_innovation, "INNOVATION_RESOURCES", response_innovation.load_innovation_model),
+    ):
+        res = dict(getattr(mod, resources_name))
+        res["skillcorner"] = res["metrica"]  # a Metrica-labelled file under the SkillCorner key
+        monkeypatch.setattr(mod, resources_name, res)
+        monkeypatch.setattr(mod, "_CACHE", {})
+        with pytest.warns(UserWarning, match="labelled for provider 'metrica'"):
+            assert load("skillcorner") is None
+        monkeypatch.setattr(mod, "_CACHE", {})
+        m = load("metrica")
+        assert m is not None and m.meta["provider"] == "metrica"

@@ -28,6 +28,7 @@ for responses to interventions.
 from __future__ import annotations
 
 import json
+import warnings
 from dataclasses import dataclass
 from importlib import resources
 from typing import Any
@@ -203,7 +204,7 @@ class ResponseModel:
         )
 
 
-_CACHE: dict[str, ResponseModel | None] = {}
+_CACHE: dict[tuple[str, str], ResponseModel | None] = {}
 
 
 def load_response_model(provider: str) -> ResponseModel | None:
@@ -211,10 +212,20 @@ def load_response_model(provider: str) -> ResponseModel | None:
     resource = PROVIDER_RESOURCES.get(provider)
     if resource is None:
         return None
-    if resource not in _CACHE:
+    key = (resource, provider)  # checked per provider, so one file never serves two
+    if key not in _CACHE:
         try:
             text = resources.files("footymind.counterfactual").joinpath(resource).read_text()
-            _CACHE[resource] = ResponseModel.from_json(text)
+            model: ResponseModel | None = ResponseModel.from_json(text)
         except FileNotFoundError:
-            _CACHE[resource] = None
-    return _CACHE[resource]
+            model = None
+        label = model.meta.get("provider") if model is not None else None
+        if model is not None and label != provider:
+            # never serve one provider's model on another provider's data (C69)
+            warnings.warn(
+                f"{resource} is labelled for provider {label!r}, not {provider!r}; not used",
+                stacklevel=2,
+            )
+            model = None
+        _CACHE[key] = model
+    return _CACHE[key]

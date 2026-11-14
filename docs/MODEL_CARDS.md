@@ -13,13 +13,13 @@ families `A/B/C`, `Adt/Bdt`, and the temporal variants) are documented in
 |---|---|
 | Files | `src/footymind/spatial/option_model_v2.json` (Metrica), `option_model_v2_skillcorner.json` (SkillCorner). Plain-JSON logistic coefficients plus 32 possession-clustered bootstrap members; no pickles |
 | Output | For each teammate of the ball carrier, an estimated probability that a pass to them would be completed. Provenance: **estimated** |
-| Inputs | Decision-frame positions and causal velocities. For each target: distance, angle, forward progress, pitch control at the target and at a lead point, lane clearance and margin, the nearest marker, target speed along the pass. No event end locations, receivers or outcomes |
+| Inputs | 21 features (the same list for both providers) from decision-frame positions and causal velocities: ball location and distance to goal; for each target its location, distance, forward progress, direction cosine, pitch control at the target and at a lead point, lane clearance, margin and defenders near the lane, the nearest marker (also at the lead point) and target speed along the pass; pressure on the carrier (nearest defender, defenders within 5 and 10 m). No event end locations, receivers or outcomes |
 | Training data | Attempted passes (rules v2). Metrica: 3 matches. SkillCorner: 20 matches, trained only on SkillCorner |
 | Held-out performance (LOMO) | At the event start frame: Metrica log loss 0.414, AUC 0.796, ECE 0.019 (C21); SkillCorner 0.354 / 0.811 / 0.024 (C24). With every input read 0.2 s earlier (ADR-0007 guard): Metrica 0.419 / 0.790 / 0.028, SkillCorner 0.354 / 0.810 / 0.021 (C71) |
 | Uncertainty | Bootstrap members drive scenario sign agreement (how many members agree on the direction of a change) |
 | Intended use | Comparing passing options within a frame, and comparing observed vs edited frames in the Multiverse |
 | Not for | Valuing players. Predicting outcomes of passes that were never attempted (estimates for options nobody chose are extrapolations). Using one provider's model on another provider's data (the API refuses to) |
-| Known limits | Few Metrica matches. Broadcast extrapolated positions enter as estimates. Labels depend on per-provider event mapping |
+| Known limits | The target of every attempted pass is inferred from the release direction (on Metrica it matches the annotated receiver in 0.762 of completed passes under the current rules, C20); options nobody chose are extrapolations. Few Metrica matches. Broadcast extrapolated positions enter as estimates. Labels depend on per-provider event mapping |
 
 ## 2. Physics geometry (pitch control and lanes)
 
@@ -39,7 +39,7 @@ families `A/B/C`, `Adt/Bdt`, and the temporal variants) are documented in
 | `press_carrier` | the nearest defender closes on a moved carrier | not supported: does not beat constant velocity under envelope v2 (C64, C70) | experimental |
 | `zonal_shift` | the block shifts with the ball | not supported: overshoots real movement, β 0.25 / 0.13 (C64, C70) | experimental, illustration only |
 | `learned` | ridge forecast of short-horizon defender displacement | beats constant velocity at forecasting real play (C40, C42); nearly inert under edits (C44, C61) | validated **as a forecaster only** |
-| `learned_innovation` | ridge model of defenders' deviation from their own motion given attackers' unexpected movement | beats constant velocity and a permuted placebo on both providers (C62); moves defenders about 1.3–1.5 m under a 5 m edit (C63) | validated (observational association, not causal) |
+| `learned_innovation` | ridge model of defenders' deviation from their own motion given attackers' unexpected movement | beats constant velocity and a permuted placebo on both providers (C62; evaluated on rows with complete attacker data, about 63% Metrica / 20% SkillCorner); moves defenders about 1.3–1.5 m under a 5 m edit (C63); fitted on real unexpected movement (99% below 2.29 / 2.48 m in 1 s, served as `fitted_range`), so larger edits extrapolate | validated (observational association, not causal) |
 
 All moves are limited by the kinematic envelope v2 (direction-dependent acceleration,
 9 m/s top speed, lag and noise margins; C55–C58) and labelled **simulated**. No policy has been validated as a response to an intervention that

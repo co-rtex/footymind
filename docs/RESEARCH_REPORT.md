@@ -10,13 +10,14 @@ tables, superseded analyses and review responses, is [`RESEARCH.md`](RESEARCH.md
 Event data records what happened to the ball: passes, shots, tackles. It does not record
 the space, pressure and passing options that shaped each decision. FootyMind is an
 open-source lab that reconstructs that "invisible game" from player-tracking data from two
-providers. It studies how much it adds to the analysis of decisions, using pre-registered,
-leakage-audited, leave-one-match-out experiments. Without any information from the executed
+providers. It studies how much it adds to the analysis of decisions, using leakage-audited,
+leave-one-match-out experiments (pre-registered from RQ2 onwards; RQ1's decision-time split
+was added after an independent review). Without any information from the executed
 kick, tracking-derived spatial context improves held-out prediction of attempted-pass
 outcomes over event-only context on both optical tracking (Metrica, 3 matches:
 Δ log loss −0.026 [−0.034, −0.018]) and broadcast tracking (SkillCorner, 20 A-League
-matches: −0.021 [−0.025, −0.018], better in 20/20 held-out matches). The gain survives
-reading every feature 0.2 s before the release. The last second of movement adds a further,
+matches: −0.021 [−0.025, −0.018] with every feature read 0.2 s before the release, better in
+20/20 held-out matches). The gain is the same at the event start frame. The last second of movement adds a further,
 smaller gain on both providers (−0.014 and −0.009). Several more ambitious ideas did not
 survive evaluation, and they are reported as negative results:
 * a literature physics model of pitch control is structurally miscalibrated;
@@ -115,7 +116,8 @@ so it is never used as a label.
 * *Temporal* (RQ2): time-on-ball from tracking (censored when an unobserved ball interrupts it)
   and 1 s movement history (change in nearest-defender distance, ball travel, forward movement
   of the passer and both team centroids, change in defensive shape and in open lanes).
-* *Action-conditioned* (`A`, `B`, `C`): the release direction and speed over at most 0.12 s,
+* *Action-conditioned* (`A`, `B`, `C`): the release direction and speed over at most 3 frames
+  (0.12 s at 25 Hz) or 2 frames (0.2 s at 10 fps),
   truncated before the outcome frame. These answer a different question ("given the kick")
   and are reported separately.
 
@@ -164,8 +166,8 @@ The session-3 reviews prompted the guard frame itself.
 
 | | Metrica (3 matches) | SkillCorner (20 matches) |
 |---|---|---|
-| decision-time, event-only → + spatial | **−0.026** [−0.034, −0.018], AUC 0.648 → 0.721, 3/3 matches (C20) | **−0.021** [−0.025, −0.018], 20/20 matches (C28) |
-| same, every feature 0.2 s before release | −0.026 [−0.034, −0.018] (C34) | −0.021 [−0.025, −0.018] (C35) |
+| decision-time, event-only → + spatial (event start frame) | **−0.026** [−0.034, −0.018], AUC 0.648 → 0.721, 3/3 matches (C20) | **−0.021** [−0.025, −0.018], 20/20 matches (C28) |
+| same, every feature 0.2 s before release (primary for SkillCorner, ADR-0007) | −0.026 [−0.034, −0.018] (C34) | **−0.021** [−0.025, −0.018], 20/20, match-level [−0.026, −0.017] (C35) |
 | action-conditioned (kick known) | −0.071 (C20) | −0.046 (C28) |
 | interaction features beyond spatial | none (C12) | −0.004 (C28) |
 
@@ -194,7 +196,7 @@ plus time-on-ball (H-T2), at the guard frame:
 | time-on-ball over the event baseline (H-T1) | −0.002 [−0.005, +0.001] (C34) | −0.002 [−0.003, −0.001] (C35) |
 
 The movement gain is mainly in discrimination (AUC rises), not calibration. At the guard frame
-it holds with a gradient-boosting model (Metrica −0.013). At the release frame it also holds
+it holds with a gradient-boosting model (Metrica −0.0126). At the release frame it also holds
 with header/cross annotations added to both sides (−0.013). On Metrica it shrinks when read 0.4 s before the release,
 consistent with information ageing. On SkillCorner, the guard removes about half of the
 release-frame time-on-ball gain and about a fifth of the movement gain, but none of the
@@ -226,7 +228,8 @@ product shows this validated estimate, separately from the short list of example
 * Four interpretable rules were tested observationally (C37; under envelope v2, C64; paired against size-matched placebos, C70), by treating the attackers'
   *unexpected* real movement (beyond their own constant velocity) as the intervention:
   * `marker_follows` and `lane_cover` reduce forecast error on both providers. The fitted size
-    slope is about 1, and the gain is several times larger than a permuted placebo's.
+    slope β is 0.77–1.30 across rules and providers, and the gain is several times larger than
+    a permuted placebo's.
   * `press_carrier` passed only on Metrica under the v1 envelope, and passes nowhere under v2 (C64).
   * `zonal_shift` overshoots: real blocks shift a fraction of its move (β 0.25 / 0.13, C64).
   * A first version of this check concluded that every rule was wrong. That was a

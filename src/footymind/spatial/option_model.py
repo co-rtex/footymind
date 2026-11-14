@@ -5,7 +5,8 @@ features that can be computed for **any** candidate receiver at a frame. This ma
 applicable to unchosen and hypothetical options in the Possession Multiverse.
 
 Training data: attempted passes (``research.pass_dataset``) with the candidate receiver
-inferred from the release direction (78.6% top-1 on completed passes).
+inferred from the release direction (it matches the annotated receiver of 0.762 of completed
+Metrica passes under rules v2, C20; 0.786 under the original rules, C8).
 
 Caveat (selection bias): the model is fit on passes that players *chose* to attempt.
 Applying it to options they did not choose is extrapolation. Options that are rarely
