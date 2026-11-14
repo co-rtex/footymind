@@ -119,8 +119,17 @@ a.btn {
 /* ---------- featured situations ---------- */
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--sp-4);
+}
+@media (max-width: 1180px) {
+  .feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* an odd last card takes the full row rather than leaving a hole */
+  .feature-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
 }
 .feature-card {
   display: flex;
@@ -134,6 +143,9 @@ a.btn {
 }
 .feature-kicker {
   margin-bottom: 0;
+}
+.feature-kicker .tabular {
+  white-space: nowrap;
 }
 .feature-title {
   font-size: var(--fs-lg);
@@ -180,6 +192,35 @@ a.btn {
 .fact-sub {
   display: block;
   margin-top: 2px;
+}
+/* static defenders vs a defender response, for the pass that was played */
+.fact-compare {
+  border-collapse: collapse;
+  margin-top: 2px;
+}
+.fact-compare th,
+.fact-compare td {
+  padding: 2px 0;
+  vertical-align: baseline;
+  text-align: left;
+}
+.fact-compare th {
+  font-weight: 500;
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  padding-right: var(--sp-4);
+}
+.fact-compare td + td {
+  padding-left: var(--sp-3);
+}
+.fact-compare-value {
+  font-size: var(--fs-lg);
+  font-weight: 650;
+  white-space: nowrap;
+}
+.fact-verdict {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-sm);
 }
 .feature-actions {
   margin-top: auto;

@@ -67,15 +67,16 @@ export interface RouteMove {
 
 export type Route =
   | { name: "home"; matchId: string | null }
-  | { name: "lab"; possessionId: string; frame?: number; moves?: RouteMove[]; tour?: string }
+  | { name: "lab"; possessionId: string; frame?: number; moves?: RouteMove[]; response?: string; tour?: string }
   /** Stable deep link: (match, frame) resolved to its possession by the API. */
-  | { name: "at"; matchId: string; frame: number; moves?: RouteMove[]; tour?: string };
+  | { name: "at"; matchId: string; frame: number; moves?: RouteMove[]; response?: string; tour?: string };
 
 /**
  * Hash routes:
  *   #/match/<matchId>
- *   #/lab/<possessionId>[?f=<frame>][&move=<player_id>,<x>,<y>]...[&tour=<featured id>]
- *   #/at/<matchId>?f=<frame>[&move=...][&tour=<featured id>]
+ *   #/lab/<possessionId>[?f=<frame>][&move=<player_id>,<x>,<y>]...[&response=<policy>][&tour=<featured id>]
+ *   #/at/<matchId>?f=<frame>[&move=...][&response=<policy>][&tour=<featured id>]
+ * `response` preselects a defender response policy for the moves; the backend still validates it.
  * Invalid optional parameters are ignored, never guessed.
  */
 export function parseRoute(hash: string): Route {
@@ -98,6 +99,8 @@ export function parseRoute(hash: string): Route {
       }
     }
     if (moves.length) route.moves = moves.slice(0, 4);
+    const response = params.get("response");
+    if (response && /^[a-z][a-z0-9_]{0,31}$/.test(response)) route.response = response;
     const tour = params.get("tour");
     if (tour && /^[a-z0-9-]{1,32}$/.test(tour)) route.tour = tour;
     return route;
@@ -109,6 +112,7 @@ export function parseRoute(hash: string): Route {
     if (Number.isInteger(f) && f > 0 && lab.name === "lab") {
       const route: Route = { name: "at", matchId: decodeURIComponent(arg), frame: f };
       if (lab.moves) route.moves = lab.moves;
+      if (lab.response) route.response = lab.response;
       if (lab.tour) route.tour = lab.tour;
       return route;
     }
@@ -119,13 +123,15 @@ export function parseRoute(hash: string): Route {
 
 export function routeHash(r: Route): string {
   if (r.name === "at") {
-    const lab = routeHash({ name: "lab", possessionId: r.matchId, frame: r.frame, moves: r.moves, tour: r.tour });
+    const { matchId, frame, moves, response, tour } = r;
+    const lab = routeHash({ name: "lab", possessionId: matchId, frame, moves, response, tour });
     return lab.replace(/^#\/lab\//, "#/at/");
   }
   if (r.name === "lab") {
     const params = new URLSearchParams();
     if (r.frame !== undefined) params.set("f", String(r.frame));
     for (const m of r.moves ?? []) params.append("move", `${m.player_id},${m.x},${m.y}`);
+    if (r.response) params.set("response", r.response);
     if (r.tour) params.set("tour", r.tour);
     const q = params.toString();
     return `#/lab/${encodeURIComponent(r.possessionId)}${q ? `?${q.replace(/%2C/g, ",")}` : ""}`;
