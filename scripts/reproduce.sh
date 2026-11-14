@@ -52,6 +52,7 @@ if [[ " $PROVIDERS " == *" skillcorner "* ]]; then
     run uv run footymind experiment "experiments/configs/$c.json"
   done
   run uv run python -m footymind.research.temporal_strata temporal_skillcorner_v1
+  run uv run python -m footymind.research.temporal_strata temporal_guard_skillcorner_v1_02s --match-level-only
   run uv run python -m footymind.research.shadow_validation skillcorner
   run uv run python -m footymind.research.data_quality_audit
   run uv run python -m footymind.research.run_value_validation skillcorner
