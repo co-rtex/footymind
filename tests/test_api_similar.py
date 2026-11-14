@@ -19,14 +19,16 @@ pytestmark = pytest.mark.skipif(
 def client() -> TestClient:
     from footymind.api.app import app
 
-    rows = build(["metrica-sample-2"]).select(similarity.STORED_COLUMNS)
+    rows = build(["metrica-sample-2"], similarity.similarity_dataset_config()).select(
+        similarity.STORED_COLUMNS
+    )
     similarity._CACHE["metrica"] = similarity.SimilarityIndex.from_rows(rows)
     yield TestClient(app)
     similarity._CACHE.pop("metrica", None)
 
 
 def test_similar_moments_contract(client: TestClient) -> None:
-    q = build(["metrica-sample-1"]).row(30, named=True)
+    q = build(["metrica-sample-1"], similarity.similarity_dataset_config()).row(30, named=True)
     body = client.get(f"/api/matches/metrica-sample-1/frames/{q['frame']}/similar?k=6").json()
     assert body["decision_frame"] == q["frame"] and body["passer_id"] == q["passer_id"]
     assert body["k"] == 6 and len(body["neighbours"]) == 6
@@ -40,7 +42,7 @@ def test_similar_moments_contract(client: TestClient) -> None:
 
 
 def test_decision_row_equals_training_row() -> None:
-    q = build(["metrica-sample-1"]).row(12, named=True)
+    q = build(["metrica-sample-1"], similarity.similarity_dataset_config()).row(12, named=True)
     row = similarity.decision_row("metrica-sample-1", int(q["frame"]))
     assert row is not None and row["event_id"] == q["event_id"]
     for f in similarity.SIMILARITY_FEATURES:

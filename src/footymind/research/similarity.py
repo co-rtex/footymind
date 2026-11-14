@@ -32,6 +32,7 @@ from footymind.research.pass_dataset import (
     TEMPORAL_EVENT_FEATURES,
     TEMPORAL_TRACK_FEATURES,
     TIME_ON_BALL_FEATURES,
+    DatasetConfig,
 )
 
 SIMILARITY_FEATURES = [
@@ -56,6 +57,15 @@ INDEX_COLUMNS = [
 
 # every column stored in an index file, without duplicates
 STORED_COLUMNS = [*INDEX_COLUMNS, *(f for f in SIMILARITY_FEATURES if f not in INDEX_COLUMNS)]
+
+
+# Every similarity path (index, serving and validation) reads the situation 0.2 s BEFORE the
+# release frame: on SkillCorner the start frame often already contains the kick (RQ2 review).
+GUARD_S = 0.2
+
+
+def similarity_dataset_config() -> DatasetConfig:
+    return DatasetConfig(static_offset_s=GUARD_S, temporal_offset_s=GUARD_S)
 
 
 def index_path(provider: str) -> Path:
@@ -99,11 +109,11 @@ class SimilarityIndex:
 
 def build_index(provider: str, match_ids: list[str]) -> Path:
     """Build and save the provider's index from the research dataset rows (rules v2)."""
-    from footymind.research.pass_dataset import DatasetConfig, build
+    from footymind.research.pass_dataset import build
 
     if any(not m.startswith(provider + "-") for m in match_ids):
         raise ValueError("an index must contain a single provider's matches")
-    df = build(match_ids, DatasetConfig())
+    df = build(match_ids, similarity_dataset_config())
     out = index_path(provider)
     out.parent.mkdir(parents=True, exist_ok=True)
     df.select(STORED_COLUMNS).write_parquet(out)
@@ -134,7 +144,6 @@ def decision_row(match_id: str, frame: int) -> dict[str, object] | None:
     """
     from footymind.data.store import load_match
     from footymind.research.pass_dataset import (
-        DatasetConfig,
         _features_for,
         _prev_event_features,
         label_events,
@@ -143,7 +152,7 @@ def decision_row(match_id: str, frame: int) -> dict[str, object] | None:
     b = load_match(match_id)
     td = b.tracking
     window = round(NEXT_DECISION_WINDOW_S * td.fps)
-    cfg = DatasetConfig()
+    cfg = similarity_dataset_config()
     ev = b.events.filter(
         (pl.col("start_frame") >= frame) & (pl.col("start_frame") <= frame + window)
     )

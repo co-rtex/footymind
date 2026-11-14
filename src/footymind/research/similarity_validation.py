@@ -33,8 +33,13 @@ from footymind.research.evaluate import (
     model_specs,
     paired_bootstrap,
 )
-from footymind.research.pass_dataset import DatasetConfig, build
-from footymind.research.similarity import SIMILARITY_FEATURES, SimilarityIndex
+from footymind.research.pass_dataset import build
+from footymind.research.similarity import (
+    GUARD_S,
+    SIMILARITY_FEATURES,
+    SimilarityIndex,
+    similarity_dataset_config,
+)
 
 K = 50
 PRIOR_STRENGTH = 2.0
@@ -72,7 +77,7 @@ def knn_lomo(df: pl.DataFrame, k: int = K) -> tuple[np.ndarray, np.ndarray, np.n
 def main(provider: str = "metrica", seed: int = 0, n_boot: int = 1000) -> dict[str, Any]:
     t0 = time.time()
     mids = [m for m in available_matches() if m.startswith(provider + "-")]
-    df = build(mids, DatasetConfig())
+    df = build(mids, similarity_dataset_config())
     p_knn, p_base, dist = knn_lomo(df)
     spec = model_specs()[LR_REFERENCE]
     oof_lr, _, _ = lomo_predictions(df, {LR_REFERENCE: spec}, seed)
@@ -84,6 +89,7 @@ def main(provider: str = "metrica", seed: int = 0, n_boot: int = 1000) -> dict[s
         "code_revision": git_revision(),
         "matches": mids,
         "k": K,
+        "guard_s": GUARD_S,
         "prior_strength": PRIOR_STRENGTH,
         "features": SIMILARITY_FEATURES,
         "n": int(df.height),
