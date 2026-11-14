@@ -82,7 +82,7 @@ export function App() {
             initialMoves={route.moves}
           />
         ) : matches.status === "error" && !matches.data ? (
-          <StatusBlock kind="error" title="Could not load matches" detail={matches.error.message} onRetry={matches.reload} />
+          <StatusBlock kind="error" title="Could not load matches" error={matches.error} onRetry={matches.reload} />
         ) : !matches.data ? (
           <StatusBlock kind="loading" title="Loading matches" />
         ) : matches.data.length === 0 ? (
@@ -124,7 +124,22 @@ function AtFrame({
     api.framePossession(matchId, frame, signal),
   );
   if (pos.status === "error") {
-    return <StatusBlock kind="error" title="Could not resolve this link" detail={pos.error.message} onRetry={pos.reload} />;
+    return (
+      <div className="lab lab--status">
+        <StatusBlock
+          kind="error"
+          title="Could not open this moment"
+          error={pos.error}
+          subject={`a possession at frame ${frame} of this match`}
+          onRetry={pos.reload}
+          action={
+            <button type="button" className="btn btn--sm" onClick={onBack}>
+              Browse possessions
+            </button>
+          }
+        />
+      </div>
+    );
   }
   if (!pos.data) return <StatusBlock kind="loading" title="Finding the possession" />;
   return (

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { FrameAnalysisOut, PlayerOut } from "../api/types";
 import { fmtMetres, playerLabel, teamLabel } from "../lib/format";
 import { optionModelLabel, PHYSICS_LABEL } from "../lib/models";
@@ -20,7 +21,17 @@ interface Props {
 
 export const PASS_TABLE_ID = "pass-options-table";
 
-export function AnalysisPanel({ playing, status, analysis, error, onRetry, players, highlight, onHighlight, clock }: Props) {
+export const AnalysisPanel = memo(function AnalysisPanel({
+  playing,
+  status,
+  analysis,
+  error,
+  onRetry,
+  players,
+  highlight,
+  onHighlight,
+  clock,
+}: Props) {
   if (playing) {
     return (
       <section className="card" aria-labelledby="an-title">
@@ -40,7 +51,7 @@ export function AnalysisPanel({ playing, status, analysis, error, onRetry, playe
         <h2 id="an-title" className="h-card">
           Frame analysis
         </h2>
-        <StatusBlock kind="error" title="Analysis failed" detail={error.message} onRetry={onRetry} compact />
+        <StatusBlock kind="error" title="Analysis failed" error={error} subject="this frame" onRetry={onRetry} compact />
       </section>
     );
   }
@@ -189,4 +200,4 @@ export function AnalysisPanel({ playing, status, analysis, error, onRetry, playe
       </details>
     </section>
   );
-}
+});

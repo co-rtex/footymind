@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Team } from "../api/types";
 import type { ScenarioView } from "../render/renderer";
 
@@ -17,7 +18,14 @@ const Disc = ({ fill, stroke, dash, opacity = 1 }: { fill: string; stroke?: stri
   </svg>
 );
 
-export function Legend({ attackingTeam, showHeat, scenarioLayer, view, showShadow = false, showEstimated = false }: Props) {
+export const Legend = memo(function Legend({
+  attackingTeam,
+  showHeat,
+  scenarioLayer,
+  view,
+  showShadow = false,
+  showEstimated = false,
+}: Props) {
   const att = attackingTeam === "away" ? "var(--c-away)" : "var(--c-home)";
   const def = attackingTeam === "away" ? "var(--c-home)" : "var(--c-away)";
   return (
@@ -57,7 +65,8 @@ export function Legend({ attackingTeam, showHeat, scenarioLayer, view, showShado
               <Disc fill="var(--c-home)" opacity={0.3} stroke="var(--c-accent)" dash="3.5 2.2" /> Hypothetical (you moved)
             </li>
             <li>
-              <Disc fill="var(--c-home)" opacity={0.3} stroke="var(--c-text)" dash="1 2.2" /> Simulated (rule response)
+              <Disc fill="var(--c-home)" opacity={0.3} stroke="var(--c-text)" dash="1 2.2" /> Simulated (defender
+              response model; arrow labelled &ldquo;sim&rdquo;)
             </li>
             <li>
               <Disc fill="transparent" stroke="var(--c-text-muted)" dash="2.5 2.5" /> Ghost: observed position
@@ -116,4 +125,4 @@ export function Legend({ attackingTeam, showHeat, scenarioLayer, view, showShado
       ) : null}
     </div>
   );
-}
+});

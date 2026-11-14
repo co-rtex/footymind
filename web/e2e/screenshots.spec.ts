@@ -58,7 +58,7 @@ test.describe("desktop", () => {
     const matchId = decodeURIComponent(page.url().split("/lab/")[1] ?? "").split(":")[0] ?? "";
     const a = (await fetchAnalysis(page, matchId, frame)) as Analysis & { attack_sign: number };
     await page.getByRole("radio", { name: "Edit scenario" }).click();
-    await page.getByRole("radio", { name: "Marker follows" }).click();
+    await page.getByTestId("policy-select").selectOption("marker_follows");
     const p = pickAttacker(a);
     const to = { x: p.x! + a.attack_sign * 6, y: p.y! + (p.y! > 0 ? -3 : 3) };
     await dragPlayer(page, { x: p.x!, y: p.y! }, to);

@@ -1,17 +1,21 @@
+import { useId } from "react";
 import type {
   FeasibilityOut,
   InterventionIn,
   PlayerOut,
+  PolicyInfo,
   ResponsePolicy,
   ScenarioResponse,
   SummaryDict,
   ValueModel,
 } from "../api/types";
 import { MAX_INTERVENTIONS } from "../api/types";
-import { fmtMetres, fmtSigned, playerLabel } from "../lib/format";
+import { fmtMetres, fmtSigned, humaniseIds, playerLabel } from "../lib/format";
 import { agreementSentence } from "../lib/agreement";
 import { optionModelLabel, PHYSICS_LABEL, valueModelLabel } from "../lib/models";
+import { isExperimental, policyLabel, STATIC_POLICY } from "../lib/policies";
 import { OptionDeltaTable } from "./OptionDeltaTable";
+import { PolicyComparison } from "./PolicyComparison";
 import { ProvBadge } from "./ProvBadge";
 import { Segmented } from "./Segmented";
 import { StatusBlock } from "./StatusBlock";
@@ -23,6 +27,11 @@ interface Props {
   interventions: InterventionIn[];
   policy: ResponsePolicy;
   onPolicy: (p: ResponsePolicy) => void;
+  /** policies the backend offers (or the fallback list on older backends) */
+  policies: PolicyInfo[];
+  /** the same edit with static defenders, for the sensitivity comparison (only when policy is not static) */
+  staticStatus: "idle" | "loading" | "success" | "error";
+  staticScenario: ScenarioResponse | null;
   valueModel: ValueModel;
   onValueModel: (v: ValueModel) => void;
   status: "idle" | "loading" | "success" | "error";
@@ -91,16 +100,86 @@ function FeasibilityLine({ f, players }: { f: FeasibilityOut; players: Map<strin
   );
 }
 
+function PolicyPicker({
+  policy,
+  policies,
+  info,
+  onPolicy,
+}: {
+  policy: ResponsePolicy;
+  policies: PolicyInfo[];
+  info: PolicyInfo | null;
+  onPolicy: (p: ResponsePolicy) => void;
+}) {
+  const id = useId();
+  const options = policies.some((q) => q.name === policy)
+    ? policies
+    : [...policies, { name: policy, description: "", assumptions: [], validated: false, validation_ref: null }];
+  const experimental = isExperimental(info);
+  return (
+    <div className="policy-picker" data-testid="policy-picker">
+      <div className="policy-picker-row">
+        <label htmlFor={id} className="segmented-label">
+          Defender response
+        </label>
+        <select
+          id={id}
+          className="select"
+          value={policy}
+          onChange={(e) => onPolicy(e.target.value)}
+          data-testid="policy-select"
+          aria-describedby={`${id}-desc`}
+        >
+          {options.map((q) => (
+            <option key={q.name} value={q.name}>
+              {policyLabel(q.name)}
+              {isExperimental(q) ? " (experimental)" : ""}
+            </option>
+          ))}
+        </select>
+        {experimental ? (
+          <span
+            className="badge badge--experimental"
+            data-testid="policy-experimental"
+            title="Not validated against how defenders actually moved in the tracking data"
+          >
+            experimental
+          </span>
+        ) : null}
+      </div>
+      <p id={`${id}-desc`} className="small muted" data-testid="policy-description">
+        {info?.description ||
+          (policy === STATIC_POLICY ? "Only the players you move change position." : "No description available.")}
+        {policy !== STATIC_POLICY ? (
+          experimental ? (
+            <> Not validated against observed defender movement: treat its moves as one possible reaction.</>
+          ) : info?.validation_ref ? (
+            <> Validated: {info.validation_ref}.</>
+          ) : null
+        ) : null}
+      </p>
+    </div>
+  );
+}
+
 export function ScenarioPanel(p: Props) {
   const { scenario, players } = p;
   const top = scenario
     ? [...scenario.option_deltas].sort((a, b) => Math.abs(b.delta ?? 0) - Math.abs(a.delta ?? 0))[0]
     : undefined;
+  // The response's own description wins: it describes the policy that produced these moves.
+  const policyInfo =
+    (scenario?.policy && scenario.policy.name === p.policy ? scenario.policy : null) ??
+    p.policies.find((q) => q.name === p.policy) ??
+    null;
+  // Policy-specific statements only once the result for the current choice has arrived.
+  const fresh = p.status === "success";
+  const simulated = fresh ? (scenario?.movements.filter((m) => m.provenance === "simulated") ?? []) : [];
 
   return (
     <section className="card card--scenario" aria-labelledby="sc-title" data-testid="scenario-panel" data-status={p.status}>
       <div className="card-head">
-        <h2 id="sc-title" className="h-card">
+        <h2 id="sc-title" className="h-card" tabIndex={-1}>
           Possession Multiverse
         </h2>
         <span className="muted small tabular">anchored at {p.frameLabel}</span>
@@ -114,26 +193,14 @@ export function ScenarioPanel(p: Props) {
           </p>
           <p className="small muted">
             Up to {MAX_INTERVENTIONS} players. The model is re-run on the edited frame and compared with the observed one.
-            Keyboard users: select a player and use the move form in the player card.
+            Without a mouse, or on a small screen: choose a player in the <strong>Player</strong> menu above the
+            pitch and type the new position in the player card.
           </p>
           {!p.ready ? <StatusBlock kind="loading" title="Waiting for the observed analysis" compact /> : null}
         </div>
       ) : null}
 
-      <Segmented<ResponsePolicy>
-        label="Opponent response"
-        value={p.policy}
-        onChange={p.onPolicy}
-        testId="policy"
-        options={[
-          { value: "none", label: "No response", title: "Only the players you move change position" },
-          {
-            value: "marker_follows",
-            label: "Marker follows",
-            title: "Rule: when you move an attacker, the nearest defender within 10 m shifts by half the displacement",
-          },
-        ]}
-      />
+      <PolicyPicker policy={p.policy} policies={p.policies} info={policyInfo} onPolicy={p.onPolicy} />
 
       <Segmented<ValueModel>
         label="Compare using"
@@ -170,23 +237,27 @@ export function ScenarioPanel(p: Props) {
               </button>
             </li>
           ))}
-          {scenario?.movements
-            .filter((m) => m.provenance === "simulated")
-            .map((m) => (
-              <li key={`sim-${m.player_id}`}>
-                <ProvBadge prov="simulated" />
-                <span>
-                  {playerLabel(m.player_id, players)} shifted {fmtMetres(Math.hypot(m.to_x - m.from_x, m.to_y - m.from_y))}
-                  <span className="muted"> ({m.reason})</span>
-                </span>
-              </li>
-            ))}
+          {simulated.map((m) => (
+            <li key={`sim-${m.player_id}`} data-testid="simulated-move">
+              <ProvBadge prov="simulated" />
+              <span>
+                {playerLabel(m.player_id, players)} moved {fmtMetres(Math.hypot(m.to_x - m.from_x, m.to_y - m.from_y))} by
+                the {policyLabel(p.policy)} response
+                {m.reason ? <span className="muted"> · {humaniseIds(m.reason, players)}</span> : null}
+              </span>
+            </li>
+          ))}
+          {fresh && scenario && p.policy !== STATIC_POLICY && simulated.length === 0 ? (
+            <li className="small muted" data-testid="no-simulated-moves">
+              The {policyLabel(p.policy)} response moved no defender for this edit.
+            </li>
+          ) : null}
         </ul>
       ) : null}
 
       {p.status === "loading" ? <StatusBlock kind="loading" title="Re-running the model on the edited frame" compact /> : null}
       {p.status === "error" && p.error ? (
-        <StatusBlock kind="error" title="Scenario failed" detail={p.error.message} onRetry={p.onRetry} compact />
+        <StatusBlock kind="error" title="Scenario failed" error={p.error} onRetry={p.onRetry} compact />
       ) : null}
 
       {scenario && p.interventions.length > 0 ? (
@@ -261,6 +332,29 @@ export function ScenarioPanel(p: Props) {
             Agreement is the share of settings in which the change has the same sign.
           </p>
 
+          {!fresh ? null : p.policy !== STATIC_POLICY ? (
+            p.staticScenario && p.staticScenario.value_model === scenario.value_model ? (
+              <PolicyComparison
+                policy={p.policy}
+                staticDeltas={p.staticScenario.option_deltas}
+                policyDeltas={scenario.option_deltas}
+                players={players}
+                nSimulated={simulated.length}
+              />
+            ) : p.staticStatus === "error" ? (
+              <p className="small muted" data-testid="policy-comparison-error">
+                The static comparison could not be computed, so the effect of the defender response is not shown.
+              </p>
+            ) : (
+              <StatusBlock kind="loading" title="Computing the same edit with static defenders" compact />
+            )
+          ) : (
+            <p className="small muted" data-testid="policy-static-hint">
+              Defenders stay where they were tracked. Choose a defender response above to see how much this result depends
+              on that assumption.
+            </p>
+          )}
+
           <section className="evidence" aria-labelledby="ev-title" data-testid="evidence">
             <h3 id="ev-title" className="h-sub">
               Evidence &amp; assumptions
@@ -279,6 +373,18 @@ export function ScenarioPanel(p: Props) {
                 ))}
               </ul>
             </details>
+            {scenario.policy && scenario.policy.name !== STATIC_POLICY && scenario.policy.assumptions.length > 0 ? (
+              <details data-testid="policy-assumptions">
+                <summary>
+                  {policyLabel(scenario.policy.name)} response: assumptions ({scenario.policy.assumptions.length})
+                </summary>
+                <ul className="assumptions">
+                  {scenario.policy.assumptions.map((a, i) => (
+                    <li key={i}>{a}</li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
             <p className="disclaimer">{scenario.disclaimer}</p>
           </section>
         </>

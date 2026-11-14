@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { PlayerOut, ProvenanceLabel } from "../api/types";
 import { INTERVENTION_BOUNDS } from "../api/types";
 import { fmtMetres, teamLabel } from "../lib/format";
@@ -21,10 +21,16 @@ interface Props {
   editable: boolean;
   onMove: (x: number, y: number) => void;
   onClose: () => void;
+  /** incremented when the user picks this player from the Player menu to move them */
+  focusMove?: number;
 }
 
-export function PlayerInspector({ info, playing, editable, onMove, onClose }: Props) {
+export function PlayerInspector({ info, playing, editable, onMove, onClose, focusMove = 0 }: Props) {
   const { player } = info;
+  const xRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (focusMove > 0) xRef.current?.focus();
+  }, [focusMove]);
   const [mx, setMx] = useState("");
   const [my, setMy] = useState("");
   useEffect(() => {
@@ -88,13 +94,30 @@ export function PlayerInspector({ info, playing, editable, onMove, onClose }: Pr
         <form className="move-form" onSubmit={submit} aria-label={`Move ${teamLabel(player.team)} #${player.jersey}`}>
           <label>
             x (m)
-            <input type="number" step="0.5" min={-INTERVENTION_BOUNDS.x} max={INTERVENTION_BOUNDS.x} value={mx} onChange={(e) => setMx(e.target.value)} />
+            <input
+              ref={xRef}
+              type="number"
+              step="0.1"
+              min={-INTERVENTION_BOUNDS.x}
+              max={INTERVENTION_BOUNDS.x}
+              value={mx}
+              onChange={(e) => setMx(e.target.value)}
+              data-testid="move-x"
+            />
           </label>
           <label>
             y (m)
-            <input type="number" step="0.5" min={-INTERVENTION_BOUNDS.y} max={INTERVENTION_BOUNDS.y} value={my} onChange={(e) => setMy(e.target.value)} />
+            <input
+              type="number"
+              step="0.1"
+              min={-INTERVENTION_BOUNDS.y}
+              max={INTERVENTION_BOUNDS.y}
+              value={my}
+              onChange={(e) => setMy(e.target.value)}
+              data-testid="move-y"
+            />
           </label>
-          <button type="submit" className="btn btn--sm">
+          <button type="submit" className="btn btn--sm" data-testid="move-submit">
             Move
           </button>
         </form>

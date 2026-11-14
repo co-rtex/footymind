@@ -9,6 +9,7 @@ import {
   parseMatches,
   parsePossessions,
   parseReplay,
+  parseResponsePolicies,
   parseScenario,
   type ReplayData,
 } from "./parse";
@@ -16,6 +17,7 @@ import type {
   DefensiveShadowOut,
   FrameAnalysisOut,
   MatchSummary,
+  PolicyInfo,
   PossessionSummary,
   ScenarioRequest,
   ScenarioResponse,
@@ -27,13 +29,20 @@ export const API_BASE = "/api";
 export class ApiError extends Error {
   readonly status: number;
   readonly detail: string;
-  constructor(status: number, detail: string) {
+  /** true when the API itself could not be reached (network failure, or a dev-proxy error with no body) */
+  readonly unreachable: boolean;
+  constructor(status: number, detail: string, unreachable = false) {
     super(status ? `HTTP ${status}: ${detail}` : detail);
     this.name = "ApiError";
     this.status = status;
     this.detail = detail;
+    this.unreachable = unreachable;
   }
 }
+
+const UNREACHABLE = "Cannot reach the FootyMind API. Is the backend running?";
+/** Gateway statuses that a proxy (the Vite dev server, a reverse proxy) returns when the API is down. */
+const GATEWAY = new Set([502, 503, 504]);
 
 /** Turn FastAPI's `{detail: string | ValidationError[]}` into readable text. */
 export function formatErrorDetail(body: unknown, fallback: string): string {
@@ -74,9 +83,13 @@ export async function requestJson<T>(
     });
   } catch (e) {
     if (e instanceof DOMException && e.name === "AbortError") throw e;
-    throw new ApiError(0, "Cannot reach the FootyMind API. Is the backend running?");
+    throw new ApiError(0, UNREACHABLE, true);
   }
   const text = await res.text();
+  // A proxy in front of a stopped API answers 5xx with an empty body; FastAPI always sends JSON.
+  if ((GATEWAY.has(res.status) || res.status === 500) && !text.trim()) {
+    throw new ApiError(res.status, UNREACHABLE, true);
+  }
   let body: unknown = null;
   if (text) {
     try {
@@ -133,6 +146,13 @@ export function createApi(fetchImpl: Fetch = (...a) => fetch(...a)) {
         { signal },
         fetchImpl,
       ),
+
+    /**
+     * Defender response policies the backend can simulate. Older backends do not have the
+     * endpoint (404); callers fall back to FALLBACK_POLICIES (src/lib/policies.ts).
+     */
+    responsePolicies: (matchId: string, signal?: AbortSignal): Promise<PolicyInfo[]> =>
+      requestJson(`/response-policies?match_id=${enc(matchId)}`, parseResponsePolicies, { signal }, fetchImpl),
 
     scenario: (req: ScenarioRequest, signal?: AbortSignal): Promise<ScenarioResponse> =>
       requestJson(

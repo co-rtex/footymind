@@ -47,7 +47,7 @@ export function ShadowPanel({ playing, status, shadow, unavailable, error, onRet
       {playing ? (
         <p className="muted small">Pause to compute the defensive shadow for a frame (about 0.4 s per frame).</p>
       ) : status === "error" && error ? (
-        <StatusBlock kind="error" title="Defensive shadow failed" detail={error.message} onRetry={onRetry} compact />
+        <StatusBlock kind="error" title="Defensive shadow failed" error={error} onRetry={onRetry} compact />
       ) : unavailable ? (
         <p className="muted small" data-testid="shadow-unavailable">
           Not available at this frame: {unavailable}.

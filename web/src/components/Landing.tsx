@@ -40,6 +40,18 @@ const FEATURED_BROADCAST = {
   }),
 };
 
+/**
+ * On a phone the possession list starts far below the match cards, so choosing a match would
+ * otherwise change nothing visible. Bring the list's heading into view there (no animation).
+ */
+function revealPossessions(): void {
+  if (typeof window === "undefined" || !window.matchMedia?.("(max-width: 720px)").matches) return;
+  requestAnimationFrame(() => {
+    const el = document.getElementById("poss-title");
+    if (el && el.getBoundingClientRect().top > window.innerHeight * 0.6) el.scrollIntoView({ block: "start" });
+  });
+}
+
 export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Props) {
   return (
     <div className="landing">
@@ -141,7 +153,10 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
                       role="radio"
                       aria-checked={selected}
                       className={`match-card${selected ? " is-selected" : ""}`}
-                      onClick={() => onSelectMatch(m.match_id)}
+                      onClick={() => {
+                        onSelectMatch(m.match_id);
+                        revealPossessions();
+                      }}
                       title={m.source.name}
                       aria-label={`${m.source.name}, ${m.fps} Hz, ${m.n_possessions} possessions`}
                     >
@@ -212,7 +227,7 @@ function PossessionList({ match, onOpen }: { match: MatchSummary; onOpen: (pid: 
       </div>
 
       {poss.status === "error" ? (
-        <StatusBlock kind="error" title="Could not load possessions" detail={poss.error.message} onRetry={poss.reload} />
+        <StatusBlock kind="error" title="Could not load possessions" error={poss.error} subject="the possessions of this match" onRetry={poss.reload} />
       ) : !poss.data ? (
         <StatusBlock kind="loading" title="Loading possessions" />
       ) : rows.length === 0 ? (

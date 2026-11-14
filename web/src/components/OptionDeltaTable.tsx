@@ -55,7 +55,11 @@ export function OptionDeltaTable({ deltas, players, ensembleSize, highlight, onH
             <th scope="col" className="num">
               Δ
             </th>
-            <th scope="col" title="10th to 90th percentile over the parameter ensemble. Grey: observed. Violet: hypothetical.">
+            <th
+              scope="col"
+              className="col-range"
+              title="10th to 90th percentile over the parameter ensemble. Grey: observed. Violet: hypothetical."
+            >
               10–90% range
             </th>
             <th scope="col" title="Share of parameter settings whose change has the same sign">
@@ -90,7 +94,7 @@ export function OptionDeltaTable({ deltas, players, ensembleSize, highlight, onH
                 <td className="num">{fmtProb(d.observed_p)}</td>
                 <td className="num">{fmtProb(d.hypothetical_p)}</td>
                 <td className={`num strong ${dcls}`}>{fmtSigned(d.delta)}</td>
-                <td>
+                <td className="col-range">
                   <IntervalBars d={d} />
                 </td>
                 <td>

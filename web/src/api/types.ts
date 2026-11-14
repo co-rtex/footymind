@@ -219,7 +219,24 @@ export interface InterventionIn {
   y: number;
 }
 
-export type ResponsePolicy = "none" | "marker_follows";
+/**
+ * Defender response policies. The backend accepts a fixed set; the lab reads the
+ * available ones from GET /api/response-policies when the endpoint exists, so a
+ * name outside this list is still carried through as a string.
+ */
+export type KnownResponsePolicy = "none" | "marker_follows" | "press_carrier" | "zonal_shift" | "lane_cover" | "learned";
+export type ResponsePolicy = KnownResponsePolicy | (string & {});
+
+/** Mirrors the policy description in ScenarioOut.policy and GET /api/response-policies. */
+export interface PolicyInfo {
+  name: ResponsePolicy;
+  description: string;
+  assumptions: string[];
+  /** false = experimental: the policy has not been validated against observed defender movement */
+  validated: boolean;
+  /** where the validation lives (ledger claim, results file), or null */
+  validation_ref: string | null;
+}
 export type VelocityMode = "keep" | "zero";
 export type ValueModel = "option_model" | "physics";
 
@@ -292,6 +309,8 @@ export interface ScenarioResponse {
   disclaimer: string;
   /** which per-option probability option_deltas use */
   value_model: ValueModel;
+  /** the defender response policy that produced the simulated movements (absent on older backends) */
+  policy?: PolicyInfo | null;
 }
 
 /** One defender's experimental "defensive shadow" (mirrors DefenderShadowOut). */
