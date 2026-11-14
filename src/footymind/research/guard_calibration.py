@@ -52,6 +52,40 @@ def kick_underway_share(match_ids: list[str], offset_s: float) -> tuple[float, i
     return hit / max(tot, 1), tot
 
 
+def guard_ball_fallback(match_ids: list[str], guard_s: float = 0.2) -> dict[str, Any]:
+    """How often the guarded dataset falls back to the start-frame ball (session-4 review).
+
+    ``pass_dataset._features_for`` uses the start-frame ball when the guard-frame ball is
+    unobserved. That is harmless for restarts (the ball is placed at the start frame), and
+    for open play it uses the start-frame ball, which is at the passer's feet in almost all
+    Metrica passes (C38). This counts both cases.
+    """
+    from footymind.research.pass_dataset import DatasetConfig, _prev_event_features, label_events
+
+    n = nan = restart = 0
+    for mid in match_ids:
+        b = load_match(mid)
+        td = b.tracking
+        k = round(guard_s * td.fps)
+        ev = label_events(_prev_event_features(b.events), DatasetConfig())
+        for r in ev.select("start_frame", "last_set_piece_frame").iter_rows():
+            f0, lsp = int(r[0]), r[1]
+            i0 = td.index_of_frame(f0)
+            i = i0 - k
+            if i < 0 or td.period[i] != td.period[i0]:
+                continue
+            n += 1
+            if np.isnan(td.ball_xy[i]).any():
+                nan += 1
+                restart += int(lsp is not None and 0 <= f0 - int(lsp) <= k)
+    return {
+        "pass_rows": n,
+        "ball_unobserved_at_guard": nan,
+        "of_which_restarts": restart,
+        "open_play_fallbacks": nan - restart,
+    }
+
+
 def main() -> dict[str, Any]:
     t0 = time.time()
     out: dict[str, Any] = {"name": "guard_calibration_v1", "code_revision": git_revision()}
@@ -65,7 +99,11 @@ def main() -> dict[str, Any]:
         for off in OFFSETS_S:
             share, n = kick_underway_share(mids, off)
             rows.append({"offset_s": off, "share_ball_moving_away": share, "n": n})
-        providers[prov] = {"n_matches": len(mids), "by_offset": rows}
+        providers[prov] = {
+            "n_matches": len(mids),
+            "by_offset": rows,
+            "guard_ball_fallback": guard_ball_fallback(mids),
+        }
     out["providers"] = providers
     out["runtime_s"] = round(time.time() - t0, 1)
     d = EXPERIMENTS_DIR / "results" / "guard_calibration_v1"
