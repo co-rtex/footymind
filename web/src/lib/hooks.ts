@@ -67,14 +67,15 @@ export interface RouteMove {
 
 export type Route =
   | { name: "home"; matchId: string | null }
-  | { name: "lab"; possessionId: string; frame?: number; moves?: RouteMove[] }
+  | { name: "lab"; possessionId: string; frame?: number; moves?: RouteMove[]; tour?: string }
   /** Stable deep link: (match, frame) resolved to its possession by the API. */
-  | { name: "at"; matchId: string; frame: number; moves?: RouteMove[] };
+  | { name: "at"; matchId: string; frame: number; moves?: RouteMove[]; tour?: string };
 
 /**
  * Hash routes:
  *   #/match/<matchId>
- *   #/lab/<possessionId>[?f=<frame>][&move=<player_id>,<x>,<y>]...
+ *   #/lab/<possessionId>[?f=<frame>][&move=<player_id>,<x>,<y>]...[&tour=<featured id>]
+ *   #/at/<matchId>?f=<frame>[&move=...][&tour=<featured id>]
  * Invalid optional parameters are ignored, never guessed.
  */
 export function parseRoute(hash: string): Route {
@@ -97,6 +98,8 @@ export function parseRoute(hash: string): Route {
       }
     }
     if (moves.length) route.moves = moves.slice(0, 4);
+    const tour = params.get("tour");
+    if (tour && /^[a-z0-9-]{1,32}$/.test(tour)) route.tour = tour;
     return route;
   }
   if (head === "at" && arg) {
@@ -106,6 +109,7 @@ export function parseRoute(hash: string): Route {
     if (Number.isInteger(f) && f > 0 && lab.name === "lab") {
       const route: Route = { name: "at", matchId: decodeURIComponent(arg), frame: f };
       if (lab.moves) route.moves = lab.moves;
+      if (lab.tour) route.tour = lab.tour;
       return route;
     }
   }
@@ -115,13 +119,14 @@ export function parseRoute(hash: string): Route {
 
 export function routeHash(r: Route): string {
   if (r.name === "at") {
-    const lab = routeHash({ name: "lab", possessionId: r.matchId, frame: r.frame, moves: r.moves });
+    const lab = routeHash({ name: "lab", possessionId: r.matchId, frame: r.frame, moves: r.moves, tour: r.tour });
     return lab.replace(/^#\/lab\//, "#/at/");
   }
   if (r.name === "lab") {
     const params = new URLSearchParams();
     if (r.frame !== undefined) params.set("f", String(r.frame));
     for (const m of r.moves ?? []) params.append("move", `${m.player_id},${m.x},${m.y}`);
+    if (r.tour) params.set("tour", r.tour);
     const q = params.toString();
     return `#/lab/${encodeURIComponent(r.possessionId)}${q ? `?${q.replace(/%2C/g, ",")}` : ""}`;
   }

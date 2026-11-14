@@ -56,6 +56,28 @@ Game 1: 381 possessions. Game 2: 366.
 | Label mapping (adapter v2, pipeline 2) | `player_possession` with `end_type = pass`: `successful` → completed (receiver = `player_targeted_id`); `unsuccessful` → failed, recorded as `BALL OUT` when play stopped for a throw-in, corner or goal kick (about 18% of failures), `BALL LOST` with no subtype for a free kick, otherwise `INTERCEPTION`. Offside is skipped (no null outcomes exist). Context: restarts awarded to the team (`game_interruption_before = *_for`) emit `SET PIECE` in the release frame. Possessions starting with a recovery or interception emit `RECOVERY`. Release frame = possession `frame_end`, the last frame the passer controls the ball; the release window is 2 frames at 10 fps. |
 | Caveats | Provider-specific: event definitions, frame rate and visibility differ from Metrica, so results are **evaluated separately and never pooled**. There are no duel events (`CHALLENGE` is never produced), and the restart mapping is approximate. Event positions (`x_end`/`y_end`, attacking-team frame) rotated by the attack sign coincide with the tracked passer in all 20 matches. That independently verifies the x and y conventions. Player names exist in the metadata but are deliberately not stored. |
 
+## Known data-quality limitations (measured; `experiments/results/data_quality_v1`, C30)
+
+* **SkillCorner event start frames often already contain the kick.** The ball is already moving
+  away from the passer at the start frame in 62.7% of passes (Metrica 1.8%). Decision-time
+  research therefore reads a guard frame 0.2 s earlier (ADR-0007, C38).
+* **Broadcast visibility.** 66.6% of on-pitch SkillCorner positions at pass starts are
+  camera-detected (87.4% within 25 m of the ball). Player and ball extrapolations are labelled
+  *estimated* (re-ingest bundles from before `ac0629f` to get the ball mask).
+* **Possession boundaries.**
+  * 17 of 4,872 SkillCorner possessions (33 passes) end in a different tracking period than
+    they start, because event and tracking period boundaries disagree.
+  * 63 SkillCorner possessions last longer than 120 s, because long stoppages are not split.
+    This inflates `time_in_possession_s` for the passes in them.
+  * On Metrica, 426 of 1,222 possessions overlap the next one, by a median of about 0.1 s and
+    at most 6 s. This is the lost pass's arrival frame against the recovery.
+
+  These are documented rather than re-segmented. Re-segmenting would change possession ids and
+  every committed result for well under 1% of passes. It is a candidate for a future pipeline
+  version.
+* A handful of passes have no ball or no passer position at the start frame (4 + 4 on
+  SkillCorner). Their features stay NaN and are never filled.
+
 ## Candidates investigated, not yet integrated
 
 | Source | Notes | Status |

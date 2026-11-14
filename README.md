@@ -67,7 +67,7 @@ Metrica (3 matches, optical, 25 Hz) and SkillCorner (20 A-League matches, broadc
   raises the best progressive option and defensive movement takes about as much back, on
   average. The option model is so non-additive that per-pass credit for a run depends on
   which side is held fixed. A placebo shows this is mostly the model, with a small
-  genuine coupling on SkillCorner (C31, C32).
+  genuine attacker–defender coupling on both providers (C31, C32).
 * **Opponent responses.** A learned short-horizon model forecasts real defender movement better
   than constant velocity (C40–C44) but is nearly inert under hypothetical edits. Of the
   interpretable rules, `marker_follows` and `lane_cover` move defenders the way real defenders

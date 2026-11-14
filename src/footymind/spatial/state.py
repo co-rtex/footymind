@@ -109,7 +109,16 @@ def find_carrier(xy: F, ball: F, teams: list[TeamSide], team: TeamSide | None) -
 
 
 ON_BALL_TYPES = ("PASS", "SHOT", "BALL LOST", "SET PIECE")
-EVENT_CARRIER_TOLERANCE_FRAMES = 3
+# A time, not a frame count (session-4 audit): 3 frames was 0.12 s on Metrica (25 Hz) but
+# 0.3 s on SkillCorner (10 fps), so carriers at the 0.2 s guard frame were found on one
+# provider and not on the other. 0.3 s keeps SkillCorner unchanged (3 frames) and gives
+# Metrica the same window (8 frames). It identifies only *who* is about to play the ball
+# (an on-ball event starting up to 0.3 s later), never what they do with it.
+EVENT_CARRIER_TOLERANCE_S = 0.3
+
+
+def event_carrier_tolerance_frames(fps: float) -> int:
+    return round(EVENT_CARRIER_TOLERANCE_S * fps)
 
 
 def event_carrier(bundle: MatchBundle, frame: int, team: TeamSide) -> int | None:
@@ -121,7 +130,10 @@ def event_carrier(bundle: MatchBundle, frame: int, team: TeamSide) -> int | None
     ev = bundle.events.filter(
         (pl.col("team") == team)
         & pl.col("type").is_in(ON_BALL_TYPES)
-        & ((pl.col("start_frame") - frame).abs() <= EVENT_CARRIER_TOLERANCE_FRAMES)
+        & (
+            (pl.col("start_frame") - frame).abs()
+            <= event_carrier_tolerance_frames(bundle.tracking.fps)
+        )
         & pl.col("from_player_id").is_not_null()
     )
     if ev.height == 0:

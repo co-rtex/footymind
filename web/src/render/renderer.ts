@@ -114,7 +114,7 @@ export class PitchRenderer {
   private raf = 0;
   private heat: { key: unknown; view: ScenarioView; team: Team | null; canvas: HTMLCanvasElement | null } | null = null;
   private drawn: DrawnPlayer[] = [];
-  private ball: Vec2 | null = null;
+  private ball: (Vec2 & { estimated: boolean }) | null = null;
   private tmp: Vec2 = { x: 0, y: 0 };
 
   constructor(canvas: HTMLCanvasElement, theme: CanvasTheme = DEFAULT_THEME) {
@@ -272,7 +272,9 @@ export class PitchRenderer {
         if (p.x === null || p.y === null) continue;
         this.drawn.push({ id: p.player_id, team: p.team, jersey: p.jersey, x: p.x, y: p.y, prov: p.position_provenance });
       }
-      if (hyp.ball_x !== null && hyp.ball_y !== null) this.ball = { x: hyp.ball_x, y: hyp.ball_y };
+      if (hyp.ball_x !== null && hyp.ball_y !== null) {
+        this.ball = { x: hyp.ball_x, y: hyp.ball_y, estimated: hyp.ball_provenance === "estimated" };
+      }
     } else {
       const v = this.tmp;
       for (let k = 0; k < r.nPlayers; k++) {
@@ -289,7 +291,13 @@ export class PitchRenderer {
           prov: kind === ESTIMATED ? "estimated" : "observed",
         });
       }
-      if (sampleXY(r.ball, 1, r.nFrames, s.t, 0, v, r.period)) this.ball = { x: v.x, y: v.y };
+      // The ball is estimated where the provider extrapolated it (replay mask), or when the paused
+      // frame's analysis says so (the analysis is authoritative for its own frame).
+      const kind = sampleTrack(r.ball, 1, r.nFrames, s.t, 0, v, r.period, r.ballDetected);
+      if (kind !== NOT_DRAWN) {
+        const paused = !s.playing && s.analysis && s.analysis.frame === r.frame[Math.round(s.t)] ? s.analysis : null;
+        this.ball = { x: v.x, y: v.y, estimated: kind === ESTIMATED || paused?.ball_provenance === "estimated" };
+      }
     }
 
     if (overrideAllowed) {
@@ -858,13 +866,34 @@ export class PitchRenderer {
     ctx.beginPath();
     ctx.arc(x + 1, y + 1.5, r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = this.theme.ball;
-    ctx.strokeStyle = "#0b0e12";
-    ctx.lineWidth = 1.25;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    if (this.ball.estimated) {
+      // estimated (provider extrapolation): hollow and dashed, like an estimated player, with a tag
+      ctx.fillStyle = rgba(this.theme.ball, 0.12);
+      ctx.strokeStyle = rgba(this.theme.ball, 0.95);
+      ctx.lineWidth = 1.4;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = `600 9px ${fontStack()}`;
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "left";
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "rgba(11, 14, 18, 0.85)";
+      ctx.strokeText("est.", x + r + 3, y - r - 2);
+      ctx.fillStyle = rgba(this.theme.ball, 0.95);
+      ctx.fillText("est.", x + r + 3, y - r - 2);
+    } else {
+      ctx.fillStyle = this.theme.ball;
+      ctx.strokeStyle = "#0b0e12";
+      ctx.lineWidth = 1.25;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
     ctx.restore();
   }
 }

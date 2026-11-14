@@ -538,12 +538,14 @@ Possession-clustered 95% CIs. Claims C31, C32.
   that defenders cancel each run.
 * **H-G2 clears its pre-registered bar, but mostly for a model reason.** A placebo that keeps
   each defender's real displacement size and randomises its direction (v2, guard frame)
-  gives an interaction ratio of 0.51 (Metrica) and 0.53 (SkillCorner), against 0.58 and 0.64
-  for the real movement. Real − placebo: +0.07 [−0.01, +0.16] on Metrica and +0.11 [+0.08,
-  +0.14] on SkillCorner. So most of the interaction is the option model's own
-  non-additivity (max over options, nearest-defender features, the progressive cut-off). On
-  broadcast data a small, significant amount of genuine attacker–defender coupling sits on
-  top. The SkillCorner match-level CI for the real ratio is [0.56, 0.73].
+  gives an interaction ratio of 0.58 (Metrica, n = 349) and 0.53 (SkillCorner), against 0.67
+  and 0.64 for the real movement. Real − placebo: +0.095 [+0.017, +0.181] on Metrica and
+  +0.11 [+0.08, +0.14] on SkillCorner. So most of the interaction is the option model's own
+  non-additivity (max over options, nearest-defender features, the progressive cut-off),
+  with a small, significant amount of genuine attacker–defender coupling on top, on both
+  providers. (The Metrica guard-frame numbers are from rev d9617ff, after the event-carrier
+  tolerance became 0.3 s on both providers. Before that fix the Metrica guard sample lacked
+  carriers: n = 285, real − placebo +0.07 [−0.01, +0.16].) The SkillCorner match-level CI for the real ratio is [0.56, 0.73].
 * **What survives.** Per-pass credit for a run depends on a convention (holding defenders at
   their observed positions, as `run_value` does, or at their earlier ones), because the
   serving model is strongly non-additive under displacements of this size. Averaged over
@@ -879,13 +881,13 @@ least-squares slope of the real residual on the simulated move (1 = right size).
 
 | policy | design | Metrica Δ (β) | SkillCorner Δ (β) |
 |---|---|---|---|
-| marker_follows | innovation | **−0.095** [−0.111, −0.079] (1.03) | **−0.144** [−0.154, −0.133] (1.30) |
-| | placebo | −0.026 [−0.039, −0.012] | −0.060 [−0.070, −0.050] |
-| lane_cover | innovation | **−0.033** [−0.042, −0.022] (1.24) | **−0.031** [−0.038, −0.025] (1.05) |
-| | placebo | −0.011 [−0.021, −0.002] | −0.016 [−0.021, −0.010] |
-| press_carrier | innovation | −0.025 [−0.050, −0.002] (0.99) | +0.007 [−0.009, +0.024] (0.28) |
-| zonal_shift | innovation | +0.081 [+0.058, +0.103] (0.22) | +0.087 [+0.075, +0.100] (0.13) |
-| all four | full (v1 design, at the guard) | +0.03 to +0.65, β 0.04–0.21 | +0.01 to +0.60, β 0.02–0.47 |
+| marker_follows | innovation | **−0.097** [−0.112, −0.083] (1.07) | **−0.144** [−0.154, −0.133] (1.30) |
+| | placebo | −0.023 [−0.035, −0.011] | −0.060 [−0.070, −0.050] |
+| lane_cover | innovation | **−0.032** [−0.042, −0.023] (1.19) | **−0.031** [−0.038, −0.025] (1.05) |
+| | placebo | −0.012 [−0.020, −0.003] | −0.016 [−0.021, −0.010] |
+| press_carrier | innovation | −0.025 [−0.048, −0.000] (0.90) | +0.007 [−0.009, +0.024] (0.28) |
+| zonal_shift | innovation | +0.077 [+0.058, +0.097] (0.26) | +0.087 [+0.075, +0.100] (0.13) |
+| all four | full (v1 design, at the guard) | +0.04 to +0.62, β 0.04–0.19 | +0.01 to +0.60, β 0.02–0.47 |
 
 * **The v1 conclusion ("every rule makes forecasts worse") was a design artefact.** With the
   full real displacement as the intervention, the response double counts motion that is

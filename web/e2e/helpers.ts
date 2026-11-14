@@ -36,9 +36,11 @@ export async function pitchToScreen(page: Page, x: number, y: number): Promise<{
 
 export async function openGoalPossession(page: Page): Promise<void> {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Quantify the invisible game." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The Invisible Game", level: 1 })).toBeVisible();
   const table = page.getByTestId("possession-table");
   await expect(table).toBeVisible();
+  // the list shows its first page; goals end in a shot, so filter to reach one
+  await page.getByLabel("Ends in a shot").check();
   const goalRow = table.locator("tbody tr", { has: page.locator(".badge--goal") }).first();
   await goalRow.getByRole("link").click();
   await expect(page.getByTestId("pitch-canvas")).toBeVisible();

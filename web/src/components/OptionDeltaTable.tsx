@@ -37,6 +37,7 @@ export function OptionDeltaTable({ deltas, players, ensembleSize, highlight, onH
   const rows = [...deltas].sort((a, b) => Math.abs(b.delta ?? 0) - Math.abs(a.delta ?? 0));
   if (rows.length === 0) return <p className="muted small">No pass options to compare at this frame.</p>;
   return (
+    <>
     <div className="table-wrap">
       <table className="table table--dense delta-table" data-testid="option-deltas">
         <caption className="sr-only">
@@ -118,5 +119,19 @@ export function OptionDeltaTable({ deltas, players, ensembleSize, highlight, onH
         </tbody>
       </table>
     </div>
+    <details className="table-help" data-testid="deltas-help">
+      <summary>How to read this table</summary>
+      <dl>
+        <dt>Obs. / Hyp.</dt>
+        <dd>Estimated completion chance of the pass in the observed frame and in your edited frame.</dd>
+        <dt>Δ</dt>
+        <dd>Hypothetical minus observed. Green: the pass becomes more likely to arrive; red: less likely.</dd>
+        <dt>10–90% range</dt>
+        <dd>The spread over the perturbed model settings. Grey: observed; violet: hypothetical. Hidden on narrow screens.</dd>
+        <dt>Agreement</dt>
+        <dd>The share of model settings in which the change has the same sign: robust at 90% or more, mixed from 70%, sensitive below that. A negligible change has no meaningful direction.</dd>
+      </dl>
+    </details>
+    </>
   );
 }

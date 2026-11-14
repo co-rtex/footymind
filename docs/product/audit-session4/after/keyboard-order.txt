@@ -1,0 +1,43 @@
+## landing
+1. a: Skip to content
+2. a: FootyMind home
+3. a: Metrica Sports Sample Game 1
+4. a: tour-link
+5. a: Or browse every match and possession
+6. a: tour-link-press
+7. a: featured-link
+8. a: tour-link-broadcast
+9. a: featured-broadcast-link
+10. a: github.com/metrica-sports/sample-data
+11. button: Metrica Sports Sample Game 1, 25 Hz, 381 possessions
+12. button: Metrica Sports Sample Game 2, 25 Hz, 366 possessions
+13. button: Metrica Sports Sample Game 3, 25 Hz, 475 possessions
+14. a: github.com/SkillCorner/opendata
+
+## lab, guided tour step 1
+1. button: ← Possessions
+2. button: Replay & analyse
+3. button: guide-step-1
+4. button: guide-step-2
+5. button: guide-step-3
+6. button: guide-watch
+7. button: guide-next
+8. button: guide-exit
+9. input: layer-control
+10. input: layer-passes
+11. input: layer-pressure
+12. input: layer-trails
+13. input: layer-shadow
+14. select: player-menu
+15. button: Step back one frame
+16. button: Play
+17. button: Step forward one frame
+18. input: Replay position  [NO VISIBLE FOCUS]
+19. button: 1×
+20. summary: What do observed, derived, estimated, hy
+21. button: Why this moment
+22. button: Pass options
+23. button: Similar moments
+24. button: Events
+25. button: Labels
+26. button: #17 Away has space: nearest defender 4.3

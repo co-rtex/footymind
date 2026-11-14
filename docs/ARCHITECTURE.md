@@ -1,6 +1,6 @@
 # Architecture
 
-FootyMind 2.0 is a **modular monolith**: one Python package (`footymind`) behind one
+FootyMind is a **modular monolith**: one Python package (`footymind`) behind one
 FastAPI process, plus a static TypeScript frontend (`web/`) that the same process can
 serve. There is no database server, cache, queue or microservice. ADR-0001 explains why.
 
@@ -21,8 +21,12 @@ flowchart LR
     PC[spatial.pitch_control<br/>spatial.lanes]
     OM[spatial.option_model<br/>per-provider JSON + bootstrap]
     AN[spatial.analysis]
+    TE[spatial.temporal<br/>causal last-second context]
+    EX[spatial.explain<br/>metric-grounded statements]
+    RP[counterfactual.response<br/>policies + kinematic envelope]
     SC[counterfactual.scenario<br/>feasibility + ensemble]
-    GV[ghost.defensive_shadow<br/>ghost.run_value]
+    GV[ghost.*<br/>shadow, run value, decomposition]
+    SIM[(research.similarity<br/>per-provider index)]
   end
   subgraph Research["Research (offline)"]
     DS[research.pass_dataset<br/>rules v1/v2]
@@ -36,13 +40,19 @@ flowchart LR
   Q --> B --> FS
   FS --> PC --> AN
   OM --> AN
+  FS --> TE --> EX
+  AN --> EX
+  RP --> SC
   AN --> SC
   AN --> GV
+  DS -. builds .-> SIM
   B --> DS --> EV --> R
   DS -. trains .-> OM
   AN --> API
   SC --> API
   GV --> API
+  EX --> API
+  SIM --> API
   B --> API
   API --> WEB
 ```
@@ -65,6 +75,10 @@ flowchart LR
 | `spatial.lanes` | lane geometry + heuristic interception | done, uncalibrated |
 | `spatial.option_features`, `spatial.option_model` | shared per-option features (incl. lead-pass targets); per-provider JSON option models with bootstrap members; never pooled | done (v2) |
 | `spatial.analysis` | frame analysis: control grid, pass options (physics + option model), pressure | done |
+| `spatial.temporal` | causal temporal context (time-on-ball, censored; 1 s movement history) at a decision frame; guard-frame aware (ADR-0007) | done |
+| `spatial.explain` | deterministic, metric-grounded explanation statements with provenance | done |
+| `research.similarity` | per-provider similar-moment index (guard-frame features), own match excluded; validated k = 50 shrunk estimate (C36) | done |
+| `ghost.movement_decomposition` | Shapley attack/defense decomposition of opportunity change (with rotation placebo in the study) | research |
 | `counterfactual.scenario` | constrained interventions, final-state feasibility (user + simulated moves), response policy plumbing, uncertainty ensemble | done |
 | `counterfactual.kinematics` / `.response` / `.response_model` | reachability envelopes; defender response policies (rules + learned ridge, differential and envelope-clipped; ADR-0006); per-provider JSON coefficients | done (rules experimental; learned validated as a forecaster only) |
 | `ghost.defensive_shadow`, `ghost.run_value` | experimental model-based sensitivities (partly / negatively validated) | experimental |
@@ -132,7 +146,9 @@ Contract: `src/footymind/api/schemas.py`. Interactive docs: `GET /docs` when ser
 | GET | `/api/matches/{id}/possessions?min_passes&team` | possession list |
 | GET | `/api/matches/{id}/replay?start_frame&end_frame&step` | observed tracking window (≤ 4000 frames) |
 | GET | `/api/possessions/{pid}/replay?pad_s&step` | replay for one possession |
-| GET | `/api/matches/{id}/frames/{frame}/analysis?grid` | pitch control, pass options, pressure |
+| GET | `/api/matches/{id}/frames/{frame}/analysis?grid` | pitch control, pass options, pressure, causal temporal context, explanations |
+| GET | `/api/matches/{id}/frames/{frame}/possession` | resolves a stable `#/at/<match>?f=` deep link to its possession |
+| GET | `/api/matches/{id}/frames/{frame}/similar?k` | similar past decisions (other matches, same provider), observed outcomes, validated estimate |
 | POST | `/api/scenarios` | constrained intervention + comparison + sensitivity |
 | GET | `/api/response-policies?match_id=` | response policies with description, assumptions and provider-specific `validated` |
 
