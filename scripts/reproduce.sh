@@ -38,6 +38,10 @@ run uv run python -m footymind.research.shadow_validation metrica
 run uv run python -m footymind.research.run_value_validation metrica
 run uv run python -m footymind.research.movement_decomposition_study metrica
 run uv run footymind train-option-model --provider metrica
+# Defender response forecasts (validation first: the trainer copies its verdict into the model).
+run uv run python -m footymind.research.response_validation metrica
+run uv run footymind train-response-model --provider metrica
+run uv run python -m footymind.research.response_sensitivity metrica
 
 if [[ " $PROVIDERS " == *" skillcorner "* ]]; then
   for c in pass_outcome_skillcorner_v2 pass_outcome_skillcorner_v2_importance \
@@ -50,6 +54,9 @@ if [[ " $PROVIDERS " == *" skillcorner "* ]]; then
   run uv run python -m footymind.research.run_value_validation skillcorner
   run uv run python -m footymind.research.movement_decomposition_study skillcorner
   run uv run footymind train-option-model --provider skillcorner
+  run uv run python -m footymind.research.response_validation skillcorner
+  run uv run footymind train-response-model --provider skillcorner
+  run uv run python -m footymind.research.response_sensitivity skillcorner
 fi
 
 run uv run --group research python -m footymind.research.figures

@@ -640,6 +640,136 @@ the first Metrica run is discarded).** The review found:
    with `is_head`/`is_cross` on both sides (`Bdt_tob_hc → Bdt_tt_hc`) is added.
 4. Release strata used a model feature (`quick_release`). The descriptive strata are now
    restart vs open play.
+## Opponent response policies and kinematic envelopes (ADR-0006)
+
+**Why.** The Possession Multiverse used to relocate players on a frozen frame, with one toy
+response rule. This section documents the defender response policies that replace it, and
+what evidence exists for them. The guiding rule: a physically reachable move is not a
+tactically plausible one, and no policy says what a defender "would have done".
+
+**What was built** (`counterfactual/kinematics.py`, `counterfactual/response.py`,
+`counterfactual/response_model.py`).
+
+* *Kinematic envelope.* The player keeps the observed causal velocity for a 0.25 s reaction
+  delay, then accelerates at most 3.5 m/s² in any direction (speeding up, braking and
+  turning share one bound) at no more than 7.5 m/s. The reachable set is approximated from
+  the inside (48 constant-heading full-thrust paths; exact up to discretisation without the
+  speed limit). A NaN velocity falls back to a start from rest, and the output says so. The
+  constants are a priori (see the module docstring for the justification) and are not tuned
+  below.
+* *Policies.* `none`; `marker_follows` (legacy, verified identical on 600 frames of both
+  providers against the previous implementation); `press_carrier`, `zonal_shift`,
+  `lane_cover` (a priori rules); `learned` (a ridge model of 0.04–1.0 s outfield-defender
+  displacement from causal features in the attacking frame: own velocity, ball offset and
+  velocity, soft-nearest-attacker offset, own-goal offset). Only outfield defenders move.
+  Attackers, goalkeepers and user-moved players never do. The features are mirror-equivariant
+  by construction, and unit tests check mirror invariance and stability (a 0.1 m intervention
+  moves no defender more than 0.1 m).
+* *Differential responses.* The applied move is `clip(target | hypothetical) −
+  clip(target | observed)`, each clipped to the defender's envelope. The analysed instant
+  stays the observed frame, an unchanged situation moves nobody, and projection onto a convex
+  set is non-expansive, which makes the response stable.
+
+### Validation: forecasting real defender movement (`experiments/results/response_validation_v1*`, rev 61447dd)
+
+**What this does and does not test.** It evaluates *observational* forecasts: where outfield
+defenders actually went in the next 0.5 s and 1.0 s of real play, from a pass-start frame. It
+does **not** evaluate responses to hypothetical interventions. No ground truth exists for
+those, and none can be collected from tracking data.
+
+Protocol (pre-specified in ADR-0006 and the module docstring, committed before the runs):
+* decision frames are attempted-pass starts (rules v2);
+* the targets are every outfield defender with a complete 1.0 s trajectory in the same
+  period, a causal velocity and no flagged artefact, and on SkillCorner, *detected* at `t`
+  and at every target frame;
+* the learned model is fit leave-one-match-out with ridge α = 1 fixed a priori;
+* ADE (mean over every frame up to the horizon) and FDE (error at the horizon) are in
+  metres, with a possession-clustered bootstrap (1,000, stratified by match);
+* rule: `learned` is *validated* on a provider iff the 95% CI of FDE(learned + clip) −
+  FDE(constant velocity) is below zero at both horizons.
+
+Metrica, 3 matches, 36,465 defender rows from 3,655 pass starts (1,001 possessions); 0.5 s is
+13 frames (0.52 s) at 25 Hz. SkillCorner, 20 matches, 111,294 rows from 16,000 pass starts
+(4,038 possessions). The results (C40, C42):
+
+| Provider | Model | ADE 0.5 s | FDE 0.5 s | ADE 1.0 s | FDE 1.0 s |
+|---|---|---|---|---|---|
+| Metrica | stationary | 0.643 | 1.191 | 1.188 | 2.269 [2.235, 2.305] |
+| Metrica | constant velocity | 0.106 | 0.247 | 0.295 | 0.754 [0.744, 0.765] |
+| Metrica | CV, kinematically clipped | 0.106 | 0.247 | 0.295 | 0.754 |
+| Metrica | learned | 0.103 | 0.238 | 0.283 | 0.715 |
+| Metrica | **learned + clip (served)** | 0.104 | 0.239 | 0.283 | 0.715 [0.705, 0.724] |
+| SkillCorner | stationary | 0.774 | 1.285 | 1.405 | 2.530 [2.507, 2.555] |
+| SkillCorner | constant velocity | 0.137 | 0.282 | 0.396 | 0.950 [0.943, 0.957] |
+| SkillCorner | CV, kinematically clipped | 0.137 | 0.282 | 0.396 | 0.950 |
+| SkillCorner | learned | 0.124 | 0.252 | 0.348 | 0.821 |
+| SkillCorner | **learned + clip (served)** | 0.130 | 0.257 | 0.352 | 0.823 [0.817, 0.829] |
+
+The paired differences, learned + clip − constant velocity (FDE):
+* Metrica: −0.008 m [−0.009, −0.007] at 0.5 s and −0.040 m [−0.043, −0.036] at 1.0 s,
+  better in 3/3 held-out matches.
+* SkillCorner: −0.025 m [−0.025, −0.024] and −0.127 m [−0.130, −0.124], better in 20/20.
+
+The rule is met on both providers, so `learned` is served as `validated = true` (scope:
+forecasting real play).
+
+**Envelope coverage (C41, C43).** These are the shares of real positions at the horizon that
+lie inside the a priori envelope:
+
+| Provider | Default envelope, 0.5 s | Default envelope, 1.0 s | No delay, 1.0 s | No delay, 5 m/s², 1.0 s |
+|---|---|---|---|---|
+| Metrica | 31% | 73% | 93% | 99% |
+| SkillCorner | 19% | 61% | 87% | 97% |
+
+In real play a defender is mid-action at `t`, not reacting to a new stimulus. The reaction
+delay therefore costs most of the coverage here, but it is the point of the delay for a
+response to an intervention. The 3.5 m/s² bound is also tighter than real braking and
+turning. The envelope is therefore a deliberately *tight inner bound*: policy moves clipped
+to it are conservative, and the kinematic check on user moves (`kinematic_reachable`) is a
+diagnostic that never changes `supported`. The defaults were not changed after seeing these
+numbers.
+
+The clipped constant-velocity baseline equals constant velocity, except for the 0.2% of rows
+above 7.5 m/s, where the cap applies. Clipping costs the learned model a little on SkillCorner
+at 0.5 s (FDE 0.252 → 0.257).
+
+### How large are the simulated responses? (`experiments/results/response_sensitivity_v1*`, rev 58389ff)
+
+This probe is descriptive. It measures the size of the responses, not whether they are
+correct. On 300 random pass starts per provider it relocates the carrier (for
+`marker_follows` and `lane_cover`, the receiver) by 1 m or 5 m in four directions and reads
+the simulated moves at the default 1.5 s horizon (C44). The figures for a 5 m relocation,
+Metrica / SkillCorner:
+* `press_carrier` moves one defender: mean 1.56 / 1.59 m, 95th percentile 3.57 / 3.75 m.
+* `zonal_shift` moves about 10 defenders: mean largest move 2.0 m (p95 2.5 m), about 20 m
+  in total.
+* `lane_cover` moves one defender: mean 0.96 / 0.87 m.
+* `learned` has a mean largest move of **0.036 / 0.057 m**.
+
+**Interpretation.**
+* The learned model forecasts real defender movement better than constant velocity in every
+  held-out match on both providers. The gain is small in absolute terms: about 5% (Metrica)
+  and 13% (SkillCorner) of the 1.0 s FDE.
+* Its coefficients show where the gain comes from (the exported JSON models). The 1.0 s
+  displacement is about 0.91× (Metrica) and 0.83× (SkillCorner) the own velocity, a damped
+  constant velocity. Every *position-offset* term (ball, nearest attacker, own goal) is
+  below 1.5 cm per metre. The ball-velocity term on SkillCorner (0.09 s) does not change
+  under an intervention. As an *intervention response* it is therefore
+  almost inert: moving the carrier 5 m moves defenders by centimetres. "Validated" here
+  means a validated short-horizon forecaster, not a validated model of how defences react.
+  The API says both.
+* The rule policies make visible, decimetre-to-metre responses, but they are a priori
+  assumptions. They are always served as `validated = false` (experimental).
+* A useful response model must make defender movement depend on the attacking configuration
+  (e.g. graph-based ghosting, Le et al. 2017). This study supplies the harness it would be
+  judged with: per provider, detected-only targets, LOMO, possession bootstrap, the
+  constant-velocity bar, and an envelope wrapper.
+
+**Limitations.** On SkillCorner, 43,412 defender rows were excluded because the position at
+`t` was extrapolated, and 5,062 because a target frame was. The evaluated defenders are
+therefore the on-camera ones, near the ball (a selection effect). Only pass-start frames were
+used. The CIs reflect within-match sampling (3 Metrica matches). The model is linear. The
+differential-response semantics is a modelling choice, not an empirical finding.
 
 ## Prior art and references
 * Spearman, W., Basye, A., Dick, G., Hotovy, R., Pop, P. (2017). *Physics-Based Modeling of Pass Probabilities in Soccer.* MIT Sloan Sports Analytics Conference.

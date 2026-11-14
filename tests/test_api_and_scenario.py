@@ -244,3 +244,125 @@ def test_frame_possession_resolves_deep_links(client: TestClient) -> None:
     assert j["possession_id"] == "metrica-sample-1:p0163"
     assert j["start_frame"] <= 53708 <= j["end_frame"]
     assert client.get(f"/api/matches/{MID}/frames/999999999/possession").status_code == 404
+
+
+# --- opponent response policies (counterfactual/response.py) ---
+
+POLICIES = ["none", "marker_follows", "press_carrier", "zonal_shift", "lane_cover", "learned"]
+
+
+def test_response_policies_endpoint(client: TestClient) -> None:
+    r = client.get("/api/response-policies")
+    assert r.status_code == 200
+    body = r.json()
+    assert [p["name"] for p in body] == POLICIES
+    for p in body:
+        assert set(p) >= {"name", "description", "assumptions", "validated", "validation_ref"}
+        assert p["description"] and p["assumptions"]
+        if p["name"] != "learned":
+            assert p["validated"] is False and p["validation_ref"] is None
+    learned = client.get("/api/response-policies", params={"match_id": MID}).json()[-1]
+    assert learned["name"] == "learned"
+    if learned["validated"]:
+        assert learned["validation_ref"] and learned["status"].startswith("validated")
+    else:
+        assert learned["status"].startswith("experimental")
+    assert client.get("/api/response-policies", params={"match_id": "nope"}).status_code == 404
+
+
+def _carrier_frame() -> tuple[int, str, str]:
+    """A pass-start frame with an identified carrier, plus the receiver."""
+    passes = load_match(MID).events.filter(pl.col("type") == "PASS")
+    for row in passes.iter_rows(named=True):
+        if row["start_frame"] < 5000:
+            continue
+        s = frame_state(MID, row["start_frame"])
+        if s.carrier is not None and s.player_ids[s.carrier] == row["from_player_id"]:
+            return row["start_frame"], row["from_player_id"], row["to_player_id"]
+    raise AssertionError("no carrier frame")
+
+
+@pytest.mark.parametrize("policy", POLICIES)
+def test_scenario_with_each_policy(client: TestClient, policy: str) -> None:
+    from footymind.counterfactual.response_model import load_response_model
+
+    if policy == "learned" and load_response_model("metrica") is None:
+        pytest.skip("learned response model not trained yet (footymind train-response-model)")
+    f, carrier, receiver = _carrier_frame()
+    s = frame_state(MID, f)
+    who = receiver if policy in ("marker_follows", "lane_cover") else carrier
+    i = s.index(who)
+    body = {
+        "match_id": MID,
+        "frame": f,
+        "ensemble": 0,
+        "response_policy": policy,
+        "interventions": [{"player_id": who, "x": float(s.xy[i, 0]) + 3, "y": float(s.xy[i, 1])}],
+    }
+    r = client.post("/api/scenarios", json=body)
+    assert r.status_code == 200, r.text
+    j = r.json()
+    assert j["policy"]["name"] == policy
+    assert isinstance(j["policy"]["validated"], bool)
+    sim = [m for m in j["movements"] if m["provenance"] == "simulated"]
+    for m in sim:
+        k = s.index(m["player_id"])
+        assert s.teams[k] != s.attacking_team  # only defenders respond
+        assert m["player_id"] != who and m["reason"]
+    simulated_feas = {x["player_id"] for x in j["feasibility"] if x["kind"] == "simulated"}
+    assert simulated_feas == {m["player_id"] for m in sim}
+    if policy == "none":
+        assert sim == []
+    if policy in ("press_carrier", "zonal_shift", "lane_cover", "learned"):
+        assert sim or any("response policy" in w for w in j["warnings"])
+
+
+def test_scenario_rejects_unknown_policy(client: TestClient) -> None:
+    body = {
+        "match_id": MID,
+        "frame": 100,
+        "response_policy": "teleport",
+        "interventions": [{"player_id": "home_1", "x": 0.0, "y": 0.0}],
+    }
+    assert client.post("/api/scenarios", json=body).status_code == 422
+
+
+def test_kinematic_feasibility_reported(pass_frame: tuple[int, str, str]) -> None:
+    f, _, receiver = pass_frame
+    s = frame_state(MID, f)
+    i = s.index(receiver)
+    x, y = float(s.xy[i, 0]), float(s.xy[i, 1])
+    near = run_scenario(MID, f, [Intervention(receiver, x + 0.2, y)], ensemble=0)
+    assert near.feasibility[0].kinematic_reachable in (True, False)
+    far = run_scenario(MID, f, [Intervention(receiver, x + 9.0, y)], ensemble=0)
+    assert far.feasibility[0].kinematic_reachable is False  # 9 m off its path in 1.5 s
+
+
+SC = "skillcorner-1899585"
+
+
+@pytest.mark.skipif(SC not in available_matches(), reason="SkillCorner data not available")
+def test_learned_policy_on_broadcast_tracking(client: TestClient) -> None:
+    from footymind.counterfactual.response_model import load_response_model
+
+    if load_response_model("skillcorner") is None:
+        pytest.skip("SkillCorner response model not trained yet")
+    s = frame_state(SC, 39177)  # featured broadcast scenario (C27)
+    assert s.carrier is not None
+    c = s.player_ids[s.carrier]
+    body = {
+        "match_id": SC,
+        "frame": 39177,
+        "ensemble": 0,
+        "response_policy": "learned",
+        "interventions": [
+            {"player_id": c, "x": float(s.xy[s.carrier, 0]) + 3, "y": float(s.xy[s.carrier, 1])}
+        ],
+    }
+    j = client.post("/api/scenarios", json=body).json()
+    assert j["policy"]["name"] == "learned"
+    for m in j["movements"]:
+        if m["provenance"] == "simulated":
+            assert s.teams[s.index(m["player_id"])] != s.attacking_team
+    pol = client.get("/api/response-policies", params={"match_id": SC}).json()[-1]
+    assert pol["validated"] == j["policy"]["validated"]

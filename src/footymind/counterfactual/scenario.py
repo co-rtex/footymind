@@ -16,6 +16,9 @@ What it does **not** do: identify causal effects. The output is a
 model-based "what the spatial model says would change" comparison under
 explicit assumptions. It is not evidence of what would have happened in the
 match.
+
+Opponent responses live in ``counterfactual/response.py`` (rule-based and learned policies,
+limited by the kinematic envelopes of ``counterfactual/kinematics.py``).
 """
 
 from __future__ import annotations
@@ -26,36 +29,49 @@ from typing import Literal
 import numpy as np
 import numpy.typing as npt
 
+from footymind.counterfactual.kinematics import DEFAULT_LIMITS, reachability_envelope
+from footymind.counterfactual.response import (
+    MIN_SEPARATION_M,
+    PITCH_MARGIN_M,
+    Intervention,
+    Movement,
+    PolicyInfo,
+    ResponseContext,
+    ResponsePolicy,
+    apply_response,
+    policy_info,
+)
+from footymind.counterfactual.response_model import load_response_model
 from footymind.data.store import load_match
 from footymind.spatial.analysis import FrameAnalysis, PassOption, analyze, summary
-from footymind.spatial.option_model import load_default
+from footymind.spatial.option_model import load_default, provider_of
 from footymind.spatial.pitch_control import (
     DEFAULT_GRID,
     DEFAULT_PARAMS,
     SENSITIVITY_RANGES,
     PitchControlParams,
 )
-from footymind.spatial.state import FrameState, frame_state
+from footymind.spatial.state import FrameState, causal_velocities, frame_state
+from footymind.tracking.kinematics import velocity
 from footymind.tracking.model import Provenance
 
 F = npt.NDArray[np.float64]
 
 REACH_SPEED_MPS = 7.0  # sustained high-intensity running speed for reachability
-MIN_SEPARATION_M = 0.5
 # Below this absolute change in probability, a delta is reported but no sign-robustness score.
 NEGLIGIBLE_DELTA = 0.005
-PITCH_MARGIN_M = 2.0
 
-ResponsePolicy = Literal["none", "marker_follows"]
+__all__ = [
+    "MIN_SEPARATION_M",
+    "PITCH_MARGIN_M",
+    "Intervention",
+    "Movement",
+    "ResponsePolicy",
+    "run_scenario",
+]
+
 VelocityMode = Literal["keep", "zero"]
 ValueModel = Literal["option_model", "physics"]
-
-
-@dataclass
-class Intervention:
-    player_id: str
-    x: float
-    y: float
 
 
 @dataclass
@@ -69,19 +85,14 @@ class Feasibility:
     min_separation_m: float
     notes: list[str] = field(default_factory=list)
     kind: str = "user"  # "user" (hypothetical) or "simulated" (response-policy move)
+    # Inside the kinematic envelope (reaction delay, acceleration and speed limits) from the
+    # observed position and causal velocity horizon_s earlier. None if that origin is
+    # unobserved. Diagnostic only: ``supported`` keeps the constant-speed disc.
+    kinematic_reachable: bool | None = None
 
     @property
     def supported(self) -> bool:
         return self.reachable and self.inside_pitch and self.min_separation_m >= MIN_SEPARATION_M
-
-
-@dataclass
-class Movement:
-    player_id: str
-    from_xy: tuple[float, float]
-    to_xy: tuple[float, float]
-    provenance: Provenance
-    reason: str
 
 
 @dataclass
@@ -109,6 +120,7 @@ class ScenarioResult:
     warnings: list[str]
     assumptions: list[str]
     value_model: ValueModel
+    policy: PolicyInfo
 
 
 ASSUMPTIONS = [
@@ -119,8 +131,9 @@ ASSUMPTIONS = [
     "current position (no lead passes, no ball height).",
     "Reachability uses a straight-line run at <= 7 m/s from the player's observed "
     "position horizon_s earlier and ignores acceleration limits and fatigue.",
-    "Opponent response policies are simple rules, not learned behaviour models; moves made by "
-    "a policy are checked for reachability, pitch bounds and separation like user moves.",
+    "Opponent responses (if any) follow the selected response policy, whose own assumptions "
+    "are listed with it; moves made by a policy are checked for reachability, pitch bounds "
+    "and separation like user moves. No policy says what a defender would have done.",
     "Uncertainty ranges: with the option model they reflect its estimation uncertainty "
     "(possession-clustered coefficient bootstrap) at default physics inputs; with the physics "
     "heuristic they reflect a plausible range of its parameters. Neither covers behavioural "
@@ -161,11 +174,17 @@ def check_feasibility(
     origin = None
     reachable = False
     radius = REACH_SPEED_MPS * horizon_s
+    kinematic: bool | None = None
     if row - k >= 0 and td.period[row - k] == state.period:
         o = td.xy[row - k, i].astype(np.float64)
         if not np.isnan(o).any():
             origin = (float(o[0]), float(o[1]))
             reachable = float(np.linalg.norm(new - o)) <= radius
+            env = reachability_envelope(
+                o, causal_velocities(match_id)[row - k, i], horizon_s, DEFAULT_LIMITS
+            )
+            kinematic = env.contains(new)
+            notes.extend(f"kinematic check: {n}" for n in env.notes)
     if origin is None:
         notes.append("no observed position at t - horizon; reachability cannot be verified")
     if np.isnan(cur).any():
@@ -178,7 +197,20 @@ def check_feasibility(
     others = np.delete(ref.xy, i, axis=0)
     d_others = np.linalg.norm(others - new[None, :], axis=1)
     sep = float(np.nanmin(d_others)) if np.isfinite(d_others).any() else float("inf")
-    return Feasibility(iv.player_id, disp, radius, reachable, origin, inside, sep, notes, kind)
+    return Feasibility(
+        iv.player_id, disp, radius, reachable, origin, inside, sep, notes, kind, kinematic
+    )
+
+
+def ball_velocity(match_id: str, frame: int) -> F | None:
+    """Causal (backward 0.2 s) ball velocity at ``frame``; None if unavailable."""
+    td = load_match(match_id).tracking
+    row = td.index_of_frame(frame)
+    k = max(1, round(0.2 * td.fps))
+    if row - k < 0 or td.period[row - k] != td.period[row]:
+        return None
+    v = velocity(td.ball_xy[row - k : row + 1], td.fps, "causal", 0.2)[-1].astype(np.float64)
+    return None if np.isnan(v).any() else v
 
 
 def _apply(
@@ -187,11 +219,10 @@ def _apply(
     policy: ResponsePolicy,
     follow_fraction: float,
     velocity_mode: VelocityMode,
-) -> tuple[FrameState, list[Movement]]:
+    ctx: ResponseContext | None = None,
+) -> tuple[FrameState, list[Movement], list[str]]:
     hyp = state.copy()
     moves: list[Movement] = []
-    moved_ids = {iv.player_id for iv in interventions}
-    shifted: set[str] = set()
     for iv in interventions:
         i = hyp.index(iv.player_id)
         frm = (float(hyp.xy[i, 0]), float(hyp.xy[i, 1]))
@@ -204,40 +235,10 @@ def _apply(
         if iv.player_id == state.player_ids[state.carrier] if state.carrier is not None else False:
             # Moving the carrier moves the ball with them.
             hyp.ball = hyp.ball + (np.array([iv.x, iv.y]) - np.array(frm))
-    if policy == "marker_follows":
-        # Rule: when an attacker is relocated, the defender nearest to the
-        # attacker's observed position (within 10 m) shifts by a fraction of the
-        # same displacement. Relocated defenders trigger no response.
-        for iv in interventions:
-            i = state.index(iv.player_id)
-            if state.teams[i] != state.attacking_team:
-                continue
-            opp = ~state.team_mask(state.teams[i]) & state.on_pitch()
-            for mid in moved_ids | shifted:
-                opp[state.index(mid)] = False  # never shift a player twice
-            if not opp.any() or np.isnan(state.xy[i]).any():
-                continue
-            d = np.linalg.norm(state.xy - state.xy[i][None, :], axis=1)
-            d[~opp] = np.inf
-            j = int(np.argmin(d))
-            if d[j] > 10.0:
-                continue
-            shift = (np.array([iv.x, iv.y]) - state.xy[i]) * follow_fraction
-            frm = (float(hyp.xy[j, 0]), float(hyp.xy[j, 1]))
-            hyp.xy[j] = hyp.xy[j] + shift
-            hyp.position_provenance[j] = Provenance.SIMULATED
-            shifted.add(state.player_ids[j])
-            moves.append(
-                Movement(
-                    state.player_ids[j],
-                    frm,
-                    (float(hyp.xy[j, 0]), float(hyp.xy[j, 1])),
-                    Provenance.SIMULATED,
-                    f"marker of {iv.player_id} follows {follow_fraction:.0%} of the displacement "
-                    "(rule-based response)",
-                )
-            )
-    return hyp, moves
+    ctx = ctx or ResponseContext(follow_fraction=follow_fraction)
+    ctx.follow_fraction = follow_fraction
+    sim, notes = apply_response(state, hyp, interventions, policy, ctx)
+    return hyp, moves + sim, notes
 
 
 def _ensemble_params(n: int, seed: int) -> list[PitchControlParams]:
@@ -271,7 +272,17 @@ def run_scenario(
             raise KeyError(iv.player_id)
         if np.isnan(observed_state.xy[observed_state.index(iv.player_id)]).any():
             raise ValueError(f"{iv.player_id} is not on the pitch at frame {frame}")
-    hyp_state, moves = _apply(observed_state, interventions, policy, follow_fraction, velocity_mode)
+    td = load_match(match_id).tracking
+    ctx = ResponseContext(
+        pitch=td.pitch,
+        horizon_s=horizon_s,
+        follow_fraction=follow_fraction,
+        ball_velocity=ball_velocity(match_id, frame) if policy == "learned" else None,
+        model=load_response_model(provider_of(match_id)) if policy == "learned" else None,
+    )
+    hyp_state, moves, policy_notes = _apply(
+        observed_state, interventions, policy, follow_fraction, velocity_mode, ctx
+    )
     feas = [
         check_feasibility(match_id, observed_state, iv, horizon_s, final_state=hyp_state)
         for iv in interventions
@@ -355,6 +366,7 @@ def run_scenario(
     deltas.sort(key=lambda d: -abs(d.delta or 0.0))
 
     warnings = list(dict.fromkeys(obs_a.warnings + hyp_a.warnings))
+    warnings.extend(f"response policy {n}" for n in policy_notes)
     for f in feas:
         who = f"{f.player_id} (simulated response)" if f.kind == "simulated" else f.player_id
         if not f.reachable:
@@ -392,4 +404,5 @@ def run_scenario(
         assumptions=ASSUMPTIONS
         + ([OPTION_MODEL_ASSUMPTION] if value_model == "option_model" else []),
         value_model=value_model,
+        policy=policy_info(policy, provider_of(match_id)),
     )

@@ -35,6 +35,12 @@ def main(argv: list[str] | None = None) -> int:
     p_sim.add_argument(
         "--provider", nargs="*", default=["metrica", "skillcorner"], help="providers to index"
     )
+    p_rsp = sub.add_parser(
+        "train-response-model",
+        help="export the learned defender-response model (run response_validation first)",
+    )
+    p_rsp.add_argument("match_ids", nargs="*", help="default: all processed matches of --provider")
+    p_rsp.add_argument("--provider", default="metrica", choices=["metrica", "skillcorner"])
 
     args = parser.parse_args(argv)
 
@@ -86,6 +92,11 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             t0 = time.time()
             print(f"{prov}: {build_index(prov, ids)} ({len(ids)} matches, {time.time() - t0:.0f}s)")
+    elif args.cmd == "train-response-model":
+        from footymind.research.train_response_model import train as train_response
+
+        rm = train_response(args.provider, args.match_ids or None)
+        print(json.dumps({k: rm.meta[k] for k in ("n_train", "validation", "code_revision")}))
     return 0
 
 

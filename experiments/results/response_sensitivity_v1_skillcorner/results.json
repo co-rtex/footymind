@@ -1,0 +1,128 @@
+{
+  "name": "response_sensitivity_v1_skillcorner",
+  "provider": "skillcorner",
+  "matches": [
+    "skillcorner-1874553",
+    "skillcorner-1886347",
+    "skillcorner-1899585",
+    "skillcorner-1925299",
+    "skillcorner-1927964",
+    "skillcorner-1953632",
+    "skillcorner-1959846",
+    "skillcorner-1986691",
+    "skillcorner-1996435",
+    "skillcorner-1996436",
+    "skillcorner-2006229",
+    "skillcorner-2006363",
+    "skillcorner-2007448",
+    "skillcorner-2007721",
+    "skillcorner-2010085",
+    "skillcorner-2011166",
+    "skillcorner-2013725",
+    "skillcorner-2015213",
+    "skillcorner-2016236",
+    "skillcorner-2017461"
+  ],
+  "code_revision": "58389ffe9c526318e0cb107c9ebc0e8cd296c07b",
+  "response_model_code_revision": "61447dd08b07c262f52b5a0a9995f20fd79e22c9",
+  "runtime_s": 127.8,
+  "n_frames": 300,
+  "horizon_s": 1.5,
+  "displacements_m": [
+    1.0,
+    5.0
+  ],
+  "note": "descriptive: size of simulated responses, not their correctness",
+  "summary": {
+    "marker_follows": {
+      "1m": {
+        "n_probes": 1200,
+        "share_any_move": 0.5766666666666667,
+        "mean_defenders_moved": 0.5766666666666667,
+        "mean_max_move_m": 0.28833333333333333,
+        "p95_max_move_m": 0.5,
+        "mean_total_move_m": 0.28833333333333333
+      },
+      "5m": {
+        "n_probes": 1200,
+        "share_any_move": 0.5766666666666667,
+        "mean_defenders_moved": 0.5766666666666667,
+        "mean_max_move_m": 1.4416666666666667,
+        "p95_max_move_m": 2.5,
+        "mean_total_move_m": 1.4416666666666667
+      }
+    },
+    "press_carrier": {
+      "1m": {
+        "n_probes": 1200,
+        "share_any_move": 0.8325,
+        "mean_defenders_moved": 0.8325,
+        "mean_max_move_m": 0.31788647773106793,
+        "p95_max_move_m": 0.9111082492183975,
+        "mean_total_move_m": 0.31788647773106793
+      },
+      "5m": {
+        "n_probes": 1200,
+        "share_any_move": 0.97,
+        "mean_defenders_moved": 0.97,
+        "mean_max_move_m": 1.592833053270488,
+        "p95_max_move_m": 3.7494994063874327,
+        "mean_total_move_m": 1.592833053270488
+      }
+    },
+    "zonal_shift": {
+      "1m": {
+        "n_probes": 1200,
+        "share_any_move": 1.0,
+        "mean_defenders_moved": 9.976666666666667,
+        "mean_max_move_m": 0.40000000000000036,
+        "p95_max_move_m": 0.5,
+        "mean_total_move_m": 3.9805597936181933
+      },
+      "5m": {
+        "n_probes": 1200,
+        "share_any_move": 1.0,
+        "mean_defenders_moved": 9.9975,
+        "mean_max_move_m": 2.0,
+        "p95_max_move_m": 2.5,
+        "mean_total_move_m": 19.9080023531896
+      }
+    },
+    "lane_cover": {
+      "1m": {
+        "n_probes": 1200,
+        "share_any_move": 0.7775,
+        "mean_defenders_moved": 0.7775,
+        "mean_max_move_m": 0.21414218314923697,
+        "p95_max_move_m": 0.8053652428317409,
+        "mean_total_move_m": 0.21414218314923697
+      },
+      "5m": {
+        "n_probes": 1200,
+        "share_any_move": 0.845,
+        "mean_defenders_moved": 0.845,
+        "mean_max_move_m": 0.872596155645744,
+        "p95_max_move_m": 2.6572832975661544,
+        "mean_total_move_m": 0.872596155645744
+      }
+    },
+    "learned": {
+      "1m": {
+        "n_probes": 1200,
+        "share_any_move": 0.44,
+        "mean_defenders_moved": 0.5733333333333334,
+        "mean_max_move_m": 0.007186507627406655,
+        "p95_max_move_m": 0.02398304736199634,
+        "mean_total_move_m": 0.008864377231393565
+      },
+      "5m": {
+        "n_probes": 1200,
+        "share_any_move": 1.0,
+        "mean_defenders_moved": 8.3575,
+        "mean_max_move_m": 0.05718481024181691,
+        "p95_max_move_m": 0.11108256207303385,
+        "mean_total_move_m": 0.2650360692530336
+      }
+    }
+  }
+}
