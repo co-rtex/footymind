@@ -29,7 +29,7 @@ from footymind.data.store import (
 )
 from footymind.ghost.defensive_shadow import NOISE_FLOOR as SHADOW_NOISE_FLOOR
 from footymind.ghost.defensive_shadow import defensive_shadow
-from footymind.paths import PROCESSED_DIR, REPO_ROOT
+from footymind.paths import EXPERIMENTS_DIR, PROCESSED_DIR, REPO_ROOT
 from footymind.spatial.analysis import FrameAnalysis, analyze
 from footymind.spatial.explain import explain
 from footymind.spatial.option_model import load_default
@@ -455,6 +455,75 @@ def frame_analysis(match_id: str, frame: int, grid: bool = True) -> S.FrameAnaly
         out.temporal = {k: _f(v, 3) for k, v in temporal.items()}
     out.explanations = [S.StatementOut(**s.to_dict()) for s in explain(a, temporal)]
     return out
+
+
+SIMILAR_DISCLAIMER = (
+    "Neighbours are past passes from other matches of the same provider whose decision-time "
+    "situation (positions, pressure, recent movement) was most similar. Their outcomes are "
+    "observed. The share completed is a comparison, not a prediction for this pass."
+)
+
+
+def _similarity_validation(provider: str) -> dict[str, Any] | None:
+    name = "similarity_validation_v1" + ("" if provider == "metrica" else f"_{provider}")
+    p = EXPERIMENTS_DIR / "results" / name / "results.json"
+    if not p.exists():
+        return None
+    r = json.loads(p.read_text())
+    return {
+        "ref": f"experiments/results/{name}/results.json",
+        "knn_beats_base_rate": r.get("criterion_knn_beats_base_rate"),
+        "log_loss": {k: v.get("log_loss") for k, v in r.get("metrics", {}).items()},
+    }
+
+
+@app.get("/api/matches/{match_id}/frames/{frame}/similar", response_model=S.SimilarMomentsOut)
+def similar_moments(match_id: str, frame: int, k: int = 8) -> S.SimilarMomentsOut:
+    """The most similar past pass decisions (other matches, same provider) and their outcomes."""
+    from footymind.research.similarity import SIMILARITY_FEATURES, decision_row, load_index
+
+    _frame_or_404(match_id, frame)
+    provider = match_id.split("-")[0]
+    idx = load_index(provider)
+    if idx is None:
+        raise HTTPException(
+            503, f"no similarity index for {provider}; run `footymind build-similarity-index`"
+        )
+    row = decision_row(match_id, frame)
+    if row is None:
+        raise HTTPException(404, "no pass decision starts within 2 s of this frame")
+    x = np.array(
+        [row[f] if row[f] is not None else np.nan for f in SIMILARITY_FEATURES], dtype=float
+    )
+    got, dist = idx.query(x, exclude_match=match_id, k=max(1, min(k, 50)))
+    neighbours = [
+        S.SimilarMoment(
+            match_id=r["match_id"],
+            frame=int(r["frame"]),
+            possession_id=r["possession_id"],
+            team=r["team"],
+            passer_id=r["passer_id"],
+            completed=bool(r["success"]),
+            distance=round(float(d), 3),
+            ball_x_att=_f(r["ball_x_att"], 1),
+            press_nearest_def_m=_f(r["press_nearest_def_m"], 1),
+            passer_control_s=_f(r["passer_control_s"], 1),
+        )
+        for r, d in zip(got.iter_rows(named=True), dist, strict=True)
+    ]
+    return S.SimilarMomentsOut(
+        match_id=match_id,
+        frame=frame,
+        decision_frame=int(str(row["frame"])),
+        passer_id=str(row["passer_id"]),
+        k=len(neighbours),
+        neighbours=neighbours,
+        completed_share=round(sum(n.completed for n in neighbours) / max(len(neighbours), 1), 3),
+        provider=provider,
+        features=SIMILARITY_FEATURES,
+        validation=_similarity_validation(provider),
+        disclaimer=SIMILAR_DISCLAIMER,
+    )
 
 
 def _summary(d: dict[str, object]) -> dict[str, float | int | str | None]:

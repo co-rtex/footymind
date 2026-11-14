@@ -54,6 +54,9 @@ INDEX_COLUMNS = [
     "passer_control_s",
 ]
 
+# every column stored in an index file, without duplicates
+STORED_COLUMNS = [*INDEX_COLUMNS, *(f for f in SIMILARITY_FEATURES if f not in INDEX_COLUMNS)]
+
 
 def index_path(provider: str) -> Path:
     return PROCESSED_DIR / f"similarity_{provider}.parquet"
@@ -103,7 +106,7 @@ def build_index(provider: str, match_ids: list[str]) -> Path:
     df = build(match_ids, DatasetConfig())
     out = index_path(provider)
     out.parent.mkdir(parents=True, exist_ok=True)
-    df.select([*INDEX_COLUMNS, *SIMILARITY_FEATURES]).write_parquet(out)
+    df.select(STORED_COLUMNS).write_parquet(out)
     return out
 
 
@@ -117,3 +120,41 @@ def load_index(provider: str) -> SimilarityIndex | None:
             return None
         _CACHE[provider] = SimilarityIndex.from_rows(pl.read_parquet(p))
     return _CACHE[provider]
+
+
+NEXT_DECISION_WINDOW_S = 2.0
+
+
+def decision_row(match_id: str, frame: int) -> dict[str, object] | None:
+    """Feature row of the next pass decision at or after ``frame`` (within 2 s), or None.
+
+    It uses exactly the research dataset's feature builder (train/serve consistency). None
+    means there is no labelled pass attempt starting in the window, or its features cannot
+    be computed (for example, an unobserved ball).
+    """
+    from footymind.data.store import load_match
+    from footymind.research.pass_dataset import (
+        DatasetConfig,
+        _features_for,
+        _prev_event_features,
+        label_events,
+    )
+
+    b = load_match(match_id)
+    td = b.tracking
+    window = round(NEXT_DECISION_WINDOW_S * td.fps)
+    cfg = DatasetConfig()
+    ev = b.events.filter(
+        (pl.col("start_frame") >= frame) & (pl.col("start_frame") <= frame + window)
+    )
+    if ev.is_empty():  # cheap early exit before labelling the whole match
+        return None
+    # Event history needs the whole possession, so label the full match and then filter.
+    cand = label_events(_prev_event_features(b.events), cfg).filter(
+        (pl.col("start_frame") >= frame) & (pl.col("start_frame") <= frame + window)
+    )
+    for r in cand.sort("start_frame").iter_rows(named=True):
+        row = _features_for(match_id, r, td, cfg)
+        if row is not None:
+            return row
+    return None

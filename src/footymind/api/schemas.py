@@ -11,7 +11,7 @@ Conventions:
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -211,6 +211,35 @@ class StatementOut(BaseModel):
     value: float | int | str | None
     provenance: ProvenanceLabel
     players: list[str]
+
+
+class SimilarMoment(BaseModel):
+    match_id: str
+    frame: int
+    possession_id: str | None
+    team: Team
+    passer_id: str
+    completed: bool = Field(description="OBSERVED outcome of that pass")
+    distance: float = Field(description="standardised feature distance (smaller = more similar)")
+    ball_x_att: float | None
+    press_nearest_def_m: float | None
+    passer_control_s: float | None
+
+
+class SimilarMomentsOut(BaseModel):
+    match_id: str
+    frame: int = Field(description="the requested frame")
+    decision_frame: int = Field(description="start frame of the pass decision that was matched")
+    passer_id: str
+    k: int
+    neighbours: list[SimilarMoment]
+    completed_share: float = Field(description="share of neighbours whose pass was completed")
+    provider: str
+    features: list[str]
+    validation: dict[str, Any] | None = Field(
+        default=None, description="held-out validation summary for this provider, if available"
+    )
+    disclaimer: str
 
 
 class FrameAnalysisOut(BaseModel):
