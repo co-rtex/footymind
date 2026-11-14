@@ -38,7 +38,7 @@ def test_trend_statements_need_finite_temporal_values() -> None:
         "temporal.press_nearest_def_change_m_l10",
         "temporal.open_lanes_change_l10",
     ]
-    assert "closed in by 2.5 m" in trends[1].text and "building" in trends[1].text
+    assert "shrank by 2.5 m" in trends[1].text and "building" in trends[1].text
     nan_t = {k: float("nan") for k in t}
     assert not [s for s in explain(a, nan_t) if s.kind == "trend"]  # no metric, no claim
     small = {"press_nearest_def_change_m_l10": 0.4, "open_lanes_change_l10": 0.0}
@@ -64,3 +64,14 @@ def test_real_frame_references_only_players_in_the_frame() -> None:
     for s in stm:
         assert set(s.players) <= set(st.player_ids)
         assert s.to_dict()["provenance"] in {p.value for p in Provenance}
+
+
+def test_statements_about_extrapolated_players_are_estimated() -> None:
+    st = _state((25.0, 8.0))
+    st.position_provenance[0] = Provenance.ESTIMATED  # the carrier is off camera
+    t = {"passer_control_s": 12.0}
+    stm = explain(analyze(st), t)
+    pres = next(s for s in stm if s.kind == "pressure")
+    tob = next(s for s in stm if s.metric == "temporal.passer_control_s")
+    assert pres.provenance == Provenance.ESTIMATED and tob.provenance == Provenance.ESTIMATED
+    assert "at least" in tob.text  # capped time-on-ball is a lower bound

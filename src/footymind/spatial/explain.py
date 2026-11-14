@@ -23,7 +23,7 @@ from typing import Any
 import numpy as np
 
 from footymind.spatial.analysis import FrameAnalysis, PassOption
-from footymind.spatial.temporal import OPEN_LANE_PERP_M
+from footymind.spatial.temporal import MAX_CONTROL_S, OPEN_LANE_PERP_M
 from footymind.tracking.model import Provenance
 
 UNDER_PRESSURE_M = 3.0
@@ -58,6 +58,14 @@ def _p(o: PassOption) -> float:
     return o.p_success_model if o.p_success_model is not None else o.p_success
 
 
+def _metric(o: PassOption) -> str:
+    return (
+        "pass_options.p_success_model"
+        if o.p_success_model is not None
+        else ("pass_options.p_success (uncalibrated physics; no fitted model)")
+    )
+
+
 def _num(d: dict[str, float], key: str) -> float | None:
     v = d.get(key)
     return float(v) if v is not None and np.isfinite(v) else None
@@ -73,6 +81,22 @@ def explain(a: FrameAnalysis, temporal: dict[str, float] | None = None) -> list[
     out: list[Statement] = []
     carrier = st.player_ids[st.carrier] if st.carrier is not None else None
     who = carrier or "the carrier"
+
+    def prov_of(ids: list[str | None]) -> Provenance:
+        """ESTIMATED if the ball or any referenced player is a provider extrapolation."""
+        if st.ball_provenance == Provenance.ESTIMATED:
+            return Provenance.ESTIMATED
+        for pid in ids:
+            if (
+                pid
+                and st.position_provenance
+                and pid in st.player_ids
+                and st.position_provenance[st.index(pid)] == Provenance.ESTIMATED
+            ):
+                return Provenance.ESTIMATED
+        return Provenance.DERIVED
+
+    carrier_prov = prov_of([carrier])
     pr = a.pressure
     if pr is not None and _finite(pr.nearest_defender_distance_m):
         d = pr.nearest_defender_distance_m
@@ -92,7 +116,7 @@ def explain(a: FrameAnalysis, temporal: dict[str, float] | None = None) -> list[
                 text + ".",
                 "pressure.nearest_defender_distance_m",
                 round(d, 2),
-                Provenance.DERIVED,
+                prov_of([carrier, pr.nearest_defender_id]),
                 [p for p in (carrier, pr.nearest_defender_id) if p],
             )
         )
@@ -102,24 +126,29 @@ def explain(a: FrameAnalysis, temporal: dict[str, float] | None = None) -> list[
             out.append(
                 Statement(
                     "trend",
-                    f"The ball has been within 2 m of {who} for {tob:.1f} s.",
+                    (
+                        f"The ball has been within 2 m of {who} for at least {tob:.0f} s."
+                        if tob >= MAX_CONTROL_S
+                        else f"The ball has been within 2 m of {who} for {tob:.1f} s."
+                    ),
                     "temporal.passer_control_s",
                     round(tob, 2),
-                    Provenance.DERIVED,
+                    carrier_prov,
                     [carrier] if carrier else [],
                 )
             )
         ch = _num(temporal, "press_nearest_def_change_m_l10")
         if ch is not None and abs(ch) >= TREND_M:
-            trend = "closed in" if ch < 0 else "dropped off"
+            trend = "shrank" if ch < 0 else "grew"
             mood = "Pressure is building." if ch < 0 else "Pressure is easing."
             out.append(
                 Statement(
                     "trend",
-                    f"Over the last second the nearest defender {trend} by {abs(ch):.1f} m. {mood}",
+                    f"Over the last second the gap to the nearest defender {trend} by "
+                    f"{abs(ch):.1f} m. {mood}",
                     "temporal.press_nearest_def_change_m_l10",
                     round(ch, 2),
-                    Provenance.DERIVED,
+                    carrier_prov,
                     [carrier] if carrier else [],
                 )
             )
@@ -144,7 +173,7 @@ def explain(a: FrameAnalysis, temporal: dict[str, float] | None = None) -> list[
                 "option",
                 f"Safest option: {safest.receiver_id} (estimated completion {_p(safest):.2f}, "
                 f"{safest.distance_m:.0f} m).",
-                "pass_options.p_success_model",
+                _metric(safest),
                 round(_p(safest), 3),
                 Provenance.ESTIMATED,
                 [safest.receiver_id],
@@ -171,7 +200,7 @@ def explain(a: FrameAnalysis, temporal: dict[str, float] | None = None) -> list[
                 Statement(
                     "option",
                     text + ".",
-                    "pass_options.p_success_model[progressive]",
+                    _metric(best) + "[progressive]",
                     round(_p(best), 3),
                     Provenance.ESTIMATED,
                     players,
@@ -209,8 +238,9 @@ def explain(a: FrameAnalysis, temporal: dict[str, float] | None = None) -> list[
             Statement(
                 "caveat",
                 "Completion estimates come from a statistical model fitted to this provider's "
-                "passes. They describe typical outcomes in similar situations, not what would "
-                "certainly happen.",
+                "attempted passes. They describe typical outcomes in similar situations, not what "
+                "would certainly happen, and options nobody chose are extrapolated from the "
+                "passes players did choose to attempt.",
                 "model",
                 None,
                 Provenance.ESTIMATED,
