@@ -53,6 +53,10 @@ class MatchSummary(BaseModel):
     pitch: Pitch
     home_label: str = "Home"
     away_label: str = "Away"
+    competition: str | None = Field(
+        default=None, description="provider metadata (SkillCorner only; Metrica is anonymised)"
+    )
+    date: str | None = Field(default=None, description="kick-off date (UTC), provider metadata")
 
 
 class PossessionSummary(BaseModel):
@@ -227,6 +231,10 @@ class SimilarMoment(BaseModel):
     ball_x_att: float | None
     press_nearest_def_m: float | None
     passer_control_s: float | None
+    period: int | None = None
+    match_minute: float | None = Field(
+        default=None, description="provider match clock in minutes at the pass start"
+    )
 
 
 class SimilarMomentsOut(BaseModel):

@@ -52,3 +52,23 @@ def test_replay_exposes_detected_mask() -> None:
     n = len(r["frame"]) * len(r["players"])
     assert r["players_detected"] is not None and len(r["players_detected"]) == n
     assert not all(r["players_detected"])  # broadcast tracking: some positions extrapolated
+
+
+def test_match_summary_has_public_match_facts_but_no_player_names() -> None:
+    from fastapi.testclient import TestClient
+
+    from footymind.api.app import app
+
+    s = TestClient(app).get(f"/api/matches/{SC[0]}").json()
+    assert s["home_label"] not in ("Home", "") and s["away_label"] not in ("Away", "")
+    assert s["date"] and len(s["date"]) == 10 and s["competition"]
+    import json
+
+    from footymind.data.sources import SOURCES
+
+    meta = json.loads(
+        (SOURCES[SC[0]].local_dir() / f"{SC[0].split('-', 1)[1]}_match.json").read_text()
+    )
+    text = json.dumps(s)
+    names = [p.get("last_name") for p in meta["players"] if p.get("last_name")]
+    assert names and not any(n in text for n in names)  # no player names are served

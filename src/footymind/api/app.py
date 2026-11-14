@@ -156,7 +156,42 @@ def match_summary(match_id: str) -> S.MatchSummary:
         n_possessions=int(m["counts"]["possessions"]),
         n_events=int(m["counts"]["events"]),
         pitch=S.Pitch(length=float(m["pitch"]["length"]), width=float(m["pitch"]["width"])),
+        **_match_meta(match_id),
     )
+
+
+@lru_cache(maxsize=256)
+def _match_meta(match_id: str) -> dict[str, str]:
+    """Public match facts from the provider's (checksum-verified) metadata file.
+
+    Only team short names, the competition, the round and the date are read: no player
+    names. Metrica's sample data is anonymised, so nothing is returned for it, and nothing
+    is returned when the raw file is not present (for example, processed-only deployments).
+    """
+    from footymind.data.sources import SOURCES
+
+    src = SOURCES.get(match_id)
+    if src is None or src.fmt != "skillcorner":
+        return {}
+    num = match_id.split("-", 1)[1]
+    path = src.local_dir() / f"{num}_match.json"
+    if not path.exists():
+        return {}
+    try:
+        d = json.loads(path.read_text())
+        out = {
+            "home_label": str(d["home_team"]["short_name"]),
+            "away_label": str(d["away_team"]["short_name"]),
+        }
+        comp = d.get("competition_edition", {}).get("competition", {}).get("name")
+        rnd = (d.get("competition_round") or {}).get("name")
+        if comp:
+            out["competition"] = f"{comp}, {rnd}" if rnd else str(comp)
+        if d.get("date_time"):
+            out["date"] = str(d["date_time"])[:10]
+        return out
+    except (KeyError, TypeError, ValueError):
+        return {}
 
 
 @lru_cache(maxsize=256)
@@ -509,6 +544,8 @@ def similar_moments(match_id: str, frame: int, k: int = 8) -> S.SimilarMomentsOu
             ball_x_att=_f(r["ball_x_att"], 1),
             press_nearest_def_m=_f(r["press_nearest_def_m"], 1),
             passer_control_s=_f(r["passer_control_s"], 1),
+            period=int(r["period"]) if r.get("period") is not None else None,
+            match_minute=_f(r.get("match_minute"), 1),
         )
         for r, d in zip(got.iter_rows(named=True), dist, strict=True)
     ]
