@@ -197,7 +197,9 @@ Limits = KinematicLimits | KinematicLimitsV2
 
 # Which envelope the response policies and the scenario feasibility diagnostic use.
 # 1 = the session-3 a priori envelope; 2 = envelope v2 with the provider's noise margin.
-ENVELOPE_VERSION = 1
+# v2 met its pre-registered adoption rule on both providers (session 4,
+# experiments/results/envelope_validation_v1*/results.json, rev e66719c). Set 1 to restore v1.
+ENVELOPE_VERSION = 2
 # Per-axis tracking noise from near-stationary players (research/envelope_noise.py),
 # pooled over every match of the provider; see experiments/results/envelope_validation_v1*.
 # (sigma_p in m, sigma_v in m/s); estimated before any v2 coverage was computed.

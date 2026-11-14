@@ -43,9 +43,9 @@ import numpy as np
 import numpy.typing as npt
 
 from footymind.counterfactual.kinematics import (
-    DEFAULT_LIMITS,
     Envelope,
-    KinematicLimits,
+    Limits,
+    default_limits,
     reachability_envelope,
 )
 from footymind.counterfactual.response_model import (
@@ -100,7 +100,9 @@ class Intervention:
 class ResponseContext:
     pitch: PitchSpec = field(default_factory=PitchSpec)
     horizon_s: float = 1.5
-    limits: KinematicLimits = DEFAULT_LIMITS
+    # The envelope in force (kinematics.ENVELOPE_VERSION). Without a provider it has no
+    # measurement margin; the scenario engine passes the provider's limits.
+    limits: Limits = field(default_factory=default_limits)
     follow_fraction: float = 0.5
     ball_velocity: F | None = None  # canonical frame, causal; None if unavailable
     model: ResponseModel | None = None
@@ -150,7 +152,8 @@ class PolicySpec:
     assumptions: tuple[str, ...]
 
 
-def _specs(limits: KinematicLimits = DEFAULT_LIMITS) -> dict[str, PolicySpec]:
+def _specs(limits: Limits | None = None) -> dict[str, PolicySpec]:
+    limits = limits or default_limits()
     kin = _KINEMATIC.format(limits=limits.describe())
     common = (_DIFFERENTIAL, kin, _WHO, _NOT_WHAT)
     return {

@@ -24,6 +24,7 @@ from typing import Any
 import numpy as np
 import polars as pl
 
+from footymind.counterfactual.kinematics import DEFAULT_LIMITS, default_limits
 from footymind.counterfactual.response import Intervention, ResponseContext, apply_response
 from footymind.counterfactual.response_model import load_response_model
 from footymind.counterfactual.scenario import ball_velocity
@@ -37,8 +38,12 @@ DIRECTIONS = ((1.0, 0.0), (-1.0, 0.0), (0.0, 1.0), (0.0, -1.0))
 HORIZON_S = 1.5  # scenario default
 
 
-def main(provider: str = "metrica", max_frames: int = 300, seed: int = 0) -> dict[str, Any]:
+def main(
+    provider: str = "metrica", max_frames: int = 300, seed: int = 0, version: int = 1
+) -> dict[str, Any]:
+    """v1: the session-3 envelope (reproduces C44). v2: the envelope in force (v2)."""
     t0 = time.time()
+    limits = DEFAULT_LIMITS if version == 1 else default_limits(provider)
     rng = np.random.default_rng(seed)
     mids = [m for m in available_matches() if m.startswith(provider + "-")]
     model = load_response_model(provider)
@@ -70,6 +75,7 @@ def main(provider: str = "metrica", max_frames: int = 300, seed: int = 0) -> dic
             horizon_s=HORIZON_S,
             ball_velocity=ball_velocity(mid, f),
             model=model,
+            limits=limits,
         )
         for pol in POLICIES:
             if pol == "learned" and model is None:
@@ -104,7 +110,7 @@ def main(provider: str = "metrica", max_frames: int = 300, seed: int = 0) -> dic
                 "p95_max_move_m": float(np.percentile(a[:, 1], 95)),
                 "mean_total_move_m": float(a[:, 2].mean()),
             }
-    name = "response_sensitivity_v1" + ("" if provider == "metrica" else f"_{provider}")
+    name = f"response_sensitivity_v{version}" + ("" if provider == "metrica" else f"_{provider}")
     result = {
         "name": name,
         "provider": provider,
@@ -114,6 +120,7 @@ def main(provider: str = "metrica", max_frames: int = 300, seed: int = 0) -> dic
         "runtime_s": round(time.time() - t0, 1),
         "n_frames": used,
         "horizon_s": HORIZON_S,
+        "envelope": limits.describe(),
         "displacements_m": list(DISPLACEMENTS_M),
         "note": "descriptive: size of simulated responses, not their correctness",
         "summary": summary,
@@ -131,4 +138,5 @@ if __name__ == "__main__":
     main(
         sys.argv[1] if len(sys.argv) > 1 else "metrica",
         max_frames=int(sys.argv[2]) if len(sys.argv) > 2 else 300,
+        version=int(sys.argv[3]) if len(sys.argv) > 3 else 1,
     )
