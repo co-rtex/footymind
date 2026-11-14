@@ -6,8 +6,10 @@ verified results and the next action.
 ## Commands
 ```bash
 uv sync                                   # Python env (3.11+; developed on 3.13)
-uv run footymind download                 # fetch Metrica sample data (checksum-verified, ~180 MB)
-uv run footymind ingest                   # build data/processed/<match>/ bundles (~3 s/match)
+uv run footymind download metrica-sample-1 metrica-sample-2 metrica-sample-3   # ~180 MB, checksum-verified
+uv run footymind ingest metrica-sample-1 metrica-sample-2 metrica-sample-3     # ~3 s/match
+#   (without ids: every registered source, incl. 20 SkillCorner matches, ~2 GB)
+uv run footymind build-similarity-index   # per-provider "Similar moments" index (derived)
 uv run pytest -q                          # all tests; real-data tests skip if data is absent
 scripts/check.sh                          # every CI gate locally (Python + web); run before committing
 uv run footymind serve                    # API on :8000 (serves web/dist at / if built)

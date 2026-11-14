@@ -23,7 +23,9 @@ shows the attribution returned by the API on every page.
 ```bash
 # 1. backend (from the repository root)
 uv sync
-uv run footymind download && uv run footymind ingest   # first time only
+uv run footymind download metrica-sample-1 metrica-sample-2 metrica-sample-3   # first time only
+uv run footymind ingest metrica-sample-1 metrica-sample-2 metrica-sample-3
+uv run footymind build-similarity-index --provider metrica
 uv run footymind serve                                  # API on :8000
 
 # 2. frontend dev server (proxies /api to :8000)
