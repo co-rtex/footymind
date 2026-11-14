@@ -37,6 +37,8 @@ run uv run python -m footymind.research.shadow_stability
 run uv run python -m footymind.research.shadow_validation metrica
 run uv run python -m footymind.research.run_value_validation metrica
 run uv run python -m footymind.research.movement_decomposition_study metrica
+run uv run python -m footymind.research.rule_response_check metrica 150
+run uv run python -m footymind.research.similarity_validation metrica
 run uv run footymind train-option-model --provider metrica
 # Defender response forecasts (validation first: the trainer copies its verdict into the model).
 run uv run python -m footymind.research.response_validation metrica
