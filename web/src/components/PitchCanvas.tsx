@@ -1,7 +1,7 @@
 import { useEffect, useRef, type PointerEvent } from "react";
 import type { ReplayData } from "../api/parse";
 import { INTERVENTION_BOUNDS } from "../api/types";
-import { clamp, pitchAspect } from "../lib/coords";
+import { clamp, pitchAspect, pitchCssWidth } from "../lib/coords";
 import { PitchRenderer, type DragState, type DrawnPlayer } from "../render/renderer";
 import { readTheme } from "../render/theme";
 
@@ -67,18 +67,21 @@ export function PitchCanvas({
     rendererRef.current = r;
     const aspect = pitchAspect(replay.pitch);
     const fit = () => {
-      const w = Math.max(240, Math.floor(wrap.clientWidth));
+      const w = pitchCssWidth(wrap.clientWidth, window.innerHeight, aspect);
       r.resize(w, Math.round(w * aspect));
     };
     fit();
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(fit) : null;
     ro?.observe(wrap);
+    // the width also depends on the viewport height (a rotated tablet, a resized window)
+    window.addEventListener("resize", fit);
     // re-rasterise when the device pixel ratio changes (zoom, moving between screens)
     const mq = typeof matchMedia !== "undefined" ? matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`) : null;
     mq?.addEventListener?.("change", fit);
     onReady(r);
     return () => {
       ro?.disconnect();
+      window.removeEventListener("resize", fit);
       mq?.removeEventListener?.("change", fit);
       r.destroy();
       rendererRef.current = null;

@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { fitPitch, insidePitch, pitchAspect, PITCH_MARGIN_M, toCanvas, toCanvasY, toPitch } from "./coords";
+import {
+  fitPitch,
+  insidePitch,
+  pitchAspect,
+  pitchCssWidth,
+  PITCH_MARGIN_M,
+  PITCH_RESERVED_HEIGHT_PX,
+  toCanvas,
+  toCanvasY,
+  toPitch,
+} from "./coords";
 
 const PITCH = { length: 105, width: 68 };
 
@@ -62,5 +72,29 @@ describe("canonical <-> canvas transform", () => {
     expect(insidePitch(PITCH, 52.5, 34)).toBe(true);
     expect(insidePitch(PITCH, 53.5, 0)).toBe(false);
     expect(insidePitch(PITCH, 53.5, 0, 2)).toBe(true);
+  });
+});
+
+describe("pitch canvas width (pitchCssWidth)", () => {
+  const aspect = pitchAspect(PITCH);
+
+  it("uses the full container width when the pitch fits the viewport height", () => {
+    expect(pitchCssWidth(910, 900, aspect)).toBe(910); // desktop 1440x900, wide layout
+    expect(pitchCssWidth(770, 1180, aspect)).toBe(770); // tablet portrait
+    expect(pitchCssWidth(356, 844, aspect)).toBe(356); // phone portrait
+  });
+
+  it("narrows a pitch that would be taller than the viewport, keeping room for the transport", () => {
+    // tablet landscape 1180x820: the full-width pitch is 757 px tall and pushed the controls off screen
+    const w = pitchCssWidth(1130, 820, aspect);
+    expect(w).toBeLessThan(1130);
+    expect(w * aspect).toBeLessThanOrEqual(820 - PITCH_RESERVED_HEIGHT_PX);
+  });
+
+  it("never shrinks below 60% of the container or 240 px, and ignores an unknown viewport", () => {
+    expect(pitchCssWidth(812, 390, aspect)).toBe(Math.floor(812 * 0.6));
+    expect(pitchCssWidth(300, 200, aspect)).toBe(240);
+    expect(pitchCssWidth(0, 800, aspect)).toBe(240);
+    expect(pitchCssWidth(1000, 0, aspect)).toBe(1000);
   });
 });

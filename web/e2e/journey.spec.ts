@@ -278,3 +278,28 @@ test("featured links are titled as the lab; an unknown match says so", async ({ 
   await page.getByRole("button", { name: "Browse possessions" }).click();
   await expect(page.getByTestId("unknown-match")).toContainText('This server has no match "no-such-match"');
 });
+
+test.describe("narrow screens", () => {
+  test.use({ viewport: { width: 320, height: 640 } });
+  test("a 320 px screen never scrolls sideways (landing, edit mode)", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByTestId("featured-card-response").getByTestId("featured-response")).toBeVisible({
+      timeout: 60_000,
+    });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+    await page.goto("/#/at/metrica-sample-2?f=31360&move=home_5,-29.04,9.47&response=learned_innovation");
+    await expect(page.getByTestId("scenario-panel")).toHaveAttribute("data-status", "success", { timeout: 60_000 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  });
+});
+
+test.describe("tablet landscape", () => {
+  test.use({ viewport: { width: 1180, height: 820 } });
+  test("watching the tour keeps the play/pause control on screen", async ({ page }) => {
+    await page.goto("/#/at/metrica-sample-1?f=53708&tour=press");
+    await expect(page.getByTestId("guide")).toBeVisible();
+    await page.getByTestId("guide-watch").click();
+    await expect(page.getByTestId("play-toggle")).toHaveAttribute("aria-label", "Pause");
+    await expect(page.getByTestId("play-toggle")).toBeInViewport({ ratio: 1 });
+  });
+});

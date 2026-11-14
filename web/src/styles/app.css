@@ -350,6 +350,7 @@ kbd {
 
 .segmented-wrap {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-2);
 }
@@ -870,6 +871,8 @@ kbd {
 }
 .pitch-canvas {
   display: block;
+  /* narrower than its frame when the viewport is short (see pitchCssWidth): centred */
+  margin: 0 auto;
   touch-action: manipulation;
   user-select: none;
 }
@@ -1796,6 +1799,8 @@ kbd {
 }
 .policy-note p {
   margin: 0;
+  /* evidence paths (experiments/results/…/results.json) must wrap on a phone */
+  overflow-wrap: anywhere;
 }
 .policy-fit {
   color: var(--c-warning);
@@ -2049,4 +2054,16 @@ h3 {
 .similar-validation,
 .similar-validation code {
   overflow-wrap: anywhere;
+}
+
+/* The policy names are long: the closed select shrinks with its card instead of widening it
+   (a 320 px wide screen otherwise scrolled sideways in edit mode). */
+.policy-picker-row .select {
+  max-width: 100%;
+  min-width: 0;
+}
+@media (max-width: 400px) {
+  .policy-picker-row .select {
+    width: 100%;
+  }
 }
