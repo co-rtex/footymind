@@ -71,6 +71,95 @@ rejection ≥ 0.90 at 0.5 s and ≥ 0.50 at 1.0 s; permutation rejection ≥ 0.9
 descriptive and cannot be adopted. A runtime pilot on one SkillCorner match is run with its
 output discarded unread, to check cost and errors only.
 
+### Results (`experiments/results/envelope_validation_v1[_skillcorner]/results.json`, rev e66719c)
+
+Rows: Metrica 36,448 defender rows (3 matches, 1,001 possessions); SkillCorner 107,800
+detected-only rows (20 matches, 4,034 possessions; 43,409 rows excluded for an extrapolated
+start position and 8,555 for an extrapolated target frame). 95% CIs are possession-clustered.
+
+| Provider | Envelope | Coverage 0.5 s | Coverage 1.0 s | Coverage 1.5 s | Area 0.5 / 1.0 / 1.5 s (m²) |
+|---|---|---|---|---|---|
+| Metrica | v1 | 0.311 [0.303, 0.319] | 0.725 [0.718, 0.733] | 0.858 [0.853, 0.864] | 0.05 / 3.0 / 24.6 |
+| Metrica | **v2** | **0.998** [0.998, 0.999] | **0.999** [0.999, 1.000] | 1.000 [0.999, 1.000] | 5.2 / 39.2 / 142.7 |
+| Metrica | disc 7 m/s (`supported`) | 0.997 | 0.998 | 0.998 | 41.7 / 154.2 / 356.2 |
+| SkillCorner | v1 | 0.188 [0.184, 0.191] | 0.609 [0.604, 0.614] | 0.764 [0.760, 0.768] | 0.04 / 3.0 / 23.0 |
+| SkillCorner | **v2** | **0.9997** [0.9996, 0.9998] | **0.9996** [0.9995, 0.9997] | 0.9997 | 5.0 / 40.1 / 139.2 |
+| SkillCorner | disc 7 m/s (`supported`) | 0.995 | 0.996 | 0.997 | 38.5 / 154.2 / 346.9 |
+
+| Provider | Envelope | Shift rejection 0.5 / 1.0 / 1.5 s | Permutation rejection 0.5 / 1.0 / 1.5 s |
+|---|---|---|---|
+| Metrica | v1 | 1.000 / 1.000 / 0.965 | 1.000 / 1.000 / 0.996 |
+| Metrica | **v2** | 1.000 / **0.977** [0.975, 0.979] / 0.153 | 0.999 / **0.994** [0.993, 0.995] / 0.962 |
+| Metrica | disc 7 m/s | 0.932 / 0.168 / 0.039 | 0.994 / 0.957 / 0.860 |
+| SkillCorner | v1 | 1.000 / 1.000 / 0.955 | 1.000 / 0.999 / 0.992 |
+| SkillCorner | **v2** | 1.000 / **0.960** [0.959, 0.961] / 0.205 | 1.000 / **0.988** [0.987, 0.989] / 0.926 |
+| SkillCorner | disc 7 m/s | 0.938 / 0.204 / 0.061 | 0.991 / 0.920 / 0.781 |
+
+Cost: one v2 envelope at 1.5 s takes 2.4 ms (Metrica run) / 2.2 ms (SkillCorner run), median,
+against 0.7 ms for v1; vectorised throughput is about 3,400–3,700 envelopes per second
+(v1 11,000–12,000).
+
+**Decision.** Every pre-registered check passes on both providers, so v2 is the default
+(`kinematics.ENVELOPE_VERSION = 2`) for the response policies' clipping and the kinematic
+feasibility diagnostic, with each provider's noise margin. v1 stays selectable
+(`ENVELOPE_VERSION = 1` or `default_limits(version=1)`), and every committed session-3 result
+still reproduces: `response_validation`, `rule_response_check` v1/v2 and
+`response_sensitivity` v1 pin `DEFAULT_LIMITS`. With v2 clipping, the learned model still
+meets its forecast rule (Metrica Δ FDE −0.0088 [−0.0097, −0.0077] m at 0.5 s and −0.039
+[−0.043, −0.036] at 1.0 s; SkillCorner −0.029 [−0.030, −0.028] and −0.126 [−0.129, −0.123];
+better in 3/3 and 20/20 matches). v2 clipping no longer costs it anything (on SkillCorner
+v1 clipping cost 0.005 m at 0.5 s).
+
+**Which causes mattered** (coverage at 0.5 s / 1.0 s, descriptive ablations):
+
+| Variant | Metrica | SkillCorner |
+|---|---|---|
+| v1 | 31.1% / 72.5% | 18.8% / 60.9% |
+| v1 without the reaction delay | 88.1% / 93.4% | 80.3% / 87.2% |
+| v2 structure with v1's 3.5 m/s² | 98.0% / 97.5% | 97.0% / 94.5% |
+| v2 without the velocity lag | 99.5% / 99.8% | 99.6% / 99.8% |
+| v2 without the noise margin | 99.7% / 99.9% | 99.9% / 99.9% |
+| v2 isotropic (no force–velocity limit) | 99.8% / 99.9% | 99.98% / 99.99% |
+| v2 | 99.8% / 99.9% | 99.97% / 99.96% |
+
+1. *Reaction delay: the main cause.* Removing it alone recovers 57 / 21 points (Metrica) and
+   62 / 26 points (SkillCorner). In continuous play players are already accelerating; the
+   delay asserted an acceleration of zero.
+2. *Acceleration bound: the second cause.* Raising 3.5 to 7 m/s² (with the force–velocity
+   limit) closes the rest. Smoothed match accelerations exceed 3.5 m/s² in 1–7% of frames
+   (Metrica 1.2% below 2 m/s, 5.5% at 4–6 m/s; SkillCorner 2.6% and 7.3%).
+3. *Direction dependence: real, and it buys precision rather than coverage.* At speed the
+   braking and turning tails exceed the propulsive tail (99th percentiles at 4–6 m/s:
+   propulsive 3.8 / 3.4, braking 4.3 / 4.3, turning 4.4 / 4.5 m/s², Metrica / SkillCorner;
+   the Metrica 6+ m/s band is inflated by tracking artefacts). The force–velocity limit costs
+   at most 0.03 points of coverage but cuts the area by 35% at 1.0 s (60 → 39–40 m²) and lifts
+   1.0 s shift rejection from 0.88 / 0.83 to 0.98 / 0.96.
+4. *Velocity estimate: lag more than noise.* The causal 0.2 s velocity differs from the
+   centred velocity at `t` by 0.13–0.42 m/s RMS on Metrica (0.15–0.21 SkillCorner), but from
+   the centred velocity 0.1 s earlier by only 0.05–0.19 (0.03–0.04): the error is mainly the
+   0.1 s lag, as expected from the estimator. Stationary-player velocity noise is small
+   (σv 0.069 / 0.079 m/s pooled; robust 0.030 / 0.053), and the 10 fps estimate is only
+   slightly noisier. The lag term is worth 0.3–0.5 points of coverage at 0.5 s.
+5. *Measurement margin: minor.* σp is 0.017 m / 0.033 m (RMS; median 0.006 / 0.013); the
+   margin is 0.18 / 0.23 m at 1.0 s and adds 0.1 points of coverage. SkillCorner positions are
+   smoothed by the provider, so stationary jitter may understate their error while moving;
+   the margin is a lower bound there.
+6. *The horizon-end test was not wrong:* the unit conversion is correct (pinned by a test),
+   and v1's misses are explained by 1–2 above.
+
+**Precision trade-off and the scenario's `supported`.** v2 is far larger than v1 (it was an
+inner bound) but rejects 96–98% of 5 m shifts at 1.0 s. At the scenario's default 1.5 s every
+physical envelope becomes permissive (shift rejection 0.15 / 0.21), yet v2 still dominates the
+constant-speed disc that decides `supported`: equal or higher coverage, an area 2.5× smaller
+at 1.5 s (about 4× at 1.0 s), and 3–4× the shift rejection at 1.5 s (5–6× at 1.0 s). `supported` was **not** switched: the web
+lab draws the disc (`reach_radius_m`), the API schema says the kinematic check "does not
+change supported", and both belong to the API owner. The switch is one constant
+(`scenario.SUPPORTED_REACHABILITY = "envelope"`, which also rewords the warning); with it set,
+all 26 existing scenario/API tests still pass on real data (checked, then reverted). Post hoc
+and not adoptable: `v2_accel_3.5` already reaches 97–98% coverage at a third of v2's area,
+so a tighter, empirically sized bound would need its own pre-registration and a fresh
+held-out test.
+
 ## Part 2. Why is the learned response model inert?
 
 ### Pre-registration (written and committed before the D4 evaluation was run)

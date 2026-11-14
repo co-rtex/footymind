@@ -151,17 +151,22 @@ _WHO = (
 _NOT_WHAT = "This is not what the defender would have done; no ground truth exists for it."
 # Observational check (claim C37, v2 design; research/rule_response_check.py): attackers'
 # real movement *beyond their own constant velocity* is treated as the intervention, and the
-# rule's simulated moves are compared with where defenders really went.
+# rule's simulated moves are compared with where defenders really went. The clipped rules
+# (lane_cover, press_carrier, zonal_shift) were re-checked with envelope v2 (v3 results,
+# session 4); marker_follows applies no envelope and is unchanged.
 _OBS_HEAD = "Observational check (C37): "
 _OBS_CHECK = {
     "marker_follows": _OBS_HEAD + "with attackers' unexpected real movement as the intervention, "
     "this rule's moves match how real markers moved (about the right direction and size) on "
     "both providers, beyond a permuted placebo. Still a rule, not a prediction.",
     "lane_cover": _OBS_HEAD + "with attackers' unexpected real movement as the intervention, "
-    "this rule's moves match real defender movement in direction and size on both providers, "
-    "beyond a permuted placebo. Still a rule, not a prediction.",
-    "press_carrier": _OBS_HEAD + "consistent with real pressing on Metrica, but not supported "
-    "on SkillCorner broadcast data. Treat its moves as an illustration of the assumption.",
+    "this rule's moves match real defender movement in direction on both providers, beyond a "
+    "permuted placebo; with the current envelope (v2) real defenders move about 0.8 of its "
+    "simulated moves. Still a rule, not a prediction.",
+    "press_carrier": _OBS_HEAD + "not supported with the current envelope (v2): its moves are "
+    "larger than real pressing reactions (real movement is 0.3-0.6 of them) and worse than "
+    "constant velocity on SkillCorner. Under the tighter session-3 envelope it was consistent "
+    "with real pressing on Metrica only. Treat its moves as an illustration of the assumption.",
     "zonal_shift": _OBS_HEAD + "real defensive blocks shift much less than this rule assumes "
     "(real movement is 0.13-0.22 of its simulated moves), on both providers. Treat its moves as an "
     "illustration of the assumption, not as a plausible response.",
