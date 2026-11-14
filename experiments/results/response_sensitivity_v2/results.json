@@ -1,0 +1,131 @@
+{
+  "name": "response_sensitivity_v2",
+  "provider": "metrica",
+  "matches": [
+    "metrica-sample-1",
+    "metrica-sample-2",
+    "metrica-sample-3"
+  ],
+  "code_revision": "6b9308d83324d5b28feec90aa00ea60ed6fa03de",
+  "response_model_code_revision": "61447dd08b07c262f52b5a0a9995f20fd79e22c9",
+  "innovation_model_code_revision": "f9dfb9bcce9f7b19f3e0398a74bf8e641fac954e",
+  "runtime_s": 247.9,
+  "n_frames": 300,
+  "horizon_s": 1.5,
+  "envelope": "envelope v2: no reaction delay, <= 7.0 m/s^2 braking or turning, speeding up <= 7(1 - v/9) m/s^2, <= 9.0 m/s, 0.10 s velocity lag, noise margin 2.45 sigma (position 0.017 m, velocity 0.07 m/s)",
+  "displacements_m": [
+    1.0,
+    5.0
+  ],
+  "note": "descriptive: size of simulated responses, not their correctness",
+  "summary": {
+    "marker_follows": {
+      "1m": {
+        "n_probes": 1200,
+        "share_any_move": 0.6266666666666667,
+        "mean_defenders_moved": 0.6266666666666667,
+        "mean_max_move_m": 0.31333333333333335,
+        "p95_max_move_m": 0.5,
+        "mean_total_move_m": 0.31333333333333335
+      },
+      "5m": {
+        "n_probes": 1200,
+        "share_any_move": 0.6266666666666667,
+        "mean_defenders_moved": 0.6266666666666667,
+        "mean_max_move_m": 1.5666666666666667,
+        "p95_max_move_m": 2.5,
+        "mean_total_move_m": 1.5666666666666667
+      }
+    },
+    "press_carrier": {
+      "1m": {
+        "n_probes": 1200,
+        "share_any_move": 0.8991666666666667,
+        "mean_defenders_moved": 0.8991666666666667,
+        "mean_max_move_m": 0.6202866465470707,
+        "p95_max_move_m": 0.9942590024497994,
+        "mean_total_move_m": 0.6202866465470707
+      },
+      "5m": {
+        "n_probes": 1200,
+        "share_any_move": 0.9975,
+        "mean_defenders_moved": 0.9975,
+        "mean_max_move_m": 3.2685087566169644,
+        "p95_max_move_m": 4.9190251762821875,
+        "mean_total_move_m": 3.2685087566169644
+      }
+    },
+    "zonal_shift": {
+      "1m": {
+        "n_probes": 1200,
+        "share_any_move": 1.0,
+        "mean_defenders_moved": 9.938333333333333,
+        "mean_max_move_m": 0.40000000000000036,
+        "p95_max_move_m": 0.5,
+        "mean_total_move_m": 3.9690152667437206
+      },
+      "5m": {
+        "n_probes": 1200,
+        "share_any_move": 1.0,
+        "mean_defenders_moved": 9.999166666666667,
+        "mean_max_move_m": 2.0,
+        "p95_max_move_m": 2.5,
+        "mean_total_move_m": 19.966742885657077
+      }
+    },
+    "lane_cover": {
+      "1m": {
+        "n_probes": 1200,
+        "share_any_move": 0.8508333333333333,
+        "mean_defenders_moved": 0.8508333333333333,
+        "mean_max_move_m": 0.3023785833382056,
+        "p95_max_move_m": 1.0,
+        "mean_total_move_m": 0.3023785833382056
+      },
+      "5m": {
+        "n_probes": 1200,
+        "share_any_move": 0.87,
+        "mean_defenders_moved": 0.87,
+        "mean_max_move_m": 1.3854261050194512,
+        "p95_max_move_m": 4.126391495085134,
+        "mean_total_move_m": 1.3854261050194512
+      }
+    },
+    "learned": {
+      "1m": {
+        "n_probes": 1200,
+        "share_any_move": 0.14083333333333334,
+        "mean_defenders_moved": 0.14833333333333334,
+        "mean_max_move_m": 0.0018217864606254242,
+        "p95_max_move_m": 0.012574931115740411,
+        "mean_total_move_m": 0.0019007345835325648
+      },
+      "5m": {
+        "n_probes": 1200,
+        "share_any_move": 0.9991666666666666,
+        "mean_defenders_moved": 7.8525,
+        "mean_max_move_m": 0.03573158562173282,
+        "p95_max_move_m": 0.055125268008234765,
+        "mean_total_move_m": 0.1758046204466749
+      }
+    },
+    "learned_innovation": {
+      "1m": {
+        "n_probes": 1200,
+        "share_any_move": 0.9633333333333334,
+        "mean_defenders_moved": 9.5425,
+        "mean_max_move_m": 0.2562844950731802,
+        "p95_max_move_m": 0.417368796917413,
+        "mean_total_move_m": 0.9824732373916911
+      },
+      "5m": {
+        "n_probes": 1200,
+        "share_any_move": 0.9633333333333334,
+        "mean_defenders_moved": 9.576666666666666,
+        "mean_max_move_m": 1.2810803399108122,
+        "p95_max_move_m": 2.0848107039225496,
+        "mean_total_move_m": 4.929254689195687
+      }
+    }
+  }
+}
