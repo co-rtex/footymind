@@ -33,7 +33,12 @@ from footymind.tracking import metrica, metrica_epts, skillcorner
 from footymind.tracking.model import DatasetProvenance, PitchSpec, PlayerInfo, TrackingData
 from footymind.tracking.possessions import assign_possessions
 
-PIPELINE_VERSION = "2"  # 2: SkillCorner adapter v2 events (restarts, recoveries, ball-outs)
+# 2: SkillCorner adapter v2 events (restarts, recoveries, ball-outs).
+# 3: event and possession end frames never leave their period. A SkillCorner event's end was
+#    the next possession's start even across half-time, so a few possessions spanned the break
+#    (release review, 2026-11-14). Such ends are now null, and possession ends are clipped to
+#    the period's last tracked frame. Bundles from v2 carry those cross-period ends.
+PIPELINE_VERSION = "3"
 
 
 def git_revision() -> str:
@@ -102,7 +107,8 @@ def ingest(match_id: str, raw_root: Path = RAW_DIR, out_root: Path = PROCESSED_D
     else:
         raise NotImplementedError(f"format {src.fmt}")
     report = validate(td, events, sync_gate)
-    events, possessions = assign_possessions(events, match_id)
+    period_last = {int(p): int(td.frame[td.period == p].max()) for p in np.unique(td.period)}
+    events, possessions = assign_possessions(events, match_id, period_last)
 
     out = out_root / match_id
     out.mkdir(parents=True, exist_ok=True)

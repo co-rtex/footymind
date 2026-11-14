@@ -18,17 +18,25 @@ splits short scrambles into micro-possessions, which the ``n_events`` and
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 import polars as pl
 
 NON_POSSESSION_TYPES = frozenset({"CHALLENGE", "CARD", "FAULT RECEIVED"})
 TERMINAL_TYPES = frozenset({"BALL OUT", "SHOT"})
 
 
-def assign_possessions(events: pl.DataFrame, match_id: str) -> tuple[pl.DataFrame, pl.DataFrame]:
+def assign_possessions(
+    events: pl.DataFrame, match_id: str, period_last_frame: Mapping[int, int] | None = None
+) -> tuple[pl.DataFrame, pl.DataFrame]:
     """Return ``(events_with_possession_id, possessions)``.
 
     Possession ids are stable strings ``"{match_id}:p{index:04d}"``. The index
     is the order of appearance, which is deterministic for a given event file.
+
+    ``period_last_frame`` (period -> last tracked frame) clips each possession's
+    ``end_frame`` to its own period, so a provider event whose end lies past the period
+    (for example in the next half) can never make a possession span half-time.
     """
     ev = events.sort(["start_frame", "event_id"])
     pos_ids: list[str | None] = []
@@ -77,4 +85,16 @@ def assign_possessions(events: pl.DataFrame, match_id: str) -> tuple[pl.DataFram
             pl.lit(match_id).alias("match_id"),
         )
     )
+    if period_last_frame:
+        last = pl.col("period").replace_strict(
+            {int(k): int(v) for k, v in period_last_frame.items()},
+            default=None,
+            return_dtype=pl.Int64,
+        )
+        possessions = possessions.with_columns(
+            pl.when(last.is_not_null() & (pl.col("end_frame") > last))
+            .then(pl.max_horizontal(last, pl.col("start_frame")))
+            .otherwise(pl.col("end_frame"))
+            .alias("end_frame")
+        )
     return ev, possessions

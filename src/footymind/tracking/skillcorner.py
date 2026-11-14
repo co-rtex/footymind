@@ -148,7 +148,11 @@ def load_events(events_csv: Path, meta: dict[str, Any], td: TrackingData) -> pl.
       - ``possession_loss`` → ``BALL LOST``/``THEFT``; ``clearance`` → ``BALL LOST``/``CLEARANCE``;
         ``shot`` → ``SHOT``. None of these are pass attempts under the label rules.
 
-    ``end_frame`` is the start of the next player possession (reception or interception).
+    ``end_frame`` is the start of the next player possession (reception or interception)
+    when that possession is in the **same period** and within its tracked frames. Otherwise
+    (the last possession before half-time or full time) the end is unknown and stays null,
+    the same convention as a Metrica event without an end frame. Taking the next period's
+    first possession made events, and so possessions, span half-time (release review).
     Event positions come from ``x_end``/``y_end``, the passer at ``frame_end``. These are
     metres in the attacking team's frame (verified: after the attack sign they match the
     tracked passer, with a median distance of 0 m). They are rotated into the canonical frame.
@@ -176,6 +180,7 @@ def load_events(events_csv: Path, meta: dict[str, Any], td: TrackingData) -> pl.
     ]
     recs = pp.select([c for c in cols if c in pp.columns]).to_dicts()
     frames = set(td.frame.tolist())
+    period_last = {int(p): int(td.frame[td.period == p].max()) for p in np.unique(td.period)}
     out: list[dict[str, Any]] = []
 
     def emit(**kw: Any) -> None:
@@ -237,6 +242,10 @@ def load_events(events_csv: Path, meta: dict[str, Any], td: TrackingData) -> pl.
             typ = "SHOT"
         else:
             continue
+        end: int | None = None
+        if nxt is not None and int(nxt["period"]) == per:
+            nf = int(nxt["frame_start"])
+            end = nf if nf <= period_last.get(per, -1) else None
         if restart:
             emit(
                 type="SET PIECE",
@@ -253,7 +262,7 @@ def load_events(events_csv: Path, meta: dict[str, Any], td: TrackingData) -> pl.
             type=typ,
             subtype=sub,
             start_frame=f0,
-            end_frame=int(nxt["frame_start"]) if nxt is not None else None,
+            end_frame=end,
             start_time_s=f0 / SKILLCORNER_FPS,
             to_player_id=to,
             start_x=sx,

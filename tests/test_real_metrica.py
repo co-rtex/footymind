@@ -6,7 +6,7 @@ import pytest
 
 from footymind.data import sources
 from footymind.data.store import ingest, load_match
-from tests.conftest import METRICA_RAW, requires_metrica
+from tests.conftest import METRICA_RAW, assert_ends_within_periods, requires_metrica
 
 pytestmark = [requires_metrica, pytest.mark.data]
 
@@ -68,3 +68,7 @@ def test_possessions_partition_events(bundle) -> None:  # type: ignore[no-untype
     assert pos["possession_id"].is_unique().all()
     assert ev.filter(pl.col("type") == "PASS")["possession_id"].null_count() == 0
     assert (pos["end_frame"] >= pos["start_frame"]).all()
+
+
+def test_no_event_or_possession_ends_past_its_period(bundle) -> None:  # type: ignore[no-untyped-def]
+    assert_ends_within_periods(bundle)
