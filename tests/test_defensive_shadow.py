@@ -100,6 +100,7 @@ def test_shadow_endpoint() -> None:
     assert j["defenders"] and all(d["provenance"] == "estimated" for d in j["defenders"])
     assert len(j["defenders"][0]["alternatives"]) == 8
     assert "experimental" in j["status"] and "not better than nearest-defender" in j["status"]
+    assert j["provider"] == "metrica" and j["validation_claim"] == "C17"
     assert j["noise_floor"] == 0.025 and j["horizon_s"] == 1.0 and j["alt_radius_m"] == 3.5
     for d in j["defenders"]:
         if d["most_suppressed_receiver"] is not None:
@@ -113,3 +114,43 @@ def test_recovery_window_is_a_time_not_a_frame_count() -> None:
 
     assert recovery_window_frames(25.0) == 50
     assert recovery_window_frames(10.0) == 20
+
+
+def test_shadow_status_is_per_provider_and_cites_the_ledger() -> None:
+    """Regression (release review): one Metrica-based status was served for every provider."""
+    from pathlib import Path
+
+    from footymind.api.app import SHADOW_STATUS
+    from footymind.paths import REPO_ROOT
+
+    assert set(SHADOW_STATUS) == {"metrica", "skillcorner"}
+    ledger = (REPO_ROOT / "docs" / "CLAIMS_LEDGER.md").read_text()
+    for provider, (status, claim, ref) in SHADOW_STATUS.items():
+        assert f"| {claim} |" in ledger and ref in ledger, provider
+        assert (REPO_ROOT / ref).exists() and Path(ref).name == "results.json"
+        assert claim in status and "Not a defender rating" in status
+    assert "2x chance" in SHADOW_STATUS["metrica"][0]
+    sc = SHADOW_STATUS["skillcorner"][0]
+    assert "no better than chance" in sc and "2x" not in sc
+
+
+SC = sorted(m for m in available_matches() if m.startswith("skillcorner-"))
+
+
+@pytest.mark.skipif(not SC, reason="processed SkillCorner data not available")
+def test_shadow_endpoint_on_skillcorner_cites_the_non_replication() -> None:
+    import polars as pl
+
+    from footymind.api.app import app
+    from footymind.data.store import load_match
+
+    c = TestClient(app)
+    passes = load_match(SC[0]).events.filter(pl.col("type") == "PASS")
+    for f in passes["start_frame"].to_list()[::25]:
+        r = c.get(f"/api/matches/{SC[0]}/frames/{f}/defensive-shadow")
+        if r.status_code == 200:
+            break
+    assert r.status_code == 200, r.text
+    j = r.json()
+    assert j["provider"] == "skillcorner" and j["validation_claim"] == "C29"
+    assert "no better than chance" in j["status"] and "2x" not in j["status"]

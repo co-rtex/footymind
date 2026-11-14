@@ -689,6 +689,25 @@ def _summary(d: dict[str, object], a: FrameAnalysis) -> dict[str, float | int | 
     return out
 
 
+# Defensive Shadow is validated per provider (never pooled). Each status cites its ledger row.
+SHADOW_STATUS: dict[str, tuple[str, str, str]] = {
+    "metrica": (
+        "experimental: partly validated on Metrica (C17): about 2x chance at ranking the "
+        "eventual interceptor, but not better than nearest-defender. Not a defender rating.",
+        "C17",
+        "experiments/results/shadow_validation_v1/results.json",
+    ),
+    "skillcorner": (
+        "experimental: not validated on SkillCorner (C29): no better than chance on broadcast "
+        "data at ranking the eventual interceptor; worse than nearest-defender. "
+        "Not a defender rating.",
+        "C29",
+        "experiments/results/shadow_validation_v1_skillcorner/results.json",
+    ),
+}
+SHADOW_STATUS_UNVALIDATED = "experimental: not validated for this provider. Not a defender rating."
+
+
 @app.get(
     "/api/matches/{match_id}/frames/{frame}/defensive-shadow", response_model=S.DefensiveShadowOut
 )
@@ -703,7 +722,13 @@ def frame_defensive_shadow(
         r = defensive_shadow(match_id, frame, horizon_s=horizon_s, value_model=value_model)
     except ValueError as e:
         raise HTTPException(422, str(e)) from e
+    provider = provider_of(match_id)
+    status, claim, ref = SHADOW_STATUS.get(provider, (SHADOW_STATUS_UNVALIDATED, None, None))
     return S.DefensiveShadowOut(
+        provider=provider,
+        status=status,
+        validation_claim=claim,
+        validation_ref=ref,
         match_id=r.match_id,
         frame=r.frame,
         attacking_team=r.attacking_team,  # type: ignore[arg-type]
