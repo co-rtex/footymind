@@ -50,6 +50,15 @@ GUARD_S = 0.2  # v2: evaluate from the guard frame (ADR-0007)
 #   placebo     the innovations permuted among the moved attackers of the same frame. This
 #               keeps team-wide movement and breaks the attacker-defender pairing.
 DESIGNS = ("full", "innovation", "placebo")
+# v4 (second release review, 2026-11-14): the permutation placebo also "passes" the v2/v3
+# criterion (random partners give beta 0.8-0.9), and for carrier policies it borrowed a
+# non-carrier's innovation, so it was not size-matched. v4 adds a ROTATION placebo: each
+# mover's own innovation is rotated by a uniform random angle, which keeps its size for every
+# policy and breaks only its direction. The decision statistic is the PAIRED contrast
+# (innovation - rotation placebo) per decision frame and policy, possession-clustered and
+# match-stratified. A policy is supported only if it beats constant velocity AND beats the
+# size-matched placebo.
+DESIGNS_V4 = ("innovation", "placebo_rot", "placebo")
 CARRIER_POLICIES = ("press_carrier", "zonal_shift")
 ATTACKER_POLICIES = ("lane_cover", "marker_follows")
 
@@ -101,6 +110,10 @@ def _rows(
                         full = future[a] - obs.xy[a]
                         cv_a = np.nan_to_num(obs.vel[a]) * HORIZON_S
                         disp[a] = full if design == "full" else full - cv_a
+                        if design == "placebo_rot":
+                            ang = rng.uniform(0.0, 2.0 * np.pi)
+                            c, s_ = np.cos(ang), np.sin(ang)
+                            disp[a] = np.array([[c, -s_], [s_, c]]) @ disp[a]
                     if design == "placebo":
                         pool = [
                             int(a) for a in att if a != obs.carrier and int(a) in disp
@@ -149,6 +162,8 @@ def _rows(
                             {
                                 "match_id": mid,
                                 "possession_id": r["possession_id"],
+                                "frame": f,
+                                "defender": m.player_id,
                                 "design": design,
                                 "policy": policy,
                                 "move_m": float(np.linalg.norm(delta)),
@@ -188,6 +203,41 @@ def _summary(df: pl.DataFrame, n_boot: int, seed: int) -> dict[str, Any]:
     }
 
 
+def _paired(df: pl.DataFrame, a: str, b: str, n_boot: int, seed: int) -> dict[str, Any] | None:
+    """Paired contrast of designs ``a`` - ``b``: per (match, possession, frame), the mean
+    error change (policy - CV) over the defenders each design moved. Bootstrap over
+    possessions, stratified by match."""
+    keys = ["match_id", "possession_id", "frame"]
+
+    def per_frame(d: str) -> pl.DataFrame:
+        return (
+            df.filter(pl.col("design") == d)
+            .with_columns((pl.col("err_policy") - pl.col("err_cv")).alias("gain"))
+            .group_by(keys)
+            .agg(pl.col("gain").mean().alias(d))
+        )
+
+    j = per_frame(a).join(per_frame(b), on=keys, how="inner")
+    if j.height < 20:
+        return None
+    d = (j[a] - j[b]).to_numpy()
+    mids = j["match_id"].to_numpy()
+    poss = (j["match_id"] + "|" + j["possession_id"].fill_null("none")).to_numpy()
+    strata = []
+    for m in np.unique(mids):
+        pm = np.unique(poss[mids == m])
+        strata.append([np.flatnonzero(poss == q) for q in pm])
+    rng = np.random.default_rng(seed)
+    boots = []
+    for _ in range(n_boot):
+        idx = np.concatenate(
+            [np.concatenate([g[i] for i in rng.integers(0, len(g), len(g))]) for g in strata]
+        )
+        boots.append(float(d[idx].mean()))
+    ci = [float(np.percentile(boots, 2.5)), float(np.percentile(boots, 97.5))]
+    return {"n_frames": int(j.height), "delta_m": float(d.mean()), "ci95": ci}
+
+
 def main(
     provider: str = "metrica",
     n_per_match: int = 150,
@@ -201,7 +251,9 @@ def main(
     v2 with the envelope in force for the provider (envelope v2, session 4).
     """
     t0 = time.time()
-    guard, designs = (0.0, ("full",)) if version == 1 else (GUARD_S, DESIGNS)
+    guard, designs = (
+        (0.0, ("full",)) if version == 1 else (GUARD_S, DESIGNS_V4 if version >= 4 else DESIGNS)
+    )
     limits = default_limits(provider) if version >= 3 else DEFAULT_LIMITS
     df = pl.DataFrame(_rows(provider, n_per_match, seed, guard, designs, limits))
     by_design: dict[str, Any] = {}
@@ -221,9 +273,27 @@ def main(
         "guard_s": guard,
         "envelope": limits.describe(),
         "n_per_match": n_per_match,
-        "policies": by_design["full"],
+        "policies": by_design.get("full", by_design.get("innovation")),
         "designs": by_design,
     }
+    if version >= 4:
+        paired = {}
+        for p in (*CARRIER_POLICIES, *ATTACKER_POLICIES):
+            sub_p = df.filter(pl.col("policy") == p)
+            rot = _paired(sub_p, "innovation", "placebo_rot", n_boot, seed)
+            perm = _paired(sub_p, "innovation", "placebo", n_boot, seed)
+            inn = by_design["innovation"].get(p)
+            paired[p] = {
+                "innovation_minus_rotation_placebo": rot,
+                "innovation_minus_permutation_placebo": perm,
+                "supported": bool(
+                    inn is not None
+                    and inn["ci95"][1] < 0
+                    and rot is not None
+                    and rot["ci95"][1] < 0
+                ),
+            }
+        res["paired"] = paired
     res["runtime_s"] = round(time.time() - t0, 1)
     out = EXPERIMENTS_DIR / "results" / res["name"]
     out.mkdir(parents=True, exist_ok=True)
