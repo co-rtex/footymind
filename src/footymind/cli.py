@@ -13,6 +13,23 @@ GROUPS_HELP = (
 )
 
 
+def expand_groups(names: list[str]) -> list[str]:
+    """Expand ``metrica`` / ``skillcorner`` / ``all`` into registered ids; other names are kept
+    as given (unvalidated), in order and without duplicates."""
+    from footymind.data import sources
+
+    out: list[str] = []
+    for n in names:
+        if n == "all":
+            ids = list(sources.SOURCES)
+        elif n in ("metrica", "skillcorner"):
+            ids = [m for m in sources.SOURCES if m.startswith(n + "-")]
+        else:
+            ids = [n]
+        out += [m for m in ids if m not in out]
+    return out
+
+
 def resolve_sources(names: list[str]) -> list[str]:
     """Expand ``metrica`` / ``skillcorner`` / ``all`` into registered match ids, in order.
 
@@ -23,17 +40,10 @@ def resolve_sources(names: list[str]) -> list[str]:
 
     if not names:
         raise SystemExit(f"name the sources: {GROUPS_HELP}")
-    out: list[str] = []
-    for n in names:
-        if n == "all":
-            ids = list(sources.SOURCES)
-        elif n in ("metrica", "skillcorner"):
-            ids = [m for m in sources.SOURCES if m.startswith(n + "-")]
-        elif n in sources.SOURCES:
-            ids = [n]
-        else:
-            raise SystemExit(f"unknown source {n!r}: {GROUPS_HELP}")
-        out += [m for m in ids if m not in out]
+    out = expand_groups(names)
+    unknown = [m for m in out if m not in sources.SOURCES]
+    if unknown:
+        raise SystemExit(f"unknown source {unknown[0]!r}: {GROUPS_HELP}")
     return out
 
 

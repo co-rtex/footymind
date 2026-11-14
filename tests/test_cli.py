@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from footymind.cli import main, resolve_sources
+from footymind.cli import expand_groups, main, resolve_sources
 from footymind.data import sources
 
 
@@ -72,3 +72,13 @@ def test_ingest_without_raw_data_names_the_download_command(
     monkeypatch.setattr(sources, "RAW_DIR", root / "raw")
     with pytest.raises(SystemExit, match="run `footymind download metrica-sample-1` first"):
         main(["ingest", "metrica-sample-1"])
+
+
+def test_expand_groups_keeps_unknown_names_for_the_entrypoint_to_report() -> None:
+    # the Docker entrypoint expands groups, then reports and skips unregistered ids
+    assert expand_groups(["metrica", "nope"]) == [
+        "metrica-sample-1",
+        "metrica-sample-2",
+        "metrica-sample-3",
+        "nope",
+    ]

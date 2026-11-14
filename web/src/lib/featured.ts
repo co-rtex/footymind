@@ -69,7 +69,7 @@ export const FEATURED: readonly FeaturedScenario[] = [
     steps: (t) => ({
       watch: `Replay the real possession: ${t.away} play out from the back while ${t.home} press high. Every player and ball position drawn in the replay is observed tracking data.`,
       why: `Pause on the pass. The pitch shows the space each team controls, the passing options and the pressure on the ball; the panel says what stands out and why.`,
-      move: `Move #9 ${t.home} a few metres, within the region he could have reached, and compare the model's estimates with what was observed.`,
+      move: `Move #9 ${t.home} a few metres, within the region they could have reached, and compare the model's estimates with what was observed.`,
     }),
   },
   {
@@ -88,7 +88,7 @@ export const FEATURED: readonly FeaturedScenario[] = [
     steps: (t) => ({
       watch: `Replay the real possession from broadcast tracking. Solid players are detected by the camera; hollow ones are off camera, and their positions are provider estimates, not observations.`,
       why: `Pause on the pass. See the space, the pressure on the ball and the passing options, and which inputs are estimates.`,
-      move: `Move #25 ${t.home} within the region he could have reached and compare the estimates with what was observed.`,
+      move: `Move #25 ${t.home} within the region they could have reached and compare the estimates with what was observed.`,
     }),
   },
   {

@@ -2,8 +2,8 @@
 # Ensure processed bundles in $FOOTYMIND_DATA_DIR can be served, then run the command.
 #
 # * Empty volume (first start): download (checksum-verified) and ingest FOOTYMIND_SOURCES
-#   (default: the three Metrica sample games, ~180 MB). Add SkillCorner match ids
-#   (skillcorner-<id>, ~90 MB each) if wanted. A failure here stops the container.
+#   (default: the three Metrica sample games, ~180 MB). It takes match ids (skillcorner-<id>,
+#   ~90 MB each) and the groups metrica / skillcorner / all. A failure here stops the container.
 # * Existing volume: re-ingest bundles built by another pipeline version (an image upgrade),
 #   and ingest any source in FOOTYMIND_SOURCES (same default) that has no bundle yet, one
 #   source at a time. A failure is reported and the server still starts; the affected matches
@@ -23,8 +23,9 @@ if [ -z "$(ls -A "${PROCESSED}" 2>/dev/null)" ]; then
   # shellcheck disable=SC2086
   footymind ingest ${SOURCES}
 else
-  TODO="$(python -c 'import os; from footymind.data.store import pending_ingest
-print(" ".join(pending_ingest(os.environ["SOURCES"].split())))')"
+  TODO="$(python -c 'import os; from footymind.cli import expand_groups
+from footymind.data.store import pending_ingest
+print(" ".join(pending_ingest(expand_groups(os.environ["SOURCES"].split()))))')"
   if [ -n "${TODO}" ]; then
     echo "footymind: ingesting outdated or missing sources: ${TODO}"
     # one source at a time: a source that cannot be downloaded does not block the others

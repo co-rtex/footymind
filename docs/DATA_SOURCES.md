@@ -7,7 +7,7 @@ hashes and code revision.
 
 ## In use
 
-### Metrica Sports sample data (Sample Games 1 and 2)
+### Metrica Sports sample data (Sample Games 1 and 2, CSV)
 
 | Field | Value |
 |---|---|
@@ -20,10 +20,11 @@ hashes and code revision.
 | Known quirks | Game 2 labels one player `"Player 26"` (with a space) in both files (handled, regression-tested). Substitutes are NaN while off the pitch. Rare tracking artefacts: 20 m/s linear drifts and snap-backs, and teleports up to 91 m (flagged by `implausible_motion_mask`, about 0.01% of player-frames). A few pass start annotations lag the kick, with the ball already 2–4 m away (handled by the event-based carrier fallback). |
 | Teams/players | Anonymised (`Home`/`Away`, `PlayerN`). The UI must not invent names. |
 
-### Metrica Sample Game 3 (registered, not yet ingested)
+### Metrica Sample Game 3 (EPTS/FIFA format), ingested
 
-EPTS/FIFA format: `tracking.txt` + `metadata.xml` + JSON events. Hashes are pinned. An
-adapter is planned (see ROADMAP). Adding it gives a third leave-one-match-out fold.
+`tracking.txt` + `metadata.xml` + JSON events, hashes pinned, read by the `metrica_epts`
+adapter (`metrica-sample-3`; 3,620 events, 475 possessions). It is the third Metrica
+leave-one-match-out fold (C11 onwards). Same licence terms as Games 1 and 2.
 
 ## Event semantics used for labels (Metrica)
 

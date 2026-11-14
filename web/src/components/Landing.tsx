@@ -143,9 +143,7 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
               <p className="small muted" data-testid="featured-missing">
                 {nMissing === 1 ? "One more featured situation needs" : `${nMissing} more featured situations need`} data
                 that is not loaded on this server (
-                {FEATURED.filter((f) => !featured.includes(f))
-                  .map((f) => f.source)
-                  .join("; ")}
+                {[...new Set(FEATURED.filter((f) => !featured.includes(f)).map((f) => f.source))].join("; ")}
                 ).
               </p>
             ) : null}
