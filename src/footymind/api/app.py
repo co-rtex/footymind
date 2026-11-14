@@ -30,10 +30,11 @@ from footymind.data.store import (
     StaleBundleError,
     available_matches,
     load_match,
+    read_manifest,
 )
 from footymind.ghost.defensive_shadow import NOISE_FLOOR as SHADOW_NOISE_FLOOR
 from footymind.ghost.defensive_shadow import defensive_shadow
-from footymind.paths import EXPERIMENTS_DIR, PROCESSED_DIR, REPO_ROOT
+from footymind.paths import EXPERIMENTS_DIR, REPO_ROOT
 from footymind.spatial.analysis import FrameAnalysis, analyze
 from footymind.spatial.explain import explain
 from footymind.spatial.option_model import (
@@ -187,7 +188,6 @@ def match_summary(match_id: str) -> S.MatchSummary:
     )
 
 
-@lru_cache(maxsize=256)
 def _match_meta(match_id: str) -> dict[str, str]:
     """Public match facts from the provider's (checksum-verified) metadata file.
 
@@ -202,8 +202,16 @@ def _match_meta(match_id: str) -> dict[str, str]:
         return {}
     num = match_id.split("-", 1)[1]
     path = src.local_dir() / f"{num}_match.json"
-    if not path.exists():
+    try:
+        st = os.stat(path)
+    except OSError:
         return {}
+    # cached per file version: a replaced metadata file is read again on the next call
+    return _read_match_meta(path, (st.st_mtime_ns, st.st_size, st.st_ino))
+
+
+@lru_cache(maxsize=256)
+def _read_match_meta(path: Path, _token: tuple[int, int, int]) -> dict[str, str]:
     try:
         d = json.loads(path.read_text())
         out = {
@@ -221,9 +229,10 @@ def _match_meta(match_id: str) -> dict[str, str]:
         return {}
 
 
-@lru_cache(maxsize=256)
 def _manifest(match_id: str) -> dict[str, Any]:
-    m: dict[str, Any] = json.loads((PROCESSED_DIR / match_id / "manifest.json").read_text())
+    # read_manifest is cached per manifest file version (one os.stat per call), so a
+    # re-ingest while the server runs is served on the next request.
+    m = read_manifest(match_id)
     if m["pipeline_version"] != PIPELINE_VERSION:
         raise HTTPException(503, f"{match_id}: stale bundle; re-run `footymind ingest {match_id}`")
     return m
@@ -581,6 +590,7 @@ def similar_moments(
     """The most similar past pass decisions (other matches, same provider) and their outcomes."""
     from footymind.research.similarity import (
         SIMILARITY_FEATURES,
+        StaleIndexError,
         decision_row,
         index_path,
         load_index,
@@ -590,6 +600,8 @@ def similar_moments(
     provider = provider_of(match_id)
     try:
         idx = load_index(provider)
+    except StaleIndexError as e:  # built from other bundles or another pipeline version
+        raise HTTPException(503, str(e)) from e
     except Exception as e:  # unreadable parquet or missing columns: polars raises many types
         raise HTTPException(
             503,

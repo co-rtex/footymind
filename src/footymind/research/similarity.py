@@ -15,18 +15,25 @@ Honesty constraints:
   pass; ``research/similarity_validation.py`` measures how informative it is held-out.
 
 Index files live in ``data/processed/similarity_<provider>.parquet`` (derived, not
-committed) and are built with ``footymind build-similarity-index``.
+committed) and are built with ``footymind build-similarity-index``. Each file records, in
+its parquet metadata, the pipeline version and the ``created_utc`` of every bundle it was
+built from. ``load_index`` refuses an index whose metadata no longer matches the processed
+bundles (``StaleIndexError``), and its in-process cache follows the file's modification time
+and the bundles' manifests, so a rebuild or a re-ingest is picked up without a restart.
 """
 
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 import polars as pl
 
-from footymind.paths import PROCESSED_DIR
+from footymind import paths
+from footymind.data import store
 from footymind.research.pass_dataset import (
     DECISION_SPATIAL_FEATURES,
     TEMPORAL_EVENT_FEATURES,
@@ -69,7 +76,18 @@ def similarity_dataset_config() -> DatasetConfig:
 
 
 def index_path(provider: str) -> Path:
-    return PROCESSED_DIR / f"similarity_{provider}.parquet"
+    return paths.PROCESSED_DIR / f"similarity_{provider}.parquet"
+
+
+META_PREFIX = "footymind:"
+
+
+class StaleIndexError(RuntimeError):
+    """The index was built from other bundles (or another pipeline version) than are served."""
+
+
+def rebuild_command(provider: str) -> str:
+    return f"footymind build-similarity-index --provider {provider}"
 
 
 @dataclass
@@ -79,6 +97,9 @@ class SimilarityIndex:
     scale: np.ndarray
     median: np.ndarray
     z: np.ndarray  # (n, d) standardised, imputed
+    # (mtime_ns, size) of the file it was read from. None: placed in the cache directly
+    # (tests, embedding code), so it is not tied to a file and never reloaded.
+    source: tuple[int, int, int] | None = None
 
     @classmethod
     def from_rows(cls, rows: pl.DataFrame) -> SimilarityIndex:
@@ -114,22 +135,106 @@ def build_index(provider: str, match_ids: list[str]) -> Path:
     if any(not m.startswith(provider + "-") for m in match_ids):
         raise ValueError("an index must contain a single provider's matches")
     df = build(match_ids, similarity_dataset_config())
+    return write_index(df, provider, match_ids)
+
+
+def index_metadata(provider: str, match_ids: list[str]) -> dict[str, str]:
+    """What an index is built from: provider, pipeline version and each bundle's creation."""
+    bundles = {m: str(store.read_manifest(m)["created_utc"]) for m in sorted(match_ids)}
+    return {
+        META_PREFIX + "provider": provider,
+        META_PREFIX + "pipeline_version": store.PIPELINE_VERSION,
+        META_PREFIX + "bundles": json.dumps(bundles, sort_keys=True),
+    }
+
+
+def write_index(df: pl.DataFrame, provider: str, match_ids: list[str]) -> Path:
     out = index_path(provider)
     out.parent.mkdir(parents=True, exist_ok=True)
-    df.select(STORED_COLUMNS).write_parquet(out)
+    tmp = out.with_name(out.name + ".tmp")
+    df.select(STORED_COLUMNS).write_parquet(tmp, metadata=index_metadata(provider, match_ids))
+    os.replace(tmp, out)  # atomic: a running server never reads a half-written index
     return out
 
 
+def check_index_metadata(meta: dict[str, str], provider: str) -> None:
+    """Raise ``StaleIndexError`` unless the index matches the processed bundles served now."""
+    fix = f"rebuild it with `{rebuild_command(provider)}`"
+    name = index_path(provider).name
+    version = meta.get(META_PREFIX + "pipeline_version")
+    if version is None:
+        raise StaleIndexError(f"similarity index {name} has no build metadata; {fix}")
+    if version != store.PIPELINE_VERSION:
+        raise StaleIndexError(
+            f"similarity index {name} was built by pipeline v{version}, but the served "
+            f"bundles are v{store.PIPELINE_VERSION}; {fix}"
+        )
+    if meta.get(META_PREFIX + "provider") != provider:
+        raise StaleIndexError(f"similarity index {name} is not a {provider} index; {fix}")
+    built = json.loads(meta.get(META_PREFIX + "bundles", "{}"))
+    present = set(store.available_matches())
+    changed = sorted(
+        m
+        for m, created in built.items()
+        if m in present and str(store.read_manifest(m).get("created_utc")) != created
+    )
+    if changed:
+        more = " and others" if len(changed) > 3 else ""
+        raise StaleIndexError(
+            f"similarity index {name} predates a re-ingest of {', '.join(changed[:3])}{more}; {fix}"
+        )
+
+
+def _file_token(p: Path) -> tuple[int, int, int] | None:
+    try:
+        st = os.stat(p)
+    except OSError:
+        return None
+    return (st.st_mtime_ns, st.st_size, st.st_ino)
+
+
+def _bundles_token(provider: str) -> tuple[tuple[str, tuple[int, int, int] | None], ...]:
+    return tuple(
+        (m, store.bundle_token(m))
+        for m in store.available_matches()
+        if m.startswith(provider + "-")
+    )
+
+
 _CACHE: dict[str, SimilarityIndex] = {}
+_VALIDATED: dict[str, object] = {}  # provider -> bundles token at the last successful check
 
 
 def load_index(provider: str) -> SimilarityIndex | None:
-    if provider not in _CACHE:
-        p = index_path(provider)
-        if not p.exists():
-            return None
-        _CACHE[provider] = SimilarityIndex.from_rows(pl.read_parquet(p))
-    return _CACHE[provider]
+    """The provider's index, or None if it has not been built.
+
+    Raises ``StaleIndexError`` if it no longer matches the processed bundles, and the read
+    error for an unreadable file. The cache is checked on every call (a few ``os.stat``):
+    the file is re-read when it changes, and its metadata is re-checked when a bundle does.
+    """
+    cached = _CACHE.get(provider)
+    if cached is not None and cached.source is None:
+        return cached
+    p = index_path(provider)
+    ftok = _file_token(p)
+    if ftok is None:
+        _CACHE.pop(provider, None)
+        return None
+    btok = _bundles_token(provider)
+    if cached is not None and cached.source == ftok and _VALIDATED.get(provider) == btok:
+        return cached
+    try:
+        check_index_metadata(pl.read_parquet_metadata(p), provider)
+        if cached is None or cached.source != ftok:
+            cached = SimilarityIndex.from_rows(pl.read_parquet(p))
+            cached.source = ftok
+    except Exception:
+        _CACHE.pop(provider, None)  # never keep serving an index that failed its check
+        _VALIDATED.pop(provider, None)
+        raise
+    _CACHE[provider] = cached
+    _VALIDATED[provider] = btok
+    return cached
 
 
 NEXT_DECISION_WINDOW_S = 2.0
