@@ -117,6 +117,11 @@ export interface Replay {
   players_detected?: boolean[] | null;
   /** length n_frames * 2 */
   ball_xy: (number | null)[];
+  /**
+   * length n_frames; false where the provider extrapolated the ball (provenance "estimated");
+   * null or absent when every non-null ball position is observed (optical tracking, older backends)
+   */
+  ball_detected?: boolean[] | null;
   events: EventOut[];
   possession: PossessionSummary | null;
   /** period -> team -> +1 if the team attacks towards +x */

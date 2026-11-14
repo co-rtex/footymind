@@ -224,6 +224,10 @@ export interface ReplayData {
   detected: Uint8Array | null;
   /** number of non-null positions that are extrapolations (0 for optical tracking) */
   nEstimated: number;
+  /** [frame]: 1 = ball detected (observed), 0 = provider extrapolation (estimated); null when not provided */
+  ballDetected: Uint8Array | null;
+  /** number of frames whose non-null ball position is an extrapolation */
+  nBallEstimated: number;
   events: EventOut[];
   possession: PossessionSummary | null;
   /** period -> team -> +1 | -1 */
@@ -292,6 +296,20 @@ export function parseReplay(raw: unknown): ReplayData {
       if (!v && r.players_xy[2 * i] !== null && r.players_xy[2 * i] !== undefined) nEstimated++;
     }
   }
+  let ballDetected: Uint8Array | null = null;
+  let nBallEstimated = 0;
+  const bdet = r.ball_detected;
+  if (bdet !== null && bdet !== undefined) {
+    need(Array.isArray(bdet), "replay.ball_detected is not an array");
+    need(bdet.length === nFrames, `replay.ball_detected has ${bdet.length} values, expected ${nFrames}`);
+    ballDetected = new Uint8Array(nFrames);
+    for (let i = 0; i < nFrames; i++) {
+      const v = bdet[i];
+      need(typeof v === "boolean", "replay.ball_detected contains a non-boolean");
+      ballDetected[i] = v ? 1 : 0;
+      if (!v && r.ball_xy[2 * i] !== null && r.ball_xy[2 * i] !== undefined) nBallEstimated++;
+    }
+  }
   const attackSign = new Map<number, Record<Team, number>>();
   for (const [p, signs] of Object.entries(r.attack_sign)) {
     attackSign.set(Number(p), { home: signs.home ?? 0, away: signs.away ?? 0 });
@@ -311,6 +329,8 @@ export function parseReplay(raw: unknown): ReplayData {
     ball: toF32(r.ball_xy),
     detected,
     nEstimated,
+    ballDetected,
+    nBallEstimated,
     events: r.events,
     possession: r.possession,
     attackSign,
