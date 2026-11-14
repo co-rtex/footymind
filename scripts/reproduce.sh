@@ -28,6 +28,10 @@ for c in pass_outcome_v1 pass_outcome_v1_ablation pass_outcome_v1_sens_no_ball_o
   run uv run footymind experiment "experiments/configs/$c.json"
 done
 run uv run python -m footymind.research.failure_modes pass_outcome_v3
+for c in temporal_v1 temporal_guard_v1_02s temporal_guard_v1_04s; do
+  run uv run footymind experiment "experiments/configs/$c.json"
+done
+run uv run python -m footymind.research.temporal_strata temporal_v1
 run uv run python -m footymind.research.calibrate_physics
 run uv run python -m footymind.research.shadow_stability
 run uv run python -m footymind.research.shadow_validation metrica
@@ -36,9 +40,11 @@ run uv run python -m footymind.research.movement_decomposition_study metrica
 run uv run footymind train-option-model --provider metrica
 
 if [[ " $PROVIDERS " == *" skillcorner "* ]]; then
-  for c in pass_outcome_skillcorner_v2 pass_outcome_skillcorner_v2_importance; do
+  for c in pass_outcome_skillcorner_v2 pass_outcome_skillcorner_v2_importance \
+           temporal_skillcorner_v1 temporal_guard_skillcorner_v1_02s; do
     run uv run footymind experiment "experiments/configs/$c.json"
   done
+  run uv run python -m footymind.research.temporal_strata temporal_skillcorner_v1
   run uv run python -m footymind.research.shadow_validation skillcorner
   run uv run python -m footymind.research.data_quality_audit
   run uv run python -m footymind.research.run_value_validation skillcorner
