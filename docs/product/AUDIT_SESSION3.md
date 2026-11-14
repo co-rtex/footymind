@@ -131,6 +131,45 @@ are absent on the current backend.
   (8.36.0) is a downgrade, so those findings are left for an upstream release. They are
   dev-only and affect linting only.
 
+## Follow-up: "Why this moment" and "Similar moments" panels
+
+Both panels sit in the lab's analysis column (Replay & analyse mode). Screenshots are in
+`docs/product/audit-session3/panels/` and were made with `tools/panels.cjs`.
+
+**Why this moment** (`analysis.explanations`, with `temporal` behind it)
+* Statements are grouped as Pressure on the ball, In the last second, Passing options and
+  Caveats, in a fixed order. Statements of an unknown kind are kept in an "Other" group. Each
+  statement shows the backend's text as given; the only change is rewriting player ids such as
+  `away_17` to "#17 Away". Each one carries its provenance badge (derived or estimated).
+  Caveats are never collapsed.
+* Traceability: hovering or focusing a statement that names players rings those players on
+  the pitch (`desktop-20-why-trace.jpg`). Clicking pins the rings, which is the path on touch
+  screens. Rings are cleared when the frame, the mode or playback changes.
+* Stable layout: while a new frame loads, the previous frame's statements stay visible, dimmed
+  and labelled "showing frame N". An empty group shows a one-line placeholder. The panel never
+  shrinks while the width stays the same. Measured over 6 consecutive frames: a height change
+  of 0 px at every viewport. Before this guard, the change was up to −108 px on a phone.
+* On a backend without `explanations`, the panel says so quietly.
+
+**Similar moments** (`GET /frames/{f}/similar?k=8`)
+* The request is made only from a button, never while scrubbing or playing; the e2e test
+  checks that scrubbing makes no `/similar` request. Results are cached per frame. After the
+  frame changes, the last result stays visible, labelled with its frame, next to a "Find for
+  this frame" button.
+* The panel shows the headline "In N similar situations from other matches, M passes were
+  completed." with an *observed outcomes* badge, the matched decision (passer and frame), and
+  the backend's disclaimer as given. Each neighbour lists its outcome (observed), passer,
+  match, ball zone, nearest-defender distance, time on the ball, feature distance, and an
+  "Open" link to `#/at/<match>?f=<frame>`.
+* An **unvalidated** badge appears unless `validation.knn_beats_base_rate` is exactly `true`.
+  Locally, `validation` is null because the validation results file is not present, so the
+  badge shows.
+* Empty states: 404 ("No pass starts within 2 seconds of this frame…") and 503 ("Similar
+  moments are not available for SkillCorner data yet: the comparison index has not been built
+  on this server.") appear as quiet `role="status"` notes, not alerts. Any other failure is a
+  normal error with Retry.
+* axe reports no violations with both panels open.
+
 ## Backend changes needed (not made here; `src/` is owned by others)
 
 1. **Team names in `MatchSummary`** (F9). Populate `home_label` and `away_label` from the
@@ -156,6 +195,8 @@ export WEB=$PWD/web
 node docs/product/audit-session3/tools/audit.cjs /tmp/shots          # all states, 3 viewports
 node docs/product/audit-session3/tools/down.cjs /tmp/shots           # API stopped
 node docs/product/audit-session3/tools/policy.cjs /tmp/shots         # marker_follows with a simulated move
+node docs/product/audit-session3/tools/panels.cjs /tmp/shots         # why-this-moment and similar-moments panels
+# (similar moments needs: uv run footymind build-similarity-index --provider metrica)
 THROTTLE=4 node docs/product/audit-session3/tools/perf.cjs http://127.0.0.1:5183
 # axe: install axe-core outside the repository and point the script at it
 npm i --prefix /tmp/axe axe-core@4.10.3
