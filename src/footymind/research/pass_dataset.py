@@ -440,6 +440,8 @@ def _features_for(
     att_idx = np.flatnonzero(att)
     def_idx = np.flatnonzero(dfn)
     dxy, dvel = s.xy[def_idx], s.vel[def_idx]
+    if def_idx.size == 0:
+        return None  # no defender positions to describe (only seen at guarded offset frames)
 
     # pressure on the passer (DERIVED)
     rel_d = dxy - s.xy[passer][None, :]
