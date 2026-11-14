@@ -2066,4 +2066,13 @@ h3 {
   .policy-picker-row .select {
     width: 100%;
   }
+  /* Segmented controls may wrap: with a wider fallback font (no Inter installed) the three
+     scenario views were 314 px wide and pushed a 320 px screen sideways. */
+  .segmented {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+  .segmented button {
+    padding: 0 var(--sp-2);
+  }
 }
