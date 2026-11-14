@@ -62,6 +62,17 @@ test.describe("desktop", () => {
     await page.screenshot({ path: `${DIR}/guided-tour-desktop.png` });
   });
 
+  test("guided tour, static vs defender response", async ({ page }) => {
+    await page.goto("/#/at/metrica-sample-2?f=31360&tour=response");
+    await waitForAnalysis(page);
+    await page.getByTestId("guide-step-3").click();
+    await expect(page.getByTestId("scenario-panel")).toHaveAttribute("data-status", "success", { timeout: 30_000 });
+    await expect(page.getByTestId("policy-comparison")).toBeVisible({ timeout: 30_000 });
+    await page.mouse.move(0, 0);
+    await page.waitForTimeout(150);
+    await page.screenshot({ path: `${DIR}/guided-tour-response-desktop.png` });
+  });
+
   test("lab analysis and scenario", async ({ page }) => {
     await openGoalPossession(page);
     const frame = await pauseOnLaterFrame(page);
