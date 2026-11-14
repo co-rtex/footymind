@@ -29,6 +29,13 @@ def main(argv: list[str] | None = None) -> int:
     p_opt.add_argument("match_ids", nargs="*", help="default: all processed matches of --provider")
     p_opt.add_argument("--provider", default="metrica", choices=["metrica", "skillcorner"])
 
+    p_sim = sub.add_parser(
+        "build-similarity-index", help="build the per-provider similar-moments index"
+    )
+    p_sim.add_argument(
+        "--provider", nargs="*", default=["metrica", "skillcorner"], help="providers to index"
+    )
+
     args = parser.parse_args(argv)
 
     if args.cmd == "download":
@@ -68,6 +75,17 @@ def main(argv: list[str] | None = None) -> int:
         ]
         m = train(ids)
         print(json.dumps({k: m.meta[k] for k in ("n_train", "lomo_pooled", "code_revision")}))
+    elif args.cmd == "build-similarity-index":
+        from footymind.data.store import available_matches
+        from footymind.research.similarity import build_index
+
+        for prov in args.provider:
+            ids = [m for m in available_matches() if m.startswith(prov + "-")]
+            if not ids:
+                print(f"{prov}: no processed matches; skipped")
+                continue
+            t0 = time.time()
+            print(f"{prov}: {build_index(prov, ids)} ({len(ids)} matches, {time.time() - t0:.0f}s)")
     return 0
 
 
