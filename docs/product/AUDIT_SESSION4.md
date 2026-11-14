@@ -61,19 +61,49 @@ overflow in any capture (`scrollWidth ≤ clientWidth`).
 **Animation.** Only the loading skeleton's pulse and a 180 ms fade-in when the live numbers arrive.
 Both are off under `prefers-reduced-motion`.
 
+## Follow-up: a featured situation that depends on the defender response (C39)
+
+Still-open item 1 and backend request 4 asked for a curated attacker move where a rule moves a
+defender. The research search (RESEARCH.md, "Featured response example"; ledger C39) chose
+Metrica Game 2, frame 31360: home #1 passes to home #5, and home #5 is moved 3 m into space.
+
+* **Third featured card, "One run, two assumptions about the defence".** It requests the same two
+  scenarios the lab makes (static defenders and `marker_follows`) and shows, for the pass that was
+  played, both estimates side by side, whether the direction flips, the simulated defender move
+  (`simulated` badge, with its distance from the response), the ensemble agreement under each
+  assumption and the feasibility. No Defensive Shadow is requested or shown: the moved player is
+  an attacker. The story says the conclusion rests on an assumption about the defence and is a
+  model-based illustration, not what happened in the match. `lib/featured.ts` still holds identity
+  and text only.
+* **Featured facts generalised.** `moved` replaces `defender`; `showShadow` and an optional
+  `response` policy are per situation. `FeaturedFacts.shadow` and `FeaturedFacts.response` are
+  optional nested facts read from the API payloads.
+* **Tour step 3 preselects the response** and the guide says so, labels the moved defender as
+  simulated, and offers "Static vs response" (focuses the lab's "Does the defender response
+  matter?" comparison) and "Static (no response)". Deep links accept `response=<policy>` (malformed
+  names are ignored), so "Open the what-if directly" opens with `marker_follows` preselected too.
+* **Layout.** Three cards in three columns above 1180 px, two columns plus a full-width third card
+  from 1001 to 1180 px, one column at 1000 px and below. Checked at 1440×900, 834×1112 and
+  390×844 (DPR 1): no horizontal overflow and no console errors or warnings on the landing or in
+  the tour. The match clock in a card's kicker no longer wraps.
+* **Wording to watch.** The lab's generic experimental note says response rules are "not validated
+  against observed defender movement", while the story (and the policy's own assumptions) cite the
+  observational check of `marker_follows` (C37). Both are true; see backend request 5.
+
+Screenshots: `web/screenshots/landing-desktop.png` (refreshed, three cards) and
+`web/screenshots/guided-tour-response-desktop.png` (new, tour step 3 with the response).
+
 ## Still open
 
-1. **The featured what-if cannot show a defender response** (G4). Showing one needs a curated
-   attacker move under a validated rule (`marker_follows` or `lane_cover`), chosen by a documented
-   search like the existing featured examples.
+1. ~~**The featured what-if cannot show a defender response** (G4).~~ Done; see the follow-up above.
 2. On wide screens, when the page itself is scrolled to the bottom, sticky containment pushes the
    top of the analysis column (with its jump links) above the viewport. This is minor: the column
    still scrolls, and the links return when the page scrolls up.
 3. Leaving the tour does not remove `tour=` from the URL, so a reload shows the guide again.
 4. Carried over from session 3: the phone pitch is about 330 px wide (F17), and the lab view still
    re-renders on every frame index while scrubbing (F14).
-5. The landing makes four compute requests per visit (about 2 s of backend time). That is fine
-   locally; for a public demo, see backend request 3.
+5. The landing makes six compute requests per visit (four scenarios, then two Defensive Shadows).
+   That is fine locally; for a public demo, see backend request 3.
 
 ## Backend requests (not made here; `src/` is owned by others)
 
@@ -86,8 +116,12 @@ Both are off under `prefers-reduced-motion`.
 3. **Optional: cached featured results**, for example a `GET /api/featured` that returns the
    precomputed scenario and shadow summaries. The landing would not have to recompute them on each
    visit; the UI would keep reading every number from the API.
-4. **Research: a second featured example with an attacker move** where a validated rule moves a
-   defender, so tour step 3 can show the static-vs-response comparison doing something.
+4. ~~**Research: a second featured example with an attacker move.**~~ Done (C39); shown as the
+   third featured situation.
+5. **Optional: say what a rule's check established.** `marker_follows` and `lane_cover` report
+   `validated: false` with no `validation_ref`, although their assumptions cite the observational
+   check (C37). A field such as `checks: [{kind: "observational", ref: "C37", ...}]` would let the
+   UI say "checked observationally, not a forecast" instead of the generic "not validated" note.
 
 ## Tests
 
@@ -102,6 +136,11 @@ Both are off under `prefers-reduced-motion`.
   lab's), the player card, the jump links with column help and the labels key, keyboard entry into
   the tour, and the featured-card failure and retry.
 * `scripts/check.sh web`: exit code 0.
+* After the response follow-up: Vitest **163** (facts generalisation, the response story's
+  wording, the `response=` route, the response card and its retry, the guide's comparison step).
+  Playwright **26/26**: the response card's live numbers equal the lab's under both assumptions,
+  tour step 3 shows the comparison with `marker_follows` preselected, the direct link preselects it,
+  plus a new screenshot test.
 
 ## Reproducing the audit
 
