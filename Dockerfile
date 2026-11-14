@@ -60,7 +60,7 @@ USER app
 VOLUME ["/data"]
 EXPOSE 8000
 # The server starts after the entrypoint has built any missing similar-moments index (about 40 s
-# for Metrica and 3 minutes for all 20 SkillCorner matches on 4 vCPU), hence the long start period.
+# for Metrica and 2.5 minutes for all 20 SkillCorner matches on 4 vCPU), hence the long start period.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=300s \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"
 ENTRYPOINT ["footymind-entrypoint"]
