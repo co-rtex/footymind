@@ -67,6 +67,7 @@ export function App() {
             matchId={route.matchId}
             frame={route.frame}
             moves={route.moves}
+            tour={route.tour}
             match={match}
             onBack={goHome}
           />
@@ -80,6 +81,7 @@ export function App() {
             onBack={goHome}
             initialFrame={route.frame}
             initialMoves={route.moves}
+            tour={route.tour}
           />
         ) : matches.status === "error" && !matches.data ? (
           <StatusBlock kind="error" title="Could not load matches" error={matches.error} onRetry={matches.reload} />
@@ -111,12 +113,14 @@ function AtFrame({
   matchId,
   frame,
   moves,
+  tour,
   match,
   onBack,
 }: {
   matchId: string;
   frame: number;
   moves?: RouteMove[];
+  tour?: string;
   match: MatchSummary | null;
   onBack: () => void;
 }) {
@@ -149,6 +153,7 @@ function AtFrame({
       onBack={onBack}
       initialFrame={frame}
       initialMoves={moves}
+      tour={tour}
     />
   );
 }

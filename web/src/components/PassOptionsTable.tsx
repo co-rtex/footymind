@@ -31,6 +31,7 @@ export function PassOptionsTable({ id, options, players, highlight, onHighlight,
     );
   }
   return (
+    <>
     <div className="table-wrap" id={id}>
       <table className="table table--dense options-table" data-testid="pass-options">
         <caption className="sr-only">
@@ -124,5 +125,25 @@ export function PassOptionsTable({ id, options, players, highlight, onHighlight,
         </tbody>
       </table>
     </div>
+    <details className="table-help" data-testid="pass-options-help">
+      <summary>How to read this table</summary>
+      <dl>
+        <dt>Receiver</dt>
+        <dd>The teammate the pass would go to. Underneath: the defender closest to the passing lane and how far from it.</dd>
+        <dt>Model</dt>
+        <dd>The option model&apos;s estimated chance that the pass is completed. It is calibrated on this provider&apos;s real passes; the bar shows the same value.</dd>
+        <dt>Phys.</dt>
+        <dd>The physics heuristic, uncalibrated: Lane × Ctrl.</dd>
+        <dt>Lane</dt>
+        <dd>Physics: estimated chance that no defender intercepts the ball in the lane.</dd>
+        <dt>Ctrl</dt>
+        <dd>Physics: estimated attacking pitch control where the ball would arrive.</dd>
+        <dt>Dist</dt>
+        <dd>Pass length in metres (derived from the positions).</dd>
+        <dt>Fwd</dt>
+        <dd>Metres gained towards the opponent goal; a minus sign means backwards.</dd>
+      </dl>
+    </details>
+    </>
   );
 }

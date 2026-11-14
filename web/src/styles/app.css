@@ -507,24 +507,6 @@ kbd {
   display: grid;
   gap: var(--sp-6);
 }
-.hero {
-  padding: var(--sp-8) 0 var(--sp-4);
-}
-.steps {
-  list-style: none;
-  padding: 0;
-  margin: var(--sp-6) 0 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2) var(--sp-6);
-  color: var(--c-text-muted);
-  font-size: var(--fs-sm);
-}
-.steps li {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
-}
 .step-n {
   display: inline-grid;
   place-items: center;
@@ -634,31 +616,6 @@ kbd {
 .match-card-meta {
   color: var(--c-text-muted);
   font-size: var(--fs-sm);
-}
-
-/* ---------- featured scenario ---------- */
-.featured {
-  display: flex;
-  gap: var(--sp-4);
-  align-items: center;
-  justify-content: space-between;
-  border-color: var(--c-accent);
-}
-.featured-body {
-  max-width: 72ch;
-}
-.featured-body p {
-  margin: var(--sp-2) 0 0;
-}
-.featured-cta {
-  flex: none;
-  white-space: nowrap;
-}
-@media (max-width: 720px) {
-  .featured {
-    flex-direction: column;
-    align-items: stretch;
-  }
 }
 
 /* ---------- tables ---------- */
