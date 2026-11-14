@@ -41,6 +41,7 @@ run uv run python -m footymind.research.movement_decomposition_study metrica
 run uv run python -m footymind.research.rule_response_check metrica 150
 run uv run python -m footymind.research.similarity_validation metrica
 run uv run footymind train-option-model --provider metrica
+run uv run python -m footymind.research.offball_study metrica
 # Defender response forecasts (validation first: the trainer copies its verdict into the model).
 run uv run python -m footymind.research.response_validation metrica
 run uv run footymind train-response-model --provider metrica
@@ -48,11 +49,14 @@ run uv run python -m footymind.research.response_sensitivity metrica
 
 if [[ " $PROVIDERS " == *" skillcorner "* ]]; then
   for c in pass_outcome_skillcorner_v2 pass_outcome_skillcorner_v2_importance \
-           temporal_skillcorner_v1 temporal_guard_skillcorner_v1_02s; do
+           temporal_skillcorner_v1 temporal_guard_skillcorner_v1_02s \
+           temporal_guard_skillcorner_v2_ballcensor; do
     run uv run footymind experiment "experiments/configs/$c.json"
   done
   run uv run python -m footymind.research.temporal_strata temporal_skillcorner_v1
   run uv run python -m footymind.research.temporal_strata temporal_guard_skillcorner_v1_02s --match-level-only
+  run uv run python -m footymind.research.temporal_strata temporal_guard_skillcorner_v2_ballcensor --match-level-only
+  run uv run python -m footymind.research.ball_censor_check skillcorner
   run uv run python -m footymind.research.shadow_validation skillcorner
   run uv run python -m footymind.research.data_quality_audit
   run uv run python -m footymind.research.run_value_validation skillcorner
@@ -60,6 +64,7 @@ if [[ " $PROVIDERS " == *" skillcorner "* ]]; then
   run uv run python -m footymind.research.rule_response_check skillcorner 60
   run uv run python -m footymind.research.similarity_validation skillcorner
   run uv run footymind train-option-model --provider skillcorner
+  run uv run python -m footymind.research.offball_study skillcorner
   run uv run python -m footymind.research.response_validation skillcorner
   run uv run footymind train-response-model --provider skillcorner
   run uv run python -m footymind.research.response_sensitivity skillcorner
