@@ -1,4 +1,4 @@
-import { useMemo, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { api } from "../api/client";
 import type { MatchSummary, PossessionSummary, Team } from "../api/types";
 import { availableFeatured, FEATURED, featuredHref } from "../lib/featured";
@@ -17,6 +17,14 @@ interface Props {
   match: MatchSummary | null;
   onSelectMatch: (id: string) => void;
   onOpenPossession: (pid: string) => void;
+  /** match id named by the link (#/match/<id>); reported as not found when this server lacks it */
+  requestedMatchId?: string | null;
+  /**
+   * Returning from the lab: bring the possession list into view and focus its heading once it
+   * has loaded, instead of leaving the visitor at the top of the page; then `onRevealed` is called.
+   */
+  revealList?: boolean;
+  onRevealed?: () => void;
 }
 
 type TeamFilter = "all" | Team;
@@ -43,13 +51,53 @@ const PILLARS: { title: string; text: string; prov: "estimated" | "derived" | "h
   { title: "What if?", text: "Move a player where they could have been, and compare the estimates.", prov: "hypothetical" },
 ];
 
-export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Props) {
+/**
+ * The match cards form one radio group (role="radio"), so they are one Tab stop: arrow keys move
+ * the selection between cards (across provider groups), Home and End jump to the ends.
+ */
+function onMatchKey(e: KeyboardEvent<HTMLDivElement>, ids: string[], selected: string | null, select: (id: string) => void) {
+  // from the focused card (the selection follows it, but the route may not have updated yet)
+  const radios = [...e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]')];
+  const focused = radios.indexOf(e.target as HTMLButtonElement);
+  const i = focused >= 0 ? focused : selected ? ids.indexOf(selected) : -1;
+  let j = -1;
+  if (e.key === "ArrowRight" || e.key === "ArrowDown") j = (i + 1) % ids.length;
+  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") j = (Math.max(i, 0) - 1 + ids.length) % ids.length;
+  else if (e.key === "Home") j = 0;
+  else if (e.key === "End") j = ids.length - 1;
+  if (j < 0 || ids.length === 0) return;
+  e.preventDefault();
+  select(ids[j]!);
+  // the cards are rendered in the same order as `ids`
+  radios[j]?.focus();
+}
+
+export function Landing({
+  matches,
+  match,
+  onSelectMatch,
+  onOpenPossession,
+  requestedMatchId = null,
+  revealList = false,
+  onRevealed,
+}: Props) {
   const summaries = useMemo(() => new Map(matches.map((m) => [m.match_id, m])), [matches]);
   // only situations whose match this server has (a Metrica-only setup has no broadcast match)
   const featured = useMemo(() => availableFeatured(summaries.keys()), [summaries]);
   const tour = featured.find((f) => f.id === FEATURED[0]!.id) ?? featured[0] ?? null;
   const steps = tour ? tour.steps(matchTeams(summaries.get(tour.matchId) ?? null)) : null;
   const nMissing = FEATURED.length - featured.length;
+  const groups = useMemo(() => groupByProvider(matches), [matches]);
+  const cardOrder = useMemo(() => groups.flatMap((g) => g.matches.map((m) => m.match_id)), [groups]);
+  // roving tab stop: the selected card, or the first one when none is selected
+  const tabStop = match && cardOrder.includes(match.match_id) ? match.match_id : (cardOrder[0] ?? null);
+  // back from a lab link whose match this server lacks: show why there is no possession list
+  const unknown = !match && requestedMatchId ? requestedMatchId : null;
+  useEffect(() => {
+    if (!revealList || !unknown) return;
+    document.getElementById("poss-title")?.scrollIntoView({ block: "start" });
+    onRevealed?.();
+  }, [revealList, unknown, onRevealed]);
   return (
     <div className="landing">
       <section className="hero" aria-labelledby="hero-title">
@@ -183,8 +231,14 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
             <p className="small muted">Choose a match, then open a possession to replay and analyse it.</p>
           </div>
         </div>
-        <div className="match-groups" role="radiogroup" aria-label="Match" data-testid="match-groups">
-          {groupByProvider(matches).map((g) => {
+        <div
+          className="match-groups"
+          role="radiogroup"
+          aria-label="Match"
+          data-testid="match-groups"
+          onKeyDown={(e) => onMatchKey(e, cardOrder, match?.match_id ?? null, onSelectMatch)}
+        >
+          {groups.map((g) => {
             const compact = g.matches.length > 4;
             const split = compact ? splitCommonName(g.matches.map((m) => m.source.name)) : null;
             return (
@@ -215,6 +269,7 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
                         type="button"
                         role="radio"
                         aria-checked={selected}
+                        tabIndex={m.match_id === tabStop ? 0 : -1}
                         className={`match-card${selected ? " is-selected" : ""}`}
                         onClick={() => {
                           onSelectMatch(m.match_id);
@@ -239,7 +294,26 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
         </div>
       </section>
 
-      {match ? <PossessionList key={match.match_id} match={match} onOpen={onOpenPossession} /> : null}
+      {match ? (
+        <PossessionList
+          key={match.match_id}
+          match={match}
+          onOpen={onOpenPossession}
+          reveal={revealList}
+          onRevealed={onRevealed}
+        />
+      ) : unknown ? (
+        <section className="panel" aria-labelledby="poss-title" data-testid="unknown-match">
+          <h2 id="poss-title" className="h-section">
+            Possessions
+          </h2>
+          <StatusBlock
+            kind="empty"
+            title="Match not found"
+            detail={`This server has no match "${unknown}". The link may be mistyped, or the match is not loaded here. Choose one of the matches above.`}
+          />
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -253,7 +327,17 @@ function skipToExplore(e: MouseEvent<HTMLAnchorElement>): void {
   h?.focus({ preventScroll: true });
 }
 
-function PossessionList({ match, onOpen }: { match: MatchSummary; onOpen: (pid: string) => void }) {
+function PossessionList({
+  match,
+  onOpen,
+  reveal,
+  onRevealed,
+}: {
+  match: MatchSummary;
+  onOpen: (pid: string) => void;
+  reveal: boolean;
+  onRevealed?: () => void;
+}) {
   const [team, setTeam] = useState<TeamFilter>("all");
   const [shotsOnly, setShotsOnly] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -269,11 +353,22 @@ function PossessionList({ match, onOpen }: { match: MatchSummary; onOpen: (pid: 
   );
   const visible = showAll ? rows : rows.slice(0, POSSESSION_PAGE);
 
+  // Back from the lab ("Possessions" or the browser's Back): return to this list, not to the top
+  // of the landing page, and move focus to its heading for keyboard and screen-reader users.
+  const settled = poss.status === "success" || poss.status === "error";
+  useEffect(() => {
+    if (!reveal || !settled) return;
+    const h = document.getElementById("poss-title");
+    h?.scrollIntoView({ block: "start" });
+    h?.focus({ preventScroll: true });
+    onRevealed?.();
+  }, [reveal, settled, onRevealed]);
+
   return (
     <section className="panel" aria-labelledby="poss-title">
       <div className="panel-head panel-head--wrap">
         <div>
-          <h2 id="poss-title" className="h-section">
+          <h2 id="poss-title" className="h-section" tabIndex={-1}>
             Possessions
           </h2>
           <p className="small" data-testid="possessions-match">

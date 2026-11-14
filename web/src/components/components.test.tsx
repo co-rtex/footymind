@@ -6,6 +6,7 @@ import { Notices } from "./Notices";
 import { OptionDeltaTable } from "./OptionDeltaTable";
 import { PassOptionsTable } from "./PassOptionsTable";
 import { Segmented } from "./Segmented";
+import { StatusBlock } from "./StatusBlock";
 
 // SYNTHETIC players and options for component tests.
 const players = new Map<string, PlayerOut>([
@@ -151,5 +152,19 @@ describe("Notices and Segmented", () => {
     on.focus();
     await userEvent.keyboard("{ArrowLeft}");
     expect(onChange).toHaveBeenCalledWith("0.5");
+  });
+});
+
+describe("StatusBlock", () => {
+  it("is the page's level-one heading when it stands for the whole page", () => {
+    render(<StatusBlock kind="error" title="Could not open this moment" pageHeading />);
+    expect(screen.getByRole("heading", { level: 1, name: "Could not open this moment" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
+  it("is not a heading inside a panel", () => {
+    render(<StatusBlock kind="loading" title="Loading possessions" />);
+    expect(screen.queryByRole("heading")).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent("Loading possessions");
   });
 });

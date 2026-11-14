@@ -70,6 +70,7 @@ export function Lab({ possessionId, match, onBack, initialFrame, initialMoves, i
         <StatusBlock
           kind="error"
           title="Could not load this possession"
+          pageHeading
           error={replay.error}
           subject="this possession"
           onRetry={replay.reload}
@@ -86,7 +87,7 @@ export function Lab({ possessionId, match, onBack, initialFrame, initialMoves, i
     return (
       <div className="lab lab--status">
         <BackButton onBack={onBack} />
-        <StatusBlock kind="loading" title="Loading tracking replay" />
+        <StatusBlock kind="loading" title="Loading tracking replay" pageHeading />
       </div>
     );
   }
@@ -738,7 +739,9 @@ function LabView({
     mode === "edit"
       ? scStatus === "loading"
         ? "Re-running model..."
-        : scenario
+        : scStatus === "error" && interventions.length > 0
+          ? "What-if failed: see the scenario panel"
+          : scenario
           ? view === "observed"
             ? "Observed frame"
             : view === "hypothetical"

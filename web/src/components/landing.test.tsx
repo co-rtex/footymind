@@ -4,7 +4,8 @@
  * returns nothing, so no number is rendered.
  */
 import { render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { api } from "../api/client";
 import type { MatchSummary } from "../api/types";
 import { availableFeatured, FEATURED } from "../lib/featured";
@@ -83,5 +84,84 @@ describe("featured situations follow GET /api/matches", () => {
     expect(screen.queryByTestId("tour-card")).toBeNull();
     expect(screen.queryByTestId("tour-link-hero")).toBeNull();
     expect(screen.getByTestId("match-groups")).toBeInTheDocument();
+  });
+});
+
+describe("match choice and the possession list", () => {
+  const MATCHES = [...METRICA_ONLY, summary("skillcorner-2017461")];
+  beforeEach(() => {
+    resetFeaturedLive();
+    vi.spyOn(api, "scenario").mockRejectedValue(new Error("synthetic: not served"));
+    vi.spyOn(api, "defensiveShadow").mockRejectedValue(new Error("synthetic: not served"));
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it("the match cards are one radio group: one Tab stop, arrow keys move the selection", async () => {
+    vi.spyOn(api, "possessions").mockImplementation(() => never());
+    const onSelect = vi.fn();
+    render(<Landing matches={MATCHES} match={MATCHES[1]!} onSelectMatch={onSelect} onOpenPossession={() => {}} />);
+    const cards = within(screen.getByTestId("match-groups")).getAllByRole("radio");
+    expect(cards.filter((c) => c.tabIndex === 0)).toEqual([screen.getByTestId("match-card-metrica-sample-2")]);
+    cards[1]!.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(onSelect).toHaveBeenLastCalledWith("metrica-sample-3");
+    expect(cards[2]).toHaveFocus();
+    // across the provider groups, and wrapping around
+    await userEvent.keyboard("{ArrowRight}");
+    expect(onSelect).toHaveBeenLastCalledWith("skillcorner-2017461");
+    await userEvent.keyboard("{ArrowRight}");
+    expect(onSelect).toHaveBeenLastCalledWith("metrica-sample-1");
+    await userEvent.keyboard("{End}");
+    expect(onSelect).toHaveBeenLastCalledWith("skillcorner-2017461");
+    expect(cards[3]).toHaveFocus();
+  });
+
+  it("a link to a match this server lacks says so instead of showing nothing", () => {
+    vi.spyOn(api, "possessions").mockImplementation(() => never());
+    render(
+      <Landing
+        matches={MATCHES}
+        match={null}
+        requestedMatchId="no-such-match"
+        onSelectMatch={() => {}}
+        onOpenPossession={() => {}}
+      />,
+    );
+    expect(screen.getByTestId("unknown-match")).toHaveTextContent('This server has no match "no-such-match"');
+    // the first card is still reachable with Tab
+    expect(screen.getByTestId("match-card-metrica-sample-1").tabIndex).toBe(0);
+  });
+
+  it("back from the lab, the possession list is brought into view and its heading focused once loaded", async () => {
+    vi.spyOn(api, "possessions").mockResolvedValue([]);
+    const scroll = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scroll;
+    onTestFinished(() => {
+      Element.prototype.scrollIntoView = original;
+    });
+    const onRevealed = vi.fn();
+    render(
+      <Landing
+        matches={MATCHES}
+        match={MATCHES[0]!}
+        revealList
+        onRevealed={onRevealed}
+        onSelectMatch={() => {}}
+        onOpenPossession={() => {}}
+      />,
+    );
+    await waitFor(() => expect(onRevealed).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("heading", { name: "Possessions" })).toHaveFocus();
+    expect(scroll).toHaveBeenCalled();
+  });
+
+  it("without revealList the landing keeps focus and scroll where they are", async () => {
+    vi.spyOn(api, "possessions").mockResolvedValue([]);
+    const onRevealed = vi.fn();
+    render(<Landing matches={MATCHES} match={MATCHES[0]!} onRevealed={onRevealed} onSelectMatch={() => {}} onOpenPossession={() => {}} />);
+    await screen.findByText("No possessions match these filters");
+    expect(onRevealed).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: "Possessions" })).not.toHaveFocus();
   });
 });

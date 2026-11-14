@@ -585,3 +585,22 @@ a.btn {
     padding: var(--sp-3) var(--sp-4);
   }
 }
+
+/* 320 px wide screens (WCAG reflow): the response comparison fits its card without sideways scroll */
+@media (max-width: 360px) {
+  .fact-compare th {
+    padding-right: var(--sp-2);
+  }
+  .fact-compare td + td {
+    padding-left: var(--sp-2);
+  }
+  .fact-compare-value {
+    font-size: var(--fs-md);
+  }
+  .feature-card {
+    padding: var(--sp-3);
+  }
+  .feature-facts {
+    padding: var(--sp-3) var(--sp-2);
+  }
+}

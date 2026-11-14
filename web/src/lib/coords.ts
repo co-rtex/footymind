@@ -34,6 +34,26 @@ export function pitchAspect(pitch: Pitch, marginM = PITCH_MARGIN_M): number {
   return (pitch.width + 2 * marginM) / (pitch.length + 2 * marginM);
 }
 
+/**
+ * Viewport height kept free for the sticky top bar and the transport under the pitch, so that a
+ * pitch scrolled to the top of the screen (the guided tour does that on stacked layouts) leaves the
+ * play/pause controls visible.
+ */
+export const PITCH_RESERVED_HEIGHT_PX = 168;
+
+/**
+ * CSS width of the pitch canvas: the full container width, unless the pitch would then be too
+ * tall for the viewport (tablet landscape, short laptop screens), in which case it is narrowed
+ * (and centred) to fit. It never shrinks below 60% of the container or 240 px.
+ */
+export function pitchCssWidth(containerWidth: number, viewportHeight: number, aspect: number): number {
+  const full = Math.max(240, Math.floor(containerWidth));
+  if (!(viewportHeight > 0) || !(aspect > 0)) return full;
+  const byHeight = Math.floor((viewportHeight - PITCH_RESERVED_HEIGHT_PX) / aspect);
+  const floor = Math.max(240, Math.floor(full * 0.6));
+  return Math.min(full, Math.max(floor, byHeight));
+}
+
 export function toCanvasX(t: PitchTransform, x: number): number {
   return t.cx + x * t.scale;
 }

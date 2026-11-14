@@ -353,34 +353,37 @@ export function ScenarioPanel(p: Props) {
             <h3 className="h-sub">Summary</h3>
             <ProvBadge prov="estimated">model estimate</ProvBadge>
           </div>
-          <table className="table table--dense summary-table">
-            <thead>
-              <tr>
-                <th scope="col">Quantity</th>
-                <th scope="col" className="num">
-                  Observed
-                </th>
-                <th scope="col" className="num">
-                  Hypothetical
-                </th>
-                <th scope="col" className="num">
-                  Change
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {SUMMARY_ROWS.filter((r) => r.key in scenario.summary_observed || r.key in scenario.summary_hypothetical).map(
-                (r) => (
-                  <tr key={r.key}>
-                    <th scope="row">{r.label}</th>
-                    <td className="num">{fmtSummary(scenario.summary_observed[r.key], r.kind, players)}</td>
-                    <td className="num">{fmtSummary(scenario.summary_hypothetical[r.key], r.kind, players)}</td>
-                    <td className="num muted">{fmtSummaryDelta(scenario.summary_observed, scenario.summary_hypothetical, r.key, r.kind) ?? ""}</td>
-                  </tr>
-                ),
-              )}
-            </tbody>
-          </table>
+          {/* scrolls on its own on very narrow screens instead of widening the panel */}
+          <div className="table-wrap">
+            <table className="table table--dense summary-table">
+              <thead>
+                <tr>
+                  <th scope="col">Quantity</th>
+                  <th scope="col" className="num">
+                    Observed
+                  </th>
+                  <th scope="col" className="num">
+                    Hypothetical
+                  </th>
+                  <th scope="col" className="num">
+                    Change
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {SUMMARY_ROWS.filter((r) => r.key in scenario.summary_observed || r.key in scenario.summary_hypothetical).map(
+                  (r) => (
+                    <tr key={r.key}>
+                      <th scope="row">{r.label}</th>
+                      <td className="num">{fmtSummary(scenario.summary_observed[r.key], r.kind, players)}</td>
+                      <td className="num">{fmtSummary(scenario.summary_hypothetical[r.key], r.kind, players)}</td>
+                      <td className="num muted">{fmtSummaryDelta(scenario.summary_observed, scenario.summary_hypothetical, r.key, r.kind) ?? ""}</td>
+                    </tr>
+                  ),
+                )}
+              </tbody>
+            </table>
+          </div>
 
           <div className="subhead">
             <h3 className="h-sub">Pass options: observed vs hypothetical</h3>

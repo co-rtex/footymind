@@ -246,3 +246,60 @@ test("featured cards explain a failed live computation and offer retry", async (
   await card.getByRole("button", { name: "Retry" }).click();
   await expect(card.getByTestId("featured-facts")).toBeVisible({ timeout: 30_000 });
 });
+
+test("back from the lab returns to the possession list, not the top of the landing", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("match-card-metrica-sample-2").click();
+  const rows = page.getByTestId("possession-table").locator("tbody tr");
+  await rows.nth(5).getByRole("link").click();
+  await expect(page.getByTestId("pitch-canvas")).toBeVisible();
+  await expect(page).toHaveTitle("Lab · FootyMind");
+  await page.getByRole("button", { name: "Possessions" }).first().click();
+  const heading = page.getByRole("heading", { name: "Possessions", level: 2 });
+  await expect(heading).toBeFocused();
+  await expect(heading).toBeInViewport();
+  await expect(page.getByTestId("possessions-match")).toHaveText("Metrica Sports Sample Game 2");
+  // the browser's Back button does the same
+  await rows.nth(2).getByRole("link").click();
+  await expect(page.getByTestId("pitch-canvas")).toBeVisible();
+  await page.goBack();
+  await expect(heading).toBeFocused();
+  await expect(heading).toBeInViewport();
+});
+
+test("featured links are titled as the lab; an unknown match says so", async ({ page }) => {
+  await page.goto("/#/at/metrica-sample-1?f=53708&tour=press");
+  await expect(page.getByTestId("guide")).toBeVisible();
+  await expect(page).toHaveTitle("Lab · FootyMind");
+
+  await page.goto("/#/at/no-such-match?f=100");
+  await expect(page.getByRole("heading", { level: 1, name: "Could not open this moment" })).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText('We could not find the match "no-such-match"');
+  await page.getByRole("button", { name: "Browse possessions" }).click();
+  await expect(page.getByTestId("unknown-match")).toContainText('This server has no match "no-such-match"');
+});
+
+test.describe("narrow screens", () => {
+  test.use({ viewport: { width: 320, height: 640 } });
+  test("a 320 px screen never scrolls sideways (landing, edit mode)", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByTestId("featured-card-response").getByTestId("featured-response")).toBeVisible({
+      timeout: 60_000,
+    });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+    await page.goto("/#/at/metrica-sample-2?f=31360&move=home_5,-29.04,9.47&response=learned_innovation");
+    await expect(page.getByTestId("scenario-panel")).toHaveAttribute("data-status", "success", { timeout: 60_000 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  });
+});
+
+test.describe("tablet landscape", () => {
+  test.use({ viewport: { width: 1180, height: 820 } });
+  test("watching the tour keeps the play/pause control on screen", async ({ page }) => {
+    await page.goto("/#/at/metrica-sample-1?f=53708&tour=press");
+    await expect(page.getByTestId("guide")).toBeVisible();
+    await page.getByTestId("guide-watch").click();
+    await expect(page.getByTestId("play-toggle")).toHaveAttribute("aria-label", "Pause");
+    await expect(page.getByTestId("play-toggle")).toBeInViewport({ ratio: 1 });
+  });
+});
