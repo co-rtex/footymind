@@ -274,6 +274,8 @@ export interface SimilarMomentsOut {
   k: number;
   neighbours: SimilarMoment[];
   completed_share: number;
+  /** The validated configuration (C36): k = 50, shrunk toward the base rate. Optional. */
+  estimate?: { k: number; completion: number; base_rate: number; method: string } | null;
   provider: string;
   features: string[];
   validation: SimilarValidation | null;

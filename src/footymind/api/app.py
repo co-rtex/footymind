@@ -531,7 +531,23 @@ def similar_moments(match_id: str, frame: int, k: int = 8) -> S.SimilarMomentsOu
     x = np.array(
         [row[f] if row[f] is not None else np.nan for f in SIMILARITY_FEATURES], dtype=float
     )
+    from footymind.research.similarity_validation import PRIOR_STRENGTH
+    from footymind.research.similarity_validation import K as K_VALID
+
     got, dist = idx.query(x, exclude_match=match_id, k=max(1, min(k, 50)))
+    # The validated estimate (C36) uses exactly the validated configuration: k = 50, shrunk.
+    estimate = None
+    wide, _ = idx.query(x, exclude_match=match_id, k=K_VALID)
+    if wide.height == K_VALID:
+        base = float(idx.rows["success"].mean())  # type: ignore[arg-type]
+        succ = float(wide["success"].sum())
+        estimate = {
+            "k": K_VALID,
+            "completion": round((succ + PRIOR_STRENGTH * base) / (K_VALID + PRIOR_STRENGTH), 3),
+            "base_rate": round(base, 3),
+            "method": f"share completed among the {K_VALID} most similar decisions from other "
+            f"matches, shrunk toward the overall rate with {PRIOR_STRENGTH:g} pseudo-counts",
+        }
     neighbours = [
         S.SimilarMoment(
             match_id=r["match_id"],
@@ -557,6 +573,7 @@ def similar_moments(match_id: str, frame: int, k: int = 8) -> S.SimilarMomentsOu
         k=len(neighbours),
         neighbours=neighbours,
         completed_share=round(sum(n.completed for n in neighbours) / max(len(neighbours), 1), 3),
+        estimate=estimate,
         provider=provider,
         features=SIMILARITY_FEATURES,
         validation=_similarity_validation(provider),

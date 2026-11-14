@@ -202,6 +202,23 @@ describe("SimilarPanel", () => {
     expect(note).toHaveTextContent("experiments/results/synthetic/results.json");
   });
 
+  it("states the validated k = 50 estimate separately from the listed neighbours (synthetic)", async () => {
+    vi.spyOn(api, "matches").mockResolvedValue([]);
+    vi.spyOn(api, "similar").mockResolvedValue(
+      similar({
+        validation: { ref: "experiments/results/synthetic/results.json", knn_beats_base_rate: true, log_loss: null },
+        estimate: { k: 50, completion: 0.734, base_rate: 0.79, method: "synthetic" },
+      }),
+    );
+    render(<SimilarPanel matchId="metrica-sample-1" frame={100} provider="Metrica Sports" players={players} />);
+    await userEvent.click(screen.getByTestId("similar-find"));
+    await screen.findByTestId("similar-headline");
+    const note = screen.getByTestId("similar-validated");
+    expect(note).toHaveTextContent("50 most similar decisions");
+    expect(note).toHaveTextContent("estimate is 73%");
+    expect(note).toHaveTextContent("not the validated estimate");
+  });
+
   it("names neighbour teams and shows their match clock from the match summaries", async () => {
     vi.spyOn(api, "matches").mockResolvedValue([
       {

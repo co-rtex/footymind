@@ -244,7 +244,12 @@ class SimilarMomentsOut(BaseModel):
     passer_id: str
     k: int
     neighbours: list[SimilarMoment]
-    completed_share: float = Field(description="share of neighbours whose pass was completed")
+    completed_share: float = Field(description="share of the listed neighbours completed")
+    estimate: dict[str, Any] | None = Field(
+        default=None,
+        description="the validated configuration: completion rate among the 50 nearest "
+        "decisions, shrunk toward the index base rate (C36); null if the index is too small",
+    )
     provider: str
     features: list[str]
     validation: dict[str, Any] | None = Field(

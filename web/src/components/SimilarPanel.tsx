@@ -97,8 +97,16 @@ function ValidationNote({ data }: { data: SimilarMomentsOut }) {
   const href = refHref(ref);
   return (
     <p className="small muted similar-validation" data-testid="similar-validated">
-      Validated on held-out matches: these neighbours&apos; outcomes predicted pass completion better than the overall
-      completion rate.
+      Validated on held-out matches: the completion rate among the {data.estimate?.k ?? 50} most similar decisions
+      (shrunk toward the overall rate) predicted pass completion better than the overall completion rate.
+      {data.estimate ? (
+        <>
+          {" "}
+          For this decision that estimate is <strong>{Math.round(data.estimate.completion * 100)}%</strong> (overall{" "}
+          {Math.round(data.estimate.base_rate * 100)}%). The {data.neighbours.length} listed are the closest of them, shown
+          for inspection; their own share is not the validated estimate.
+        </>
+      ) : null}
       {ref ? (
         <>
           {" "}

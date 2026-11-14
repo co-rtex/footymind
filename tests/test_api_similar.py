@@ -39,6 +39,8 @@ def test_similar_moments_contract(client: TestClient) -> None:
         sum(n["completed"] for n in body["neighbours"]) / 6, abs=1e-3
     )
     assert "not a prediction" in body["disclaimer"]
+    est = body["estimate"]  # the validated configuration (C36): k = 50, shrunk
+    assert est["k"] == 50 and 0 < est["completion"] < 1 and 0 < est["base_rate"] < 1
 
 
 def test_decision_row_equals_training_row() -> None:
