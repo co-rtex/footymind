@@ -39,7 +39,8 @@ describe("policy labels and flags", () => {
   it("labels known policies and makes unknown names readable", () => {
     expect(policyLabel("none")).toBe("Static (no response)");
     expect(policyLabel("marker_follows")).toBe("Marker follows");
-    expect(policyLabel("learned")).toBe("Learned from tracking");
+    expect(policyLabel("learned")).toBe("Learned forecaster");
+    expect(policyLabel("learned_innovation")).toBe("Learned reaction to attackers");
     expect(policyLabel("future_policy_v2")).toBe("Future policy v2");
   });
 

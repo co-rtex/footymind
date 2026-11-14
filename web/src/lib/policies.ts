@@ -40,7 +40,8 @@ const LABELS: Record<string, string> = {
   press_carrier: "Press the carrier",
   zonal_shift: "Zonal shift",
   lane_cover: "Cover passing lanes",
-  learned: "Learned from tracking",
+  learned: "Learned forecaster",
+  learned_innovation: "Learned reaction to attackers",
 };
 
 /** Short human label for a policy name; unknown names are made readable, never hidden. */

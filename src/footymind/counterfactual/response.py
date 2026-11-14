@@ -299,6 +299,20 @@ class PolicyInfo:
     status: str
 
 
+# Status of the rule policies after the observational check (C37, and C64 with envelope v2).
+# They are never "validated" (that word is reserved for forecasting against held-out
+# trajectories, ADR-0006), but the screen should say what was checked and with what result.
+_OBSERVATIONAL_STATUS = {
+    "marker_follows": "experimental: consistent with real defender reactions in an observational "
+    "check on both providers (not a forecast, not an intervention validation)",
+    "lane_cover": "experimental: consistent with real defender reactions in an observational "
+    "check on both providers (not a forecast, not an intervention validation)",
+    "press_carrier": "experimental: not supported by the observational check under the current "
+    "kinematic envelope",
+    "zonal_shift": "experimental: overshoots real defensive movement in the observational check",
+}
+
+
 def policy_info(name: str, provider: str | None = None) -> PolicyInfo:
     """Description plus validation status. ``provider=None`` means validated on all providers.
 
@@ -340,6 +354,8 @@ def policy_info(name: str, provider: str | None = None) -> PolicyInfo:
         )
     elif validated:
         status = "validated: short-horizon forecasts of real play beat constant velocity"
+    elif name in _OBSERVATIONAL_STATUS:
+        status = _OBSERVATIONAL_STATUS[name]
     else:
         status = "experimental: not validated against tracking"
     return PolicyInfo(name, spec.description, list(spec.assumptions), validated, ref, status)

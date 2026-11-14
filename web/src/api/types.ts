@@ -195,6 +195,9 @@ export interface ModelInfo {
   reference: string;
   status: string;
   params: Record<string, number>;
+  /** provider the served model belongs to (never another provider's model) */
+  provider?: string;
+  resource?: string;
 }
 
 export interface FrameAnalysisOut {
@@ -278,7 +281,8 @@ export interface SimilarMomentsOut {
   passer_id: string;
   k: number;
   neighbours: SimilarMoment[];
-  completed_share: number;
+  /** null when there are no neighbours */
+  completed_share: number | null;
   /** The validated configuration (C36): k = 50, shrunk toward the base rate. Optional. */
   estimate?: { k: number; completion: number; base_rate: number; method: string } | null;
   provider: string;
@@ -300,7 +304,14 @@ export interface InterventionIn {
  * available ones from GET /api/response-policies when the endpoint exists, so a
  * name outside this list is still carried through as a string.
  */
-export type KnownResponsePolicy = "none" | "marker_follows" | "press_carrier" | "zonal_shift" | "lane_cover" | "learned";
+export type KnownResponsePolicy =
+  | "none"
+  | "marker_follows"
+  | "press_carrier"
+  | "zonal_shift"
+  | "lane_cover"
+  | "learned"
+  | "learned_innovation";
 export type ResponsePolicy = KnownResponsePolicy | (string & {});
 
 /** Mirrors the policy description in ScenarioOut.policy and GET /api/response-policies. */
