@@ -6,13 +6,26 @@ not in those files.
 
 ## One paragraph
 
-FootyMind is an open-source football analytics lab that reconstructs the "invisible game", the
+FootyMind is a public football analytics lab that reconstructs the "invisible game", the
 space, pressure and passing options event data cannot see, from player-tracking data from two
 providers. It covers 3 Metrica matches at 25 Hz and 20 SkillCorner A-League matches from 10 fps
 broadcast tracking. It combines a leakage-audited research pipeline with an interactive web lab.
 There you can replay real possessions, read metric-grounded explanations, find similar
 situations from other matches, and edit a defender's position under explicit, partly validated
 opponent-response assumptions.
+
+## Research question and principal challenge
+
+**Question.** Does the spatial context that only tracking data can see (space, pressure,
+passing lanes, the last second of movement) improve predictions of what happens to a pass,
+over the event log alone, once every source of hindsight is removed? And can "what if"
+repositioning be made honest about what it assumes?
+
+**Challenge.** Leakage hides in unexpected places: on broadcast tracking the event's start
+frame often already contains the kick (62.7% of SkillCorner passes, C38), so naive
+"decision-time" features carry the answer. Two providers with different frame rates, camera
+visibility and coordinate systems must never be pooled, and unobserved positions must stay
+unknown rather than be filled in.
 
 ## What is distinctive
 
@@ -66,7 +79,35 @@ opponent-response assumptions.
 * CI on GitHub Actions: lint, type checks, unit, real-data and end-to-end tests, and a Docker
   build. Pinned, checksum-verified data downloads. A one-command reproduction script for every
   committed research artefact.
-* Test counts at the end of the latest session are recorded in `CURRENT_STATE.md`.
+* Docker image verified at runtime in CI on every push: first start on an empty volume, and the
+  entrypoint's recovery on existing volumes (healthy restart, outdated bundle, interrupted
+  first start, bad inputs).
+* Test counts and the final verification are recorded in `CURRENT_STATE.md` and
+  `docs/release/RELEASE_NOTES_1.0.md`.
+
+## Demo walkthrough (about five minutes)
+
+Start it with the minimal setup in the README (or `docker run`), open the lab, then:
+
+1. **Landing.** Read the one-paragraph pitch and the four provenance-labelled layers (space,
+   pressure, passing options, what-if).
+2. **Guided tour, step 1 (watch).** A real Metrica possession replays from tracking data.
+3. **Step 2 (understand).** Pause on the pass: pitch control, ranked passing options with the
+   calibrated option model's probabilities, and "Why this moment" statements, each tied to a
+   measured or modelled quantity with its provenance label.
+4. **Step 3 (what if).** Drag a player within the region they could have reached and compare
+   the estimates with what was observed. Switch the defender response from "Static" to
+   "Marker follows": its badge says it is consistent with real reactions in an observational
+   check, while "Zonal shift" is marked "not supported".
+5. **Similar moments.** Open the panel: neighbours from other matches of the same provider
+   with their observed outcomes, and the validated k = 50 completion estimate.
+6. **Broadcast data.** Open the SkillCorner featured situation: off-camera players are drawn
+   hollow and labelled as estimates.
+
+What to say about the limits: the what-if results are model-based comparisons, not claims
+about what would have happened; response rules are assumptions with an observational check,
+not causal models; and the Defensive Shadow is an experimental layer that is no better than
+the nearest defender on Metrica and at chance on broadcast data.
 
 ## Résumé-ready bullets (all metrics verified; adjust wording, not numbers)
 
