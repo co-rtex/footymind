@@ -314,6 +314,57 @@ def paired_bootstrap(
     return res
 
 
+def match_level_bootstrap(
+    oof: pl.DataFrame, a: str, b: str, n_boot: int = 2000, seed: int = 0
+) -> dict[str, Any]:
+    """Two-stage bootstrap of log loss(b) - log loss(a): resample matches, then possessions.
+
+    Unlike :func:`paired_bootstrap`, which keeps every match and resamples possessions within
+    it, this also reflects between-match variation. It is only meaningful with many matches
+    (SkillCorner, 20); with 3 Metrica matches it is reported but not interpreted. The result
+    also has per-match point deltas and the number of matches where ``b`` is better.
+    """
+    rng = np.random.default_rng(seed)
+    y = oof["success"].to_numpy()
+    pa = np.clip(oof[f"p_{a}"].to_numpy(), EPS, 1 - EPS)
+    pb = np.clip(oof[f"p_{b}"].to_numpy(), EPS, 1 - EPS)
+    # per-row log-loss difference: the pooled delta is its mean
+    diff = -(y * np.log(pb) + (1 - y) * np.log(1 - pb)) + (
+        y * np.log(pa) + (1 - y) * np.log(1 - pa)
+    )
+    mids = oof["match_id"].to_numpy()
+    poss = oof["possession_id"].fill_null("none").to_numpy()
+    per_match: dict[str, list[np.ndarray]] = {}
+    for m in np.unique(mids):
+        mm = mids == m
+        uniq_p, inv = np.unique(poss[mm], return_inverse=True)
+        d = diff[mm]
+        per_match[str(m)] = [d[inv == g] for g in range(uniq_p.size)]
+    names = sorted(per_match)
+    boots = []
+    for _ in range(n_boot):
+        tot, cnt = 0.0, 0
+        for m in rng.choice(names, size=len(names)):
+            groups = per_match[m]
+            for g in rng.integers(0, len(groups), size=len(groups)):
+                tot += float(groups[g].sum())
+                cnt += groups[g].size
+        boots.append(tot / cnt)
+    match_deltas = {m: float(np.concatenate(per_match[m]).mean()) for m in names}
+    return {
+        "a": a,
+        "b": b,
+        "n_boot": n_boot,
+        "n_matches": len(names),
+        "log_loss": {
+            "delta": float(diff.mean()),
+            "ci95": [float(np.percentile(boots, 2.5)), float(np.percentile(boots, 97.5))],
+        },
+        "per_match_delta": match_deltas,
+        "n_matches_b_better": int(sum(v < 0 for v in match_deltas.values())),
+    }
+
+
 def permutation_importances(
     fitted: dict[Any, Any], spec: ModelSpec, seed: int = 0, n_repeats: int = 10
 ) -> list[dict[str, float]]:
