@@ -70,3 +70,30 @@ rejection ≥ 0.90 at 0.5 s and ≥ 0.50 at 1.0 s; permutation rejection ≥ 0.9
 5 m offset is near the physical boundary. 1.5 s is reported, not gated. Ablations are
 descriptive and cannot be adopted. A runtime pilot on one SkillCorner match is run with its
 output discarded unread, to check cost and errors only.
+
+## Part 2. Why is the learned response model inert?
+
+### Pre-registration (written and committed before the D4 evaluation was run)
+
+`research/response_diagnostics.py`, per provider, on the `response_validation` rows
+(pass-start frames, outfield defenders, detected-only on SkillCorner, 1.0 s):
+
+* **D1, conditioning.** Relocate the attacker nearest the ball by 5 m (with the ball) in four
+  directions, recompute the served model's inputs, and report the change of each standardised
+  input and of the 1.0 s prediction (the model's gain in metres per metre).
+* **D2, target.** R² of constant velocity for displacement; R² of the v1 inputs for the
+  *innovation* (displacement beyond own constant velocity), LOMO.
+* **D3, out of distribution.** The share of intervened input vectors beyond the observed rows'
+  99th percentile of Mahalanobis distance; the share of real attacker innovations larger than
+  the 5 m probe.
+* **D4, innovation design** (`counterfactual/response_innovation.py`). Ridge (α = 1, a priori)
+  of each defender's innovation on five summaries of the attackers' and the ball's innovations
+  (nearest attacker by softmin over 1 m, Gaussian kernel means at 5 m and 15 m, team mean,
+  ball), per frame offset to 1.0 s, LOMO. Placebo: the same model refit after permuting the
+  attacker innovations among the outfield attackers of each frame. **Rule:** the model is
+  *supported* on a provider iff at 0.5 s and 1.0 s the 95% CIs of FDE(CV + model) − FDE(CV)
+  and of FDE(model) − FDE(placebo) are both below zero (possession-clustered bootstrap,
+  1,000, stratified by match, paired rows). If it is supported on a provider, it is exported
+  per provider and served as a separate, versioned policy `learned_innovation`; `learned` is
+  kept unchanged and re-described as a forecaster. A runtime pilot on one SkillCorner match
+  was run with its output discarded unread.
