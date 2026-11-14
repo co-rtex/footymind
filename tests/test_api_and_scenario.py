@@ -49,6 +49,11 @@ def test_analysis_contract(client: TestClient, pass_frame: tuple[int, str, str])
     assert receiver in {o["receiver_id"] for o in a["pass_options"]}
     assert all(0 <= o["p_success"] <= 1 for o in a["pass_options"])
     assert "uncalibrated" in a["model"]["status"] or "not calibrated" in a["model"]["status"]
+    # the reach radius the lab draws is stated with its horizon and speed bound
+    h, v = a["reach_horizon_s"], a["reach_speed_mps"]
+    assert h > 0 and v > 0
+    radii = [p["reach_radius_m"] for p in a["players"] if p["reach_radius_m"] is not None]
+    assert radii and all(r == pytest.approx(h * v) for r in radii)
 
 
 def test_errors(client: TestClient) -> None:

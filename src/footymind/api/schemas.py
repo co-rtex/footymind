@@ -287,6 +287,12 @@ class FrameAnalysisOut(BaseModel):
     period: int
     time_s: float
     period_time_s: float = Field(0.0, description="seconds since the period's first tracked frame")
+    reach_horizon_s: float = Field(
+        1.5, description="horizon of each player's reach_origin and reach_radius_m, in seconds"
+    )
+    reach_speed_mps: float = Field(
+        7.0, description="speed bound behind reach_radius_m (= reach_speed_mps * reach_horizon_s)"
+    )
     attacking_team: Team | None
     attack_sign: int
     possession_id: str | None

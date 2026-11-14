@@ -107,6 +107,8 @@
     "players",
     "possession_id",
     "pressure",
+    "reach_horizon_s",
+    "reach_speed_mps",
     "temporal",
     "time_s",
     "warnings"

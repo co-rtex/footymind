@@ -70,7 +70,8 @@ const TS: Record<string, string[]> = {
     end_y: true, possession_id: true,
   }),
   FrameAnalysisOut: keysOf<FrameAnalysisOut>({
-    match_id: true, frame: true, period: true, time_s: true, period_time_s: true, attacking_team: true,
+    match_id: true, frame: true, period: true, time_s: true, period_time_s: true, reach_horizon_s: true,
+    reach_speed_mps: true, attacking_team: true,
     attack_sign: true, possession_id: true, carrier_id: true, ball_x: true, ball_y: true, ball_provenance: true,
     players: true, pitch_control: true, pass_options: true, pressure: true, control_area_m2: true,
     control_area_final_third_m2: true, model: true, option_model: true, warnings: true, temporal: true,

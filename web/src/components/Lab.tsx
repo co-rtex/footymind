@@ -257,7 +257,12 @@ function LabView({
   // A linked response only makes sense with linked moves; the backend validates the name.
   const [policy, setPolicy] = useState<ResponsePolicy>(linkedMoves.length && initialResponse ? initialResponse : STATIC_POLICY);
   const [valueModel, setValueModel] = useState<ValueModel>("option_model");
-  const [dragWarn, setDragWarn] = useState<{ outside: boolean | null; id: string; radius: number | null } | null>(null);
+  const [dragWarn, setDragWarn] = useState<{
+    outside: boolean | null;
+    id: string;
+    radius: number | null;
+    horizonS: number | null;
+  } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   // ---- playback -> renderer (imperative, per animation frame) ----
@@ -603,7 +608,7 @@ function LabView({
     (outside: boolean | null, id: string | null) => {
       // the reach radius is the API's (PlayerState.reach_radius_m), never a constant of the app
       const radius = id ? (analysis?.players.find((q) => q.player_id === id)?.reach_radius_m ?? null) : null;
-      setDragWarn(id ? { outside, id, radius } : null);
+      setDragWarn(id ? { outside, id, radius, horizonS: analysis?.reach_horizon_s ?? null } : null);
     },
     [analysis],
   );
@@ -915,7 +920,9 @@ function LabView({
               >
                 {dragWarn.outside === true
                   ? dragWarn.radius !== null
-                    ? `Outside the reachable region: more than ${fmtMetres(dragWarn.radius)} from the observed position a moment earlier`
+                    ? `Outside the reachable region: more than ${fmtMetres(dragWarn.radius)} from the observed position ${
+                        dragWarn.horizonS !== null ? `${dragWarn.horizonS} s` : "a moment"
+                      } earlier`
                     : "Outside the reachable region"
                   : dragWarn.outside === false
                     ? "Within the reachable region"

@@ -210,6 +210,9 @@ export interface FrameAnalysisOut {
   time_s: number;
   /** seconds since the period's first tracked frame (absent on older backends) */
   period_time_s?: number;
+  /** horizon (s) and speed bound (m/s) behind each player's reach_origin and reach_radius_m (newer backends) */
+  reach_horizon_s?: number;
+  reach_speed_mps?: number;
   attacking_team: Team | null;
   attack_sign: number;
   possession_id: string | null;
