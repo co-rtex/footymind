@@ -2,19 +2,23 @@ import type { FeaturedScenario } from "../lib/featured";
 import type { TeamNames } from "../lib/teams";
 
 export type TourStep = 1 | 2 | 3;
+/** Sections the guide can bring into view: "compare" is the static-vs-response comparison. */
+export type TourJump = "why" | "evidence" | "similar" | "response" | "result" | "compare";
 
 interface Props {
   featured: FeaturedScenario;
   teams: TeamNames;
   step: TourStep;
   playing: boolean;
-  /** label of the moved defender, e.g. "#9 Home" */
-  defender: string;
+  /** label of the player the tour moves, e.g. "#9 Home" */
+  player: string;
+  /** label of the defender response step 3 compares with static defenders; null for static only */
+  response: string | null;
   /** step 3: the featured move has been applied and its result is on screen */
   moved: boolean;
   onStep: (s: TourStep) => void;
   onWatch: () => void;
-  onJump: (target: "why" | "evidence" | "similar" | "response" | "result") => void;
+  onJump: (target: TourJump) => void;
   onExit: () => void;
 }
 
@@ -30,7 +34,7 @@ const STEPS: { n: TourStep; label: string }[] = [
  * own controls (play, pause on the decision frame, apply the move), so everything on screen is
  * the normal, labelled lab output.
  */
-export function GuideBar({ featured, teams, step, playing, defender, moved, onStep, onWatch, onJump, onExit }: Props) {
+export function GuideBar({ featured, teams, step, playing, player, response, moved, onStep, onWatch, onJump, onExit }: Props) {
   const text = featured.steps(teams);
   return (
     <section className="guide" aria-labelledby="guide-title" data-testid="guide" data-step={step}>
@@ -89,7 +93,7 @@ export function GuideBar({ featured, teams, step, playing, defender, moved, onSt
                 Similar moments
               </button>
               <button type="button" className="btn btn--primary btn--sm" onClick={() => onStep(3)} data-testid="guide-next">
-                Next: move {defender} <span aria-hidden="true">→</span>
+                Next: move {player} <span aria-hidden="true">→</span>
               </button>
             </div>
           </>
@@ -97,7 +101,13 @@ export function GuideBar({ featured, teams, step, playing, defender, moved, onSt
           <>
             <p>
               {text.move}{" "}
-              {moved ? (
+              {moved && response ? (
+                <span data-testid="guide-response">
+                  The <strong>Defender response</strong> is set to <strong>{response}</strong>; the defender it moves is
+                  simulated, not observed. <strong>Does the defender response matter?</strong> puts the static and response
+                  results side by side. Choose <strong>Static (no response)</strong> to see the defenders stand still.
+                </span>
+              ) : moved ? (
                 <>
                   Switch <strong>Observed</strong> / <strong>Hypothetical</strong> / <strong>Difference</strong> above the
                   pitch. The <strong>Defender response</strong> models react to a moved attacker or ball carrier: drag an
@@ -109,6 +119,11 @@ export function GuideBar({ featured, teams, step, playing, defender, moved, onSt
               <button type="button" className="btn btn--sm" onClick={() => onJump("result")}>
                 Result
               </button>
+              {response ? (
+                <button type="button" className="btn btn--sm" onClick={() => onJump("compare")} data-testid="guide-compare">
+                  Static vs response
+                </button>
+              ) : null}
               <button type="button" className="btn btn--sm" onClick={() => onJump("response")}>
                 Defender response
               </button>

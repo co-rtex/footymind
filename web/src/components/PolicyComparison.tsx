@@ -30,7 +30,7 @@ export function PolicyComparison({ policy, staticDeltas, policyDeltas, players, 
   if (nSimulated === 0) {
     return (
       <section className="policy-compare" aria-labelledby="pc-title" data-testid="policy-comparison" data-verdict="same">
-        <h3 id="pc-title" className="h-sub">
+        <h3 id="pc-title" className="h-sub" tabIndex={-1}>
           Does the defender response matter?
         </h3>
         <p className="policy-verdict" data-testid="policy-verdict">
@@ -46,7 +46,7 @@ export function PolicyComparison({ policy, staticDeltas, policyDeltas, players, 
   return (
     <section className="policy-compare" aria-labelledby="pc-title" data-testid="policy-comparison" data-verdict={v}>
       <div className="subhead">
-        <h3 id="pc-title" className="h-sub">
+        <h3 id="pc-title" className="h-sub" tabIndex={-1}>
           Does the defender response matter?
         </h3>
         <ProvBadge prov="estimated">model estimate</ProvBadge>

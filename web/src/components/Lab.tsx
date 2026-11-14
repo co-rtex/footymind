@@ -19,7 +19,7 @@ import { matchTeams, matchTitle, labelledPlayers, teamName, type TeamNames } fro
 import { matchOfPossession, useAsync } from "../lib/hooks";
 import { finiteDiffSpeed, valueAt } from "../lib/interp";
 import { isNegligible } from "../lib/agreement";
-import { FALLBACK_POLICIES, orderPolicies, STATIC_POLICY } from "../lib/policies";
+import { FALLBACK_POLICIES, orderPolicies, policyLabel, STATIC_POLICY } from "../lib/policies";
 import { providerInfo } from "../lib/providers";
 import { featuredById } from "../lib/featured";
 import { describeZone, pitchZone } from "../lib/zones";
@@ -28,7 +28,7 @@ import { scenarioRequest, SHADOW_OPTS } from "../lib/scenario";
 import { clockAt, eventLabel, indexOfFrame, periodAt } from "../lib/replayIndex";
 import type { DrawnPlayer, Layers, PitchRenderer, ScenarioView } from "../render/renderer";
 import { AnalysisPanel, PASS_TABLE_ID } from "./AnalysisPanel";
-import { GuideBar, type TourStep } from "./GuideBar";
+import { GuideBar, type TourJump, type TourStep } from "./GuideBar";
 import { SideNav, type SideNavItem } from "./SideNav";
 import { revealSection } from "../lib/reveal";
 import { Legend, PitchKey } from "./Legend";
@@ -50,11 +50,13 @@ interface Props {
   initialFrame?: number;
   /** Deep link: scenario moves to apply on open (opens in edit mode, difference view). */
   initialMoves?: InterventionIn[];
+  /** Deep link: defender response policy preselected for the linked moves (ignored without moves) */
+  initialResponse?: ResponsePolicy;
   /** Deep link: id of a featured situation whose guided tour is shown */
   tour?: string;
 }
 
-export function Lab({ possessionId, match, onBack, initialFrame, initialMoves, tour }: Props) {
+export function Lab({ possessionId, match, onBack, initialFrame, initialMoves, initialResponse, tour }: Props) {
   const replay = useAsync<ReplayData>(`replay:${possessionId}`, (signal) => api.possessionReplay(possessionId, signal));
   // The match clock needs period start frames. Fetch this match's summary directly (milliseconds)
   // rather than waiting for the full match list, and never show a provider-time clock in its place.
@@ -95,6 +97,7 @@ export function Lab({ possessionId, match, onBack, initialFrame, initialMoves, t
       onBack={onBack}
       initialFrame={initialFrame}
       initialMoves={initialMoves}
+      initialResponse={initialResponse}
       tour={tour}
     />
   );
@@ -193,6 +196,7 @@ function LabView({
   onBack,
   initialFrame,
   initialMoves,
+  initialResponse,
   tour,
 }: {
   replay: ReplayData;
@@ -200,6 +204,7 @@ function LabView({
   onBack: () => void;
   initialFrame?: number;
   initialMoves?: InterventionIn[];
+  initialResponse?: ResponsePolicy;
   tour?: string;
 }) {
   // Team display names (real names for SkillCorner, Home/Away for anonymised Metrica).
@@ -249,7 +254,8 @@ function LabView({
   /** players named by the focused "why this moment" statement */
   const [trace, setTrace] = useState<readonly string[]>(NO_TRACE);
   const [interventions, setInterventions] = useState<InterventionIn[]>(linkedMoves);
-  const [policy, setPolicy] = useState<ResponsePolicy>("none");
+  // A linked response only makes sense with linked moves; the backend validates the name.
+  const [policy, setPolicy] = useState<ResponsePolicy>(linkedMoves.length && initialResponse ? initialResponse : STATIC_POLICY);
   const [valueModel, setValueModel] = useState<ValueModel>("option_model");
   const [dragWarn, setDragWarn] = useState<{ outside: boolean | null; id: string } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -487,10 +493,11 @@ function LabView({
         pitchIntoView();
         return;
       }
-      // step 3: apply the curated move (a hypothetical edit, exactly as if dragged)
+      // step 3: apply the curated move (a hypothetical edit, exactly as if dragged), with the
+      // situation's defender response preselected so the lab compares it with static defenders
       const moves = featured.moves.filter((m) => replay.players.some((p) => p.player_id === m.player_id));
       setMode("edit");
-      setPolicy(STATIC_POLICY);
+      setPolicy(featured.response ?? STATIC_POLICY);
       setInterventions(moves);
       setView("difference");
       setNotice(null);
@@ -500,14 +507,20 @@ function LabView({
     },
     [featured, replay, mode, exitEdit, playback, sideToTop, pitchIntoView],
   );
-  const tourJump = useCallback((target: "why" | "evidence" | "similar" | "response" | "result") => {
+  const tourJump = useCallback((target: TourJump) => {
     if (target === "response") {
       const sel = document.querySelector<HTMLSelectElement>('[data-testid="policy-select"]');
       sel?.scrollIntoView({ block: "center" });
       sel?.focus({ preventScroll: true });
       return;
     }
-    const ids = { why: "why-title", evidence: "an-title", similar: "similar-title", result: "sc-title" } as const;
+    const ids = {
+      why: "why-title",
+      evidence: "an-title",
+      similar: "similar-title",
+      result: "sc-title",
+      compare: "pc-title",
+    } as const;
     revealSection(ids[target]);
   }, []);
 
@@ -781,7 +794,8 @@ function LabView({
             teams={teams}
             step={tourStep}
             playing={playing}
-            defender={playerLabel(featured.defender, players)}
+            player={playerLabel(featured.moved, players)}
+            response={featured.response ? policyLabel(featured.response) : null}
             moved={mode === "edit" && interventions.length > 0}
             onStep={tourStepTo}
             onWatch={tourWatch}

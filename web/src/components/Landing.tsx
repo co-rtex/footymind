@@ -126,9 +126,10 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
             Featured situations
           </h2>
           <p className="small muted">
-            Two real passes picked by a documented search for robust model changes. The numbers are computed live from
-            the tracking data when this page loads. Each what-if is a model-based comparison, not a claim about what
-            would have happened in the match.
+            Three real passes, each picked by a documented search: two for robust model changes, one for a change that
+            depends on how the defenders are assumed to respond. The numbers are
+            computed live from the tracking data when this page loads. Each what-if is a model-based comparison, not a
+            claim about what would have happened in the match.
           </p>
         </div>
         <div className="feature-grid">
@@ -137,7 +138,7 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
               key={f.id}
               f={f}
               match={summaries.get(f.matchId) ?? null}
-              testId={f.id === "press" ? "featured-link" : "featured-broadcast-link"}
+              testId={f.id === "press" ? "featured-link" : `featured-${f.id}-link`}
             />
           ))}
         </div>

@@ -67,6 +67,7 @@ export function App() {
             matchId={route.matchId}
             frame={route.frame}
             moves={route.moves}
+            response={route.response}
             tour={route.tour}
             match={match}
             onBack={goHome}
@@ -81,6 +82,7 @@ export function App() {
             onBack={goHome}
             initialFrame={route.frame}
             initialMoves={route.moves}
+            initialResponse={route.response}
             tour={route.tour}
           />
         ) : matches.status === "error" && !matches.data ? (
@@ -113,6 +115,7 @@ function AtFrame({
   matchId,
   frame,
   moves,
+  response,
   tour,
   match,
   onBack,
@@ -120,6 +123,7 @@ function AtFrame({
   matchId: string;
   frame: number;
   moves?: RouteMove[];
+  response?: string;
   tour?: string;
   match: MatchSummary | null;
   onBack: () => void;
@@ -153,6 +157,7 @@ function AtFrame({
       onBack={onBack}
       initialFrame={frame}
       initialMoves={moves}
+      initialResponse={response}
       tour={tour}
     />
   );
