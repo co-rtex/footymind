@@ -15,7 +15,7 @@ families `A/B/C`, `Adt/Bdt`, and the temporal variants) are documented in
 | Output | For each teammate of the ball carrier, an estimated probability that a pass to them would be completed. Provenance: **estimated** |
 | Inputs | Decision-frame positions and causal velocities. For each target: distance, angle, forward progress, pitch control at the target and at a lead point, lane clearance and margin, the nearest marker, target speed along the pass. No event end locations, receivers or outcomes |
 | Training data | Attempted passes (rules v2). Metrica: 3 matches. SkillCorner: 20 matches, trained only on SkillCorner |
-| Held-out performance (LOMO) | Metrica: log loss 0.414, AUC 0.796, ECE 0.019 (C21). SkillCorner: 0.354 / 0.811 / 0.024 (C24) |
+| Held-out performance (LOMO) | At the event start frame: Metrica log loss 0.414, AUC 0.796, ECE 0.019 (C21); SkillCorner 0.354 / 0.811 / 0.024 (C24). With every input read 0.2 s earlier (ADR-0007 guard): Metrica 0.419 / 0.790 / 0.028, SkillCorner 0.354 / 0.810 / 0.021 (C71) |
 | Uncertainty | Bootstrap members drive scenario sign agreement (how many members agree on the direction of a change) |
 | Intended use | Comparing passing options within a frame, and comparing observed vs edited frames in the Multiverse |
 | Not for | Valuing players. Predicting outcomes of passes that were never attempted (estimates for options nobody chose are extrapolations). Using one provider's model on another provider's data (the API refuses to) |
@@ -34,10 +34,10 @@ families `A/B/C`, `Adt/Bdt`, and the temporal variants) are documented in
 | policy | what it does | evidence | served status |
 |---|---|---|---|
 | `none` | no response | — | no response simulated |
-| `marker_follows` | the nearest marker shifts with a moved attacker | passes the observational innovation check on both providers, β ≈ 1.07 / 1.30 (C64) | experimental (consistent with real reactions) |
-| `lane_cover` | the best-placed defender moves toward the new passing lane | passes on both providers, β ≈ 0.77 / 0.80 (C64) | experimental (consistent with real reactions) |
-| `press_carrier` | the nearest defender closes on a moved carrier | not supported under envelope v2 (C64) | experimental |
-| `zonal_shift` | the block shifts with the ball | overshoots real movement, β 0.13–0.25 (C64) | experimental, illustration only |
+| `marker_follows` | the nearest marker shifts with a moved attacker | beats constant velocity and size-matched placebos on both providers (paired, C70), β ≈ 1.07 / 1.30 | experimental (consistent with real reactions) |
+| `lane_cover` | the best-placed defender moves toward the new passing lane | beats constant velocity and placebos on both providers (C70), β ≈ 0.77 / 0.80 | experimental (consistent with real reactions) |
+| `press_carrier` | the nearest defender closes on a moved carrier | not supported: does not beat constant velocity under envelope v2 (C64, C70) | experimental |
+| `zonal_shift` | the block shifts with the ball | not supported: overshoots real movement, β 0.25 / 0.13 (C64, C70) | experimental, illustration only |
 | `learned` | ridge forecast of short-horizon defender displacement | beats constant velocity at forecasting real play (C40, C42); nearly inert under edits (C44, C61) | validated **as a forecaster only** |
 | `learned_innovation` | ridge model of defenders' deviation from their own motion given attackers' unexpected movement | beats constant velocity and a permuted placebo on both providers (C62); moves defenders about 1.3–1.5 m under a 5 m edit (C63) | validated (observational association, not causal) |
 

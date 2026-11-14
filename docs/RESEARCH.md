@@ -970,6 +970,35 @@ experiment with it. No existing config was changed. Unknown time-on-ball rises f
   placebo on Metrica). `press_carrier` no longer passes, and `zonal_shift` still overshoots.
   The served statuses say this per policy.
 
+### Rule check v4: paired, size-matched placebo (session 4, after the release review)
+
+The release review found two problems with v3. Its permutation placebo also met the
+"supported" criterion, because random partners give β 0.8–0.9. And for the carrier policies
+the placebo borrowed a non-carrier's innovation, so it was not size-matched. v4 adds a
+**rotation placebo**, in which each mover's own innovation is rotated by a random angle. That
+keeps its size for every policy. v4 also decides on the **paired** per-frame contrast
+(innovation − placebo), possession-clustered and match-stratified. A rule is supported only if
+it beats constant velocity *and* the rotation placebo.
+
+| policy | vs CV (Metrica / SkillCorner) | vs rotation placebo (paired) | vs permutation placebo (paired) | supported |
+|---|---|---|---|---|
+| `marker_follows` | −0.097 / −0.144 m | −0.162 / −0.222 | −0.074 / −0.082 | **yes / yes** |
+| `lane_cover` | −0.040 / −0.049 | −0.097 / −0.098 | −0.047 / −0.030 | **yes / yes** |
+| `press_carrier` | −0.029 (n.s.) / +0.045 | −0.175 / −0.118 | +0.016 / +0.111 | no / no |
+| `zonal_shift` | +0.082 / +0.088 | −0.035 / −0.023 | +0.104 / +0.138 | no / no |
+
+All quoted CIs for the "yes" rows exclude zero (C70). The two rules that were consistent with
+real reactions under v3 remain so under a placebo that keeps size and team-wide movement. The
+other two fail because they do not beat constant velocity. They "beat" a rotation placebo only
+because moves in random directions are worse still.
+
+### Guarded evaluation of the serving option model
+
+The model cards quoted option-model metrics measured at the event start frame. Reading every
+input at the 0.2 s guard gives Metrica 0.419 / 0.790 / 0.028 and SkillCorner 0.354 / 0.810 /
+0.021 (log loss / AUC / ECE; C71), against 0.414 / 0.796 / 0.019 and 0.354 / 0.811 / 0.024.
+The served model's quality does not rest on kick information.
+
 ## Prior art and references
 * Spearman, W., Basye, A., Dick, G., Hotovy, R., Pop, P. (2017). *Physics-Based Modeling of Pass Probabilities in Soccer.* MIT Sloan Sports Analytics Conference.
 * Spearman, W. (2018). *Beyond Expected Goals.* MIT Sloan SAC. (Pitch control; off-ball scoring opportunity.)

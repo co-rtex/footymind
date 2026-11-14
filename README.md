@@ -107,8 +107,9 @@ Metrica (3 matches, optical, 25 Hz) and SkillCorner (20 A-League matches, broadc
   constant velocity but is inert under edits. Positions barely predict how defenders deviate
   from their own motion (C61). A model of *co-movement* with attackers' unexpected movement
   beats constant velocity and a placebo on both providers and is served as an observational
-  response (C62). Of the interpretable rules, `marker_follows` and `lane_cover` match real
-  reactions on both providers; `press_carrier` and `zonal_shift` do not (C64).
+  response (C62). Of the interpretable rules, `marker_follows` and `lane_cover` beat constant
+  velocity and size-matched placebos at forecasting how real defenders react to unexpected
+  attacker movement, on both providers. `press_carrier` and `zonal_shift` do not (C70).
 * **Similar moments are informative.** The completion rate among the 50 most similar decisions
   from other matches beats the base rate held-out on both providers (−0.057 / −0.051 log loss)
   and matches the logistic model on SkillCorner (C36).

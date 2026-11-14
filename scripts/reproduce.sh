@@ -29,7 +29,7 @@ for c in pass_outcome_v1 pass_outcome_v1_ablation pass_outcome_v1_sens_no_ball_o
 done
 run uv run python -m footymind.research.failure_modes pass_outcome_v3
 run uv run python -m footymind.research.guard_calibration
-for c in temporal_v1 temporal_guard_v1_02s temporal_guard_v1_04s; do
+for c in temporal_v1 temporal_guard_v1_02s temporal_guard_v1_04s option_model_guard_v1; do
   run uv run footymind experiment "experiments/configs/$c.json"
 done
 run uv run python -m footymind.research.temporal_strata temporal_v1
@@ -53,12 +53,13 @@ run uv run python -m footymind.research.response_diagnostics metrica
 run uv run python -m footymind.research.train_response_model innovation metrica
 run uv run python -m footymind.research.response_sensitivity metrica 300 2
 run uv run python -m footymind.research.rule_response_check metrica 150 3
+run uv run python -m footymind.research.rule_response_check metrica 150 4
 run uv run python -m footymind.research.offball_study metrica
 
 if [[ " $PROVIDERS " == *" skillcorner "* ]]; then
   for c in pass_outcome_skillcorner_v2 pass_outcome_skillcorner_v2_importance \
            temporal_skillcorner_v1 temporal_guard_skillcorner_v1_02s \
-           temporal_guard_skillcorner_v2_ballcensor; do
+           temporal_guard_skillcorner_v2_ballcensor option_model_guard_skillcorner_v1; do
     run uv run footymind experiment "experiments/configs/$c.json"
   done
   run uv run python -m footymind.research.temporal_strata temporal_skillcorner_v1
@@ -81,6 +82,7 @@ if [[ " $PROVIDERS " == *" skillcorner "* ]]; then
   run uv run python -m footymind.research.train_response_model innovation skillcorner
   run uv run python -m footymind.research.response_sensitivity skillcorner 300 2
   run uv run python -m footymind.research.rule_response_check skillcorner 60 3
+  run uv run python -m footymind.research.rule_response_check skillcorner 60 4
   run uv run python -m footymind.research.offball_study skillcorner
 fi
 

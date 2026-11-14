@@ -174,7 +174,9 @@ the ball was actually played, which is partly execution quality.
 
 **Serving model.** A per-provider logistic option model over per-teammate features, including
 lead-pass targets, gives held-out (LOMO) log loss 0.414, AUC 0.796, ECE 0.019 on Metrica (C21)
-and 0.354 / 0.811 / 0.024 on SkillCorner (C24). These are the probabilities shown in the
+and 0.354 / 0.811 / 0.024 on SkillCorner (C24). With every input read at the 0.2 s guard, the
+figures are 0.419 / 0.790 / 0.028 and 0.354 / 0.810 / 0.021 (C71), so quality does not depend
+on kick information. These are the probabilities shown in the
 product. They describe the passes players chose to attempt, so estimates for options nobody
 chose are extrapolations.
 
@@ -218,7 +220,7 @@ product shows this validated estimate, separately from the short list of example
   better than constant velocity on both providers (C40, C42). Under hypothetical interventions
   it is nearly inert, moving defenders by centimetres (C44). It is a good forecaster but not an
   intervention model.
-* Four interpretable rules were tested observationally (C37; under envelope v2, C64), by treating the attackers'
+* Four interpretable rules were tested observationally (C37; under envelope v2, C64; paired against size-matched placebos, C70), by treating the attackers'
   *unexpected* real movement (beyond their own constant velocity) as the intervention:
   * `marker_follows` and `lane_cover` reduce forecast error on both providers. The fitted size
     slope is about 1, and the gain is several times larger than a permuted placebo's.
