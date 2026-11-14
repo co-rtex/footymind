@@ -52,7 +52,7 @@ export const FEATURED: readonly FeaturedScenario[] = [
     title: "One pressing position, one risky pass",
     source: "Metrica Sports · optical tracking",
     story: (t) =>
-      `${t.away} build up from deep, near their own goal, under a high press. #17 plays to #18 and the pass is completed, but ${t.away} lose the ball moments later. One ${t.home} forward, #9, is standing where he takes away more passing value than any other defender.`,
+      `${t.away} build up from deep, near their own goal, under a high press. #17 plays to #18 and the pass is completed, but ${t.away} lose the ball moments later. By the experimental Defensive Shadow model, one ${t.home} forward, #9, is standing where his position takes away the most passing value; that model is not validated as identifying who stops passes.`,
     steps: (t) => ({
       watch: `Replay the real possession: ${t.away} play out from the back while ${t.home} press high. Every player and ball position drawn in the replay is observed tracking data.`,
       why: `Pause on the pass. The pitch shows the space each team controls, the passing options and the pressure on the ball; the panel says what stands out and why.`,
@@ -70,7 +70,7 @@ export const FEATURED: readonly FeaturedScenario[] = [
     title: "The same question on broadcast data",
     source: "SkillCorner · broadcast tracking",
     story: (t) =>
-      `${t.away} #27 passes to #14 and the pass is completed. ${t.home} #25 is the defender whose position takes away the most passing value. Broadcast cameras do not see every player, so positions away from the ball are provider extrapolations, drawn hollow and labelled as estimates.`,
+      `${t.away} #27 passes to #14 and the pass is completed. By the experimental Defensive Shadow model, ${t.home} #25 is the defender whose position takes away the most passing value. Broadcast cameras do not see every player, so positions away from the ball are provider extrapolations, drawn hollow and labelled as estimates.`,
     steps: (t) => ({
       watch: `Replay the real possession from broadcast tracking. Solid players are detected by the camera; hollow ones are off camera, and their positions are provider estimates, not observations.`,
       why: `Pause on the pass. See the space, the pressure on the ball and the passing options, and which inputs are estimates.`,
