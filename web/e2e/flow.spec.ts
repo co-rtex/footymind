@@ -274,3 +274,97 @@ test("broken links explain themselves and lead back to the possession list", asy
   await alert.getByRole("button", { name: "Browse possessions" }).click();
   await expect(page.getByTestId("possession-table")).toBeVisible();
 });
+
+test("why this moment: grouped statements with provenance, traceable to players, stable across frames", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/#/lab/metrica-sample-1%3Ap0163?f=53708");
+  const why = page.getByTestId("why-panel");
+  await expect(why).toHaveAttribute("data-frame", "53708");
+  const a = (await (await page.request.get("/api/matches/metrica-sample-1/frames/53708/analysis?grid=false")).json()) as {
+    explanations: { kind: string; text: string; provenance: string; players: string[] }[];
+  };
+  expect(a.explanations.length).toBeGreaterThan(0);
+
+  // Every statement is shown, with its provenance label; caveats are always visible.
+  const items = why.getByTestId("why-statement");
+  await expect(items).toHaveCount(a.explanations.length);
+  for (const s of a.explanations) {
+    const item = items.filter({ hasText: s.text.replace(/\b(home|away)_(\d+)\b/g, (_m, t: string, n: string) => `#${n} ${t === "home" ? "Home" : "Away"}`) });
+    await expect(item).toHaveCount(1);
+    await expect(item).toContainText(s.provenance);
+  }
+  const caveats = a.explanations.filter((s) => s.kind === "caveat");
+  if (caveats.length > 0) await expect(page.getByTestId("why-group-caveat").getByTestId("why-statement").first()).toBeVisible();
+
+  // Focusing a statement that names players rings them on the pitch.
+  const canvas = page.getByTestId("pitch-canvas");
+  await page.mouse.move(0, 0);
+  const before = await canvas.screenshot();
+  const traceable = why.locator("button.why-text--trace").first();
+  await traceable.focus();
+  await expect.poll(async () => Buffer.compare(before, await canvas.screenshot())).not.toBe(0);
+  await traceable.blur();
+
+  // Stepping frames updates the panel without shrinking it (no layout jump).
+  const h0 = (await why.boundingBox())!.height;
+  await page.locator("body").press("ArrowRight");
+  await expect(why).toHaveAttribute("data-frame", "53709");
+  expect((await why.boundingBox())!.height).toBeGreaterThanOrEqual(h0 - 0.5);
+  expect(errors).toEqual([]);
+});
+
+test("similar moments: on demand, observed outcomes with links, quiet empty states", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  let similarCalls = 0;
+  page.on("request", (r) => {
+    if (/\/api\/matches\/[^/]+\/frames\/\d+\/similar/.test(r.url())) similarCalls++;
+  });
+  await page.goto("/#/lab/metrica-sample-1%3Ap0163?f=53708");
+  await expect(page.getByTestId("analysis-panel")).toHaveAttribute("data-frame", "53708");
+  const panel = page.getByTestId("similar-panel");
+  // Not fetched on load or while scrubbing.
+  await page.locator("body").press("ArrowRight");
+  await page.locator("body").press("ArrowLeft");
+  await expect(page.getByTestId("analysis-panel")).toHaveAttribute("data-frame", "53708");
+  expect(similarCalls).toBe(0);
+
+  await page.getByTestId("similar-find").click();
+  await expect(panel).not.toHaveAttribute("data-status", "loading", { timeout: 30_000 });
+  const status = await panel.getAttribute("data-status");
+  if (status === "empty") {
+    // No index built for this provider on this server: a quiet note, never an error.
+    await expect(page.getByTestId("similar-empty-no-index")).toBeVisible();
+  } else {
+    expect(status).toBe("success");
+    const res = (await (await page.request.get("/api/matches/metrica-sample-1/frames/53708/similar?k=8")).json()) as {
+      neighbours: { completed: boolean }[];
+      validation: { knn_beats_base_rate: boolean | null } | null;
+    };
+    const n = res.neighbours.length;
+    const m = res.neighbours.filter((x) => x.completed).length;
+    await expect(page.getByTestId("similar-headline")).toContainText(`In ${n} similar`);
+    await expect(page.getByTestId("similar-headline")).toContainText(`${m} ${m === 1 ? "pass was" : "passes were"} completed`);
+    await expect(page.getByTestId("similar-disclaimer")).toContainText("not a prediction");
+    await expect(page.getByTestId("similar-unvalidated")).toHaveCount(res.validation?.knn_beats_base_rate === true ? 0 : 1);
+    const items = page.getByTestId("similar-item");
+    await expect(items).toHaveCount(n);
+    await expect(items.first()).toContainText("observed");
+    const link = items.first().getByRole("link", { name: /^Open / });
+    await expect(link).toHaveAttribute("href", /^#\/at\/metrica-sample-[23]\?f=\d+$/);
+    const href = (await link.getAttribute("href"))!;
+    await link.click();
+    await expect(page).toHaveURL(new RegExp(href.replace(/[?]/g, "\\?") + "$"));
+    await expect(page.getByTestId("pitch-canvas")).toBeVisible();
+    await expect(page.getByTestId("source-attribution")).toContainText("Metrica Sports");
+
+    // A frame with no pass decision within 2 s: a quiet empty state, not an error.
+    await page.goto("/#/lab/metrica-sample-1%3Ap0167?f=54500");
+    await expect(page.getByTestId("analysis-panel")).toHaveAttribute("data-frame", "54500");
+    await page.getByTestId("similar-find").click();
+    await expect(page.getByTestId("similar-empty-no-decision")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("similar-panel").getByRole("alert")).toHaveCount(0);
+  }
+  expect(errors).toEqual([]);
+});

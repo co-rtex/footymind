@@ -11,6 +11,7 @@ import {
   parseReplay,
   parseResponsePolicies,
   parseScenario,
+  parseSimilar,
   type ReplayData,
 } from "./parse";
 import type {
@@ -21,6 +22,7 @@ import type {
   PossessionSummary,
   ScenarioRequest,
   ScenarioResponse,
+  SimilarMomentsOut,
   ValueModel,
 } from "./types";
 
@@ -146,6 +148,13 @@ export function createApi(fetchImpl: Fetch = (...a) => fetch(...a)) {
         { signal },
         fetchImpl,
       ),
+
+    /**
+     * Past pass decisions (other matches, same provider) most similar to the one starting near
+     * this frame. Rejects with ApiError 404 (no pass decision within 2 s) or 503 (no index).
+     */
+    similar: (matchId: string, frame: number, k = 8, signal?: AbortSignal): Promise<SimilarMomentsOut> =>
+      requestJson(`/matches/${enc(matchId)}/frames/${frame}/similar?k=${k}`, parseSimilar, { signal }, fetchImpl),
 
     /**
      * Defender response policies the backend can simulate. Older backends do not have the

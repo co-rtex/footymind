@@ -17,7 +17,9 @@ import type {
   ProvenanceLabel,
   Replay,
   ScenarioResponse,
+  SimilarMomentsOut,
   SourceInfo,
+  StatementOut,
   Team,
 } from "./types";
 
@@ -60,8 +62,35 @@ export function parsePossessions(raw: unknown): PossessionSummary[] {
   return raw as PossessionSummary[];
 }
 
+function isNumOrNull(v: unknown): boolean {
+  return v === null || (typeof v === "number" && Number.isFinite(v));
+}
+
+export function parseStatement(raw: unknown, what = "statement"): StatementOut {
+  needKeys(raw, ["kind", "text", "metric", "provenance", "players"], what);
+  need(typeof raw.kind === "string", `${what}.kind is not a string`);
+  need(typeof raw.text === "string" && raw.text.length > 0, `${what}.text is not a non-empty string`);
+  need(typeof raw.metric === "string", `${what}.metric is not a string`);
+  need(typeof raw.provenance === "string", `${what}.provenance is not a string`);
+  need(Array.isArray(raw.players) && raw.players.every((p) => typeof p === "string"), `${what}.players is not an array of ids`);
+  const v = raw.value;
+  need(v === undefined || v === null || typeof v === "string" || typeof v === "number", `${what}.value has an invalid type`);
+  return raw as unknown as StatementOut;
+}
+
 export function parseAnalysis(raw: unknown): FrameAnalysisOut {
   needKeys(raw, ["frame", "players", "pass_options", "attacking_team", "warnings", "model"], "analysis");
+  // Optional (newer backends): causal temporal features and explanation statements.
+  const t = raw.temporal;
+  if (t !== undefined && t !== null) {
+    need(isObj(t), "analysis.temporal is not an object");
+    for (const [k, v] of Object.entries(t)) need(isNumOrNull(v), `analysis.temporal.${k} is not a number or null`);
+  }
+  const ex = raw.explanations;
+  if (ex !== undefined && ex !== null) {
+    need(Array.isArray(ex), "analysis.explanations is not an array");
+    ex.forEach((s, i) => parseStatement(s, `analysis.explanations[${i}]`));
+  }
   need(Array.isArray(raw.players), "analysis.players is not an array");
   need(Array.isArray(raw.pass_options), "analysis.pass_options is not an array");
   const pc = raw.pitch_control;
@@ -281,4 +310,42 @@ export function parseReplay(raw: unknown): ReplayData {
     provenance: r.provenance,
     source: r.source,
   };
+}
+
+const NEIGHBOUR_KEYS = ["match_id", "frame", "team", "passer_id", "completed", "distance"];
+
+export function parseSimilar(raw: unknown): SimilarMomentsOut {
+  needKeys(
+    raw,
+    ["match_id", "frame", "decision_frame", "passer_id", "k", "neighbours", "completed_share", "provider", "disclaimer"],
+    "similar moments",
+  );
+  need(Array.isArray(raw.neighbours), "similar moments neighbours is not an array");
+  (raw.neighbours as unknown[]).forEach((n, i) => {
+    const what = `similar neighbour ${i}`;
+    needKeys(n, NEIGHBOUR_KEYS, what);
+    need(typeof n.completed === "boolean", `${what}.completed is not a boolean`);
+    need(typeof n.distance === "number" && Number.isFinite(n.distance), `${what}.distance is not a number`);
+    need(Number.isInteger(n.frame), `${what}.frame is not an integer`);
+    for (const k of ["ball_x_att", "press_nearest_def_m", "passer_control_s"]) {
+      need(n[k] === undefined || isNumOrNull(n[k]), `${what}.${k} is not a number or null`);
+    }
+  });
+  need(typeof raw.disclaimer === "string" && raw.disclaimer.length > 0, "similar moments disclaimer is missing");
+  const val = raw.validation;
+  let validation: SimilarMomentsOut["validation"] = null;
+  if (val !== undefined && val !== null) {
+    need(isObj(val), "similar moments validation is not an object");
+    const kb = val.knn_beats_base_rate;
+    need(kb === undefined || kb === null || typeof kb === "boolean", "validation.knn_beats_base_rate is not a boolean or null");
+    const ref = val.ref;
+    need(ref === undefined || ref === null || typeof ref === "string", "validation.ref is not a string or null");
+    validation = {
+      ref: typeof ref === "string" ? ref : null,
+      knn_beats_base_rate: typeof kb === "boolean" ? kb : null,
+      log_loss: val.log_loss ?? null,
+    };
+  }
+  const features = Array.isArray(raw.features) ? (raw.features as string[]) : [];
+  return { ...(raw as unknown as SimilarMomentsOut), features, validation };
 }
