@@ -57,7 +57,7 @@ interface Row {
 const ROWS: Row[] = [
   {
     prov: "observed",
-    glyph: <Disc fill="var(--c-home)" />,
+    glyph: <Disc fill="var(--c-text-muted)" />,
     what: "Measured by the tracking or event provider.",
     example: "Solid players, the ball, the events list, and the outcomes of similar moments.",
   },
@@ -75,13 +75,13 @@ const ROWS: Row[] = [
   },
   {
     prov: "hypothetical",
-    glyph: <Disc fill="var(--c-home)" opacity={0.3} stroke="var(--c-accent)" dash="3.5 2.2" />,
+    glyph: <Disc fill="var(--c-text-muted)" opacity={0.3} stroke="var(--c-accent)" dash="3.5 2.2" />,
     what: "A position you set in a what-if scenario. It did not happen.",
     example: "Violet dashed rings and arrows.",
   },
   {
     prov: "simulated",
-    glyph: <Disc fill="var(--c-home)" opacity={0.3} stroke="var(--c-text)" dash="1 2.2" />,
+    glyph: <Disc fill="var(--c-text-muted)" opacity={0.3} stroke="var(--c-text)" dash="1 2.2" />,
     what: "Moved by a defender-response model in reaction to your edit. It did not happen either.",
     example: "White dotted rings and arrows tagged “sim”.",
   },

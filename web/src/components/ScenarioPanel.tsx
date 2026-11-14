@@ -260,7 +260,7 @@ export function ScenarioPanel(p: Props) {
             </li>
           ))}
           {fresh && scenario && p.policy !== STATIC_POLICY && simulated.length === 0 ? (
-            <li className="small muted" data-testid="no-simulated-moves">
+            <li className="small muted moves-note" data-testid="no-simulated-moves">
               The {policyLabel(p.policy)} response moved no defender for this edit.
               {onlyDefendersMoved(p.interventions, players, scenario.observed.attacking_team) ? (
                 <span data-testid="response-hint">

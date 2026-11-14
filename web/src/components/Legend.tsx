@@ -55,10 +55,10 @@ export const Legend = memo(function Legend({
         {showEstimated ? (
           <>
             <li>
-              <Disc fill="var(--c-home)" /> Observed (solid)
+              <Disc fill="var(--c-text-muted)" /> Observed (solid)
             </li>
             <li data-testid="legend-estimated">
-              <Disc fill="var(--c-home)" opacity={0.1} stroke="var(--c-home)" dash="2.6 2" /> Estimated (provider
+              <Disc fill="var(--c-text-muted)" opacity={0.1} stroke="var(--c-text-muted)" dash="2.6 2" /> Estimated (provider
               extrapolation, off camera)
             </li>
           </>
@@ -67,14 +67,14 @@ export const Legend = memo(function Legend({
           <>
             {showEstimated ? null : (
               <li>
-                <Disc fill="var(--c-home)" /> Observed (solid)
+                <Disc fill="var(--c-text-muted)" /> Observed (solid)
               </li>
             )}
             <li>
-              <Disc fill="var(--c-home)" opacity={0.3} stroke="var(--c-accent)" dash="3.5 2.2" /> Hypothetical (you moved)
+              <Disc fill="var(--c-text-muted)" opacity={0.3} stroke="var(--c-accent)" dash="3.5 2.2" /> Hypothetical (you moved)
             </li>
             <li>
-              <Disc fill="var(--c-home)" opacity={0.3} stroke="var(--c-text)" dash="1 2.2" /> Simulated (defender
+              <Disc fill="var(--c-text-muted)" opacity={0.3} stroke="var(--c-text)" dash="1 2.2" /> Simulated (defender
               response model; arrow labelled &ldquo;sim&rdquo;)
             </li>
             <li>

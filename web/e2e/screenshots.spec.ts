@@ -46,7 +46,20 @@ test.describe("desktop", () => {
   test("landing", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByTestId("possession-table").locator("tbody tr").first()).toBeVisible();
+    // the featured numbers are live; capture once they are in
+    await expect(page.getByTestId("featured-card-broadcast").getByTestId("featured-facts")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("featured-shadow-loading")).toHaveCount(0, { timeout: 30_000 });
     await page.screenshot({ path: `${DIR}/landing-desktop.png` });
+  });
+
+  test("guided tour, what-if step", async ({ page }) => {
+    await page.goto("/#/at/metrica-sample-1?f=53708&tour=press");
+    await waitForAnalysis(page);
+    await page.getByTestId("guide-step-3").click();
+    await expect(page.getByTestId("scenario-panel")).toHaveAttribute("data-status", "success", { timeout: 30_000 });
+    await page.mouse.move(0, 0);
+    await page.waitForTimeout(150);
+    await page.screenshot({ path: `${DIR}/guided-tour-desktop.png` });
   });
 
   test("lab analysis and scenario", async ({ page }) => {

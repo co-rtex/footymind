@@ -361,8 +361,16 @@ a.btn {
 .guide-eyebrow {
   margin-bottom: 2px;
 }
-.guide-head .btn {
-  flex: none;
+.guide {
+  position: relative;
+}
+.guide-head {
+  padding-right: 88px;
+}
+.guide-exit {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
   white-space: nowrap;
 }
 .guide-steps {
@@ -474,6 +482,11 @@ a.btn {
   }
 }
 
+/* a sentence in the moved-players list, not a badge + text row */
+.moves li.moves-note {
+  display: block;
+}
+
 .list-more {
   display: flex;
   justify-content: center;
@@ -481,10 +494,17 @@ a.btn {
 }
 
 /* ---------- responsive ---------- */
+.hero-cta {
+  display: none;
+}
 @media (max-width: 1000px) {
   .hero {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--sp-6);
+  }
+  .hero-cta {
+    display: inline-flex;
+    margin-top: var(--sp-5);
   }
   .feature-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -503,9 +523,11 @@ a.btn {
   .tour-card {
     padding: var(--sp-4);
   }
-  .tour-card .btn--primary {
+  .tour-card .btn--primary,
+  .hero-cta {
     justify-self: stretch;
     justify-content: center;
+    width: 100%;
   }
   .feature-card {
     padding: var(--sp-4);

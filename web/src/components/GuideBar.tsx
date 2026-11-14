@@ -41,9 +41,6 @@ export function GuideBar({ featured, teams, step, playing, defender, moved, onSt
             {featured.title}
           </p>
         </div>
-        <button type="button" className="btn btn--ghost btn--xs" onClick={onExit} data-testid="guide-exit">
-          Exit tour
-        </button>
       </div>
       <ol className="guide-steps">
         {STEPS.map((s) => (
@@ -122,6 +119,10 @@ export function GuideBar({ featured, teams, step, playing, defender, moved, onSt
           </>
         )}
       </div>
+      {/* last in tab order, shown top right */}
+      <button type="button" className="btn btn--ghost btn--xs guide-exit" onClick={onExit} data-testid="guide-exit">
+        Exit tour
+      </button>
     </section>
   );
 }

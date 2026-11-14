@@ -63,6 +63,10 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
             Then it lets you ask <em>what if</em>: move a player and compare the model&apos;s estimates with what was
             observed.
           </p>
+          {/* stacked layouts only: the tour card is further down there */}
+          <a className="btn btn--primary btn--lg hero-cta" href={featuredHref(tour, "tour")} data-testid="tour-link-hero">
+            Start the guided tour <span aria-hidden="true">→</span>
+          </a>
           <dl className="pillars" aria-label="What FootyMind shows">
             {PILLARS.map((p) => (
               <div key={p.title} className={`pillar pillar--${p.prov}`}>
@@ -75,7 +79,7 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
           </dl>
         </div>
 
-        <aside className="tour-card" aria-labelledby="tour-title" data-testid="tour-card">
+        <section className="tour-card" aria-labelledby="tour-title" data-testid="tour-card">
           <p className="eyebrow">New here? Start with one real moment</p>
           <h2 id="tour-title" className="h-section">
             A three-step guided tour
@@ -113,7 +117,7 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
           <a className="small tour-skip" href="#explore" onClick={skipToExplore}>
             Or browse every match and possession
           </a>
-        </aside>
+        </section>
       </section>
 
       <section className="section" aria-labelledby="featured-title">
