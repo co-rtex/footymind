@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 ProvenanceLabel = Literal["observed", "derived", "estimated", "hypothetical", "simulated"]
 ResponsePolicyName = Literal[
@@ -133,6 +133,15 @@ class Replay(BaseModel):
         ),
     )
     ball_xy: list[float | None]
+    ball_detected: list[bool] | None = Field(
+        None,
+        description=(
+            "length n_frames, aligned with ball_xy; false where the provider extrapolated the "
+            "ball (provenance 'estimated') and where the ball position is null; null when the "
+            "provider has no ball detection mask (optical tracking, or bundles ingested before "
+            "the mask existed)"
+        ),
+    )
     events: list[EventOut]
     possession: PossessionSummary | None
     attack_sign: dict[str, dict[str, int]] = Field(
@@ -207,6 +216,12 @@ class ModelInfo(BaseModel):
     reference: str
     status: str
     params: dict[str, float]
+    provider: str | None = Field(
+        default=None,
+        description="tracking provider the model was trained on (option model only; models are "
+        "per provider and never pooled)",
+    )
+    resource: str | None = Field(default=None, description="packaged model file")
 
 
 class StatementOut(BaseModel):
@@ -244,7 +259,9 @@ class SimilarMomentsOut(BaseModel):
     passer_id: str
     k: int
     neighbours: list[SimilarMoment]
-    completed_share: float = Field(description="share of the listed neighbours completed")
+    completed_share: float | None = Field(
+        description="share of the listed neighbours completed; null when none are listed"
+    )
     estimate: dict[str, Any] | None = Field(
         default=None,
         description="the validated configuration: completion rate among the 50 nearest "
@@ -293,8 +310,8 @@ class FrameAnalysisOut(BaseModel):
 
 class InterventionIn(BaseModel):
     player_id: str
-    x: float = Field(ge=-60, le=60)
-    y: float = Field(ge=-40, le=40)
+    x: float = Field(ge=-60, le=60, allow_inf_nan=False)
+    y: float = Field(ge=-40, le=40, allow_inf_nan=False)
 
 
 class ScenarioRequest(BaseModel):
@@ -302,12 +319,20 @@ class ScenarioRequest(BaseModel):
     frame: int
     interventions: list[InterventionIn] = Field(min_length=1, max_length=4)
     response_policy: ResponsePolicyName = "none"
-    follow_fraction: float = Field(0.5, ge=0.0, le=1.0)
+    follow_fraction: float = Field(0.5, ge=0.0, le=1.0, allow_inf_nan=False)
     velocity_mode: Literal["keep", "zero"] = "keep"
-    horizon_s: float = Field(1.5, gt=0.0, le=5.0)
+    horizon_s: float = Field(1.5, gt=0.0, le=5.0, allow_inf_nan=False)
     ensemble: int = Field(24, ge=0, le=64)
     seed: int = 0
     value_model: Literal["option_model", "physics"] = "option_model"
+
+    @model_validator(mode="after")
+    def _one_edit_per_player(self) -> ScenarioRequest:
+        ids = [i.player_id for i in self.interventions]
+        dup = sorted({p for p in ids if ids.count(p) > 1})
+        if dup:
+            raise ValueError(f"more than one intervention for {', '.join(dup)}")
+        return self
 
 
 class FeasibilityOut(BaseModel):

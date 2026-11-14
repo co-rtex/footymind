@@ -13,8 +13,11 @@ from typing import Any, Literal
 import numpy as np
 import polars as pl
 from fastapi import FastAPI, HTTPException, Query, Request, Response
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from footymind import __version__
@@ -33,7 +36,12 @@ from footymind.ghost.defensive_shadow import defensive_shadow
 from footymind.paths import EXPERIMENTS_DIR, PROCESSED_DIR, REPO_ROOT
 from footymind.spatial.analysis import FrameAnalysis, analyze
 from footymind.spatial.explain import explain
-from footymind.spatial.option_model import load_default, provider_of
+from footymind.spatial.option_model import (
+    PROVIDER_RESOURCES,
+    OptionModel,
+    load_default,
+    provider_of,
+)
 from footymind.spatial.pitch_control import DEFAULT_GRID, DEFAULT_PARAMS
 from footymind.spatial.state import attacking_team_at, frame_state
 from footymind.spatial.temporal import temporal_context
@@ -65,6 +73,25 @@ async def timing_header(request: Request, call_next: Any) -> Response:
     response: Response = await call_next(request)
     response.headers["Server-Timing"] = f"app;dur={(time.perf_counter() - t0) * 1000:.1f}"
     return response
+
+
+def _json_safe(x: Any) -> Any:
+    """Replace non-finite floats with their names so an error body is valid JSON."""
+    if isinstance(x, float) and not math.isfinite(x):
+        return str(x)
+    if isinstance(x, dict):
+        return {k: _json_safe(v) for k, v in x.items()}
+    if isinstance(x, list | tuple):
+        return [_json_safe(v) for v in x]
+    return x
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(_request: Request, exc: RequestValidationError) -> JSONResponse:
+    # The default handler echoes the rejected input. A NaN or Infinity in the request body
+    # (accepted by Python's JSON parser) then made the 422 itself unserialisable: a 500.
+    detail = _json_safe(jsonable_encoder(exc.errors()))
+    return JSONResponse(status_code=422, content={"detail": detail})
 
 
 def _f(x: Any, nd: int = 3) -> float | None:
@@ -257,7 +284,7 @@ def _period_time(td: TrackingData, rows: np.ndarray) -> np.ndarray:
 
 def _flat(a: np.ndarray, nd: int = 2) -> list[float | None]:
     r = np.round(a.astype(np.float64).ravel(), nd)
-    return [None if math.isnan(v) else float(v) for v in r.tolist()]
+    return [float(v) if math.isfinite(v) else None for v in r.tolist()]
 
 
 @app.get("/api/matches/{match_id}/replay", response_model=S.Replay)
@@ -307,6 +334,12 @@ def replay(
         if td.detected is None
         else [bool(v) for v in td.detected[rows].ravel().tolist()],
         ball_xy=_flat(td.ball_xy[rows]),
+        ball_detected=None
+        if td.ball_detected is None
+        else [
+            bool(v)
+            for v in (td.ball_detected[rows] & ~np.isnan(td.ball_xy[rows]).any(axis=1)).tolist()
+        ],
         events=_events_out(ev),
         possession=poss,
         attack_sign=signs,
@@ -316,7 +349,9 @@ def replay(
 
 @app.get("/api/possessions/{possession_id}/replay", response_model=S.Replay)
 def possession_replay(
-    possession_id: str, pad_s: float = Query(1.0, ge=0, le=10), step: int = Query(1, ge=1, le=25)
+    possession_id: str,
+    pad_s: float = Query(1.0, ge=0, le=10, allow_inf_nan=False),
+    step: int = Query(1, ge=1, le=25),
 ) -> S.Replay:
     match_id = possession_id.split(":", 1)[0]
     b = _bundle(match_id)
@@ -428,13 +463,31 @@ def _analysis_out(a: FrameAnalysis, horizon_s: float = 1.5) -> S.FrameAnalysisOu
     )
 
 
-def _option_model_info(match_id: str) -> S.ModelInfo | None:
+def _provider_model(match_id: str) -> OptionModel | None:
+    """The option model served for this match's provider, refusing another provider's model.
+
+    Providers are never pooled (CLAUDE.md): a model whose metadata names a different provider
+    is a packaging error, so the request fails instead of serving its probabilities.
+    """
     m = load_default(match_id)
+    provider = provider_of(match_id)
+    if m is not None and m.meta.get("provider") not in (None, provider):
+        raise HTTPException(
+            503, f"option model for {provider!r} is labelled {m.meta.get('provider')!r}; refused"
+        )
+    return m
+
+
+def _option_model_info(match_id: str) -> S.ModelInfo | None:
+    m = _provider_model(match_id)
     if m is None:
         return None
     lomo = m.meta.get("lomo_pooled", {})
+    provider = provider_of(match_id)
     return S.ModelInfo(
         name=str(m.meta.get("name", "option_model")),
+        provider=provider,
+        resource=PROVIDER_RESOURCES.get(provider),
         reference="FootyMind RQ1 option model (docs/RESEARCH.md)",
         status=(
             f"{m.meta.get('status', '')}; trained on {m.meta.get('n_train')} attempted passes; "
@@ -505,7 +558,15 @@ def _similarity_validation(provider: str) -> dict[str, Any] | None:
     p = EXPERIMENTS_DIR / "results" / name / "results.json"
     if not p.exists():
         return None
-    r = json.loads(p.read_text())
+    try:
+        r = json.loads(p.read_text())
+        if not isinstance(r, dict) or not isinstance(r.get("metrics", {}), dict):
+            raise ValueError("not a results object")
+    except (OSError, ValueError) as e:  # JSONDecodeError is a ValueError
+        # The served estimate is justified by this file: fail clearly instead of dropping it.
+        raise HTTPException(
+            503, f"validation results experiments/results/{name}/results.json unreadable: {e}"
+        ) from e
     return {
         "ref": f"experiments/results/{name}/results.json",
         "knn_beats_base_rate": r.get("criterion_knn_beats_base_rate"),
@@ -514,13 +575,27 @@ def _similarity_validation(provider: str) -> dict[str, Any] | None:
 
 
 @app.get("/api/matches/{match_id}/frames/{frame}/similar", response_model=S.SimilarMomentsOut)
-def similar_moments(match_id: str, frame: int, k: int = 8) -> S.SimilarMomentsOut:
+def similar_moments(
+    match_id: str, frame: int, k: int = Query(8, ge=1, le=50)
+) -> S.SimilarMomentsOut:
     """The most similar past pass decisions (other matches, same provider) and their outcomes."""
-    from footymind.research.similarity import SIMILARITY_FEATURES, decision_row, load_index
+    from footymind.research.similarity import (
+        SIMILARITY_FEATURES,
+        decision_row,
+        index_path,
+        load_index,
+    )
 
     _frame_or_404(match_id, frame)
-    provider = match_id.split("-")[0]
-    idx = load_index(provider)
+    provider = provider_of(match_id)
+    try:
+        idx = load_index(provider)
+    except Exception as e:  # unreadable parquet or missing columns: polars raises many types
+        raise HTTPException(
+            503,
+            f"similarity index {index_path(provider).name} is unreadable ({type(e).__name__}); "
+            f"rebuild it with `footymind build-similarity-index --provider {provider}`",
+        ) from e
     if idx is None:
         raise HTTPException(
             503, f"no similarity index for {provider}; run `footymind build-similarity-index`"
@@ -534,7 +609,8 @@ def similar_moments(match_id: str, frame: int, k: int = 8) -> S.SimilarMomentsOu
     from footymind.research.similarity_validation import PRIOR_STRENGTH
     from footymind.research.similarity_validation import K as K_VALID
 
-    got, dist = idx.query(x, exclude_match=match_id, k=max(1, min(k, 50)))
+    validation = _similarity_validation(provider)
+    got, dist = idx.query(x, exclude_match=match_id, k=k)
     # The validated estimate (C36) uses exactly the validated configuration: k = 50, shrunk.
     estimate = None
     wide, _ = idx.query(x, exclude_match=match_id, k=K_VALID)
@@ -572,18 +648,26 @@ def similar_moments(match_id: str, frame: int, k: int = 8) -> S.SimilarMomentsOu
         passer_id=str(row["passer_id"]),
         k=len(neighbours),
         neighbours=neighbours,
-        completed_share=round(sum(n.completed for n in neighbours) / max(len(neighbours), 1), 3),
+        # No neighbours (e.g. an index of this match only): the share is unknown, not 0.
+        completed_share=round(sum(n.completed for n in neighbours) / len(neighbours), 3)
+        if neighbours
+        else None,
         estimate=estimate,
         provider=provider,
         features=SIMILARITY_FEATURES,
-        validation=_similarity_validation(provider),
+        validation=validation,
         disclaimer=SIMILAR_DISCLAIMER,
     )
 
 
-def _summary(d: dict[str, object]) -> dict[str, float | int | str | None]:
+def _summary(d: dict[str, object], a: FrameAnalysis) -> dict[str, float | int | str | None]:
     out: dict[str, float | int | str | None] = {}
+    options_known = a.state.attacking_team is not None and not bool(np.isnan(a.state.ball).any())
     for k, v in d.items():
+        if k.startswith("n_options") and not options_known:
+            # Without a ball (or a possession) there are no options to count: unknown, not 0.
+            out[k] = None
+            continue
         if isinstance(v, float):
             out[k] = _f(v)
         elif v is None or isinstance(v, int | str):
@@ -599,7 +683,7 @@ def _summary(d: dict[str, object]) -> dict[str, float | int | str | None]:
 def frame_defensive_shadow(
     match_id: str,
     frame: int,
-    horizon_s: float = Query(1.0, gt=0, le=3),
+    horizon_s: float = Query(1.0, gt=0, le=3, allow_inf_nan=False),
     value_model: Literal["option_model", "physics"] = "option_model",
 ) -> S.DefensiveShadowOut:
     _frame_or_404(match_id, frame)
@@ -672,6 +756,7 @@ DISCLAIMER = (
 @app.post("/api/scenarios", response_model=S.ScenarioResponse)
 def scenario(req: S.ScenarioRequest) -> S.ScenarioResponse:
     _frame_or_404(req.match_id, req.frame)
+    _provider_model(req.match_id)
     try:
         r = run_scenario(
             req.match_id,
@@ -739,8 +824,8 @@ def scenario(req: S.ScenarioRequest) -> S.ScenarioResponse:
             )
             for d in r.option_deltas
         ],
-        summary_observed=_summary(r.summary_observed),
-        summary_hypothetical=_summary(r.summary_hypothetical),
+        summary_observed=_summary(r.summary_observed, r.observed),
+        summary_hypothetical=_summary(r.summary_hypothetical, r.hypothetical),
         ensemble_size=r.ensemble_size,
         supported=r.supported,
         warnings=r.warnings,
