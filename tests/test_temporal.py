@@ -172,3 +172,83 @@ def test_opt_in_censoring_of_extrapolated_ball() -> None:
             n_diff += 1
             n_nan_more += int(np.isnan(on) and not np.isnan(off))
     assert n_diff == n_nan_more  # censoring only ever turns a value into "unknown"
+
+
+def _synthetic_td(ball_detected: np.ndarray | None) -> tuple:
+    """SYNTHETIC tracking (constructed, not provider data): one home passer at the origin and
+    one away defender; the ball sits at the passer's feet for the last 30 of 60 frames."""
+    from footymind.tracking.model import PitchSpec, PlayerInfo, TrackingData
+
+    t = 60
+    xy = np.zeros((t, 2, 2))
+    xy[:, 1] = [10.0, 0.0]
+    ball = np.full((t, 2), 8.0)
+    ball[-30:] = [0.5, 0.0]
+    td = TrackingData(
+        match_id="synthetic",
+        pitch=PitchSpec(),
+        fps=10.0,
+        frame=np.arange(t),
+        period=np.ones(t, dtype=np.int8),
+        time_s=np.arange(t) / 10.0,
+        players=[PlayerInfo("home_1", "home", 1, "1"), PlayerInfo("away_1", "away", 1, "1")],
+        xy=xy,
+        ball_xy=ball,
+        home_attacks_positive_x={1: True},
+        ball_detected=ball_detected,
+    )
+    return td, np.array([False, False])
+
+
+def _tob(td: object, gk: np.ndarray, censor: bool, i0: int = 59) -> float:
+    return float(temporal_context(td, i0, "home", 0, gk, censor_undetected_ball=censor)[  # type: ignore[arg-type]
+        "passer_control_s"
+    ])
+
+
+def test_censor_flag_synthetic_detected_ball_unchanged() -> None:
+    """SYNTHETIC: with every ball frame detected, the flag changes nothing."""
+    td, gk = _synthetic_td(np.ones(60, dtype=bool))
+    assert _tob(td, gk, False) == pytest.approx(3.0)
+    assert _tob(td, gk, True) == pytest.approx(3.0)
+    td_none, gk = _synthetic_td(None)  # no mask (Metrica, old bundles): flag is a no-op
+    assert _tob(td_none, gk, True) == pytest.approx(3.0)
+
+
+def test_censor_flag_synthetic_extrapolated_ball() -> None:
+    """SYNTHETIC: an extrapolated ball inside the run censors it (NaN) only when the flag is on;
+    an extrapolated ball at the decision frame is unknown; extrapolation before a detected
+    out-of-reach frame does not matter, because the run already ended at a detected frame."""
+    det = np.ones(60, dtype=bool)
+    det[45] = False  # inside the 30-frame run
+    td, gk = _synthetic_td(det)
+    assert _tob(td, gk, False) == pytest.approx(3.0)  # default: extrapolated counts as observed
+    assert np.isnan(_tob(td, gk, True))
+    det = np.ones(60, dtype=bool)
+    det[59] = False  # the decision frame itself
+    td, gk = _synthetic_td(det)
+    assert _tob(td, gk, False) == pytest.approx(3.0)
+    assert np.isnan(_tob(td, gk, True))
+    assert np.isnan(
+        temporal_context(td, 59, "home", 0, gk, censor_undetected_ball=True)["quick_release"]
+    )
+    det = np.ones(60, dtype=bool)
+    det[:20] = False  # only frames before the detected out-of-reach frame 29 are extrapolated
+    td, gk = _synthetic_td(det)
+    assert _tob(td, gk, True) == pytest.approx(3.0)
+    det = np.ones(60, dtype=bool)
+    det[29] = False  # the frame that ends the run is extrapolated: the end is not observed
+    td, gk = _synthetic_td(det)
+    assert _tob(td, gk, False) == pytest.approx(3.0)
+    assert np.isnan(_tob(td, gk, True))
+
+
+def test_censor_flag_synthetic_movement_features_unaffected() -> None:
+    """SYNTHETIC: the flag only touches time-on-ball; movement history is unchanged."""
+    det = np.ones(60, dtype=bool)
+    det[50:] = False
+    td, gk = _synthetic_td(det)
+    off = temporal_context(td, 59, "home", 0, gk)
+    on = temporal_context(td, 59, "home", 0, gk, censor_undetected_ball=True)
+    for k in track_feature_names():
+        assert off[k] == pytest.approx(on[k], nan_ok=True), k
