@@ -21,7 +21,8 @@ C  an interrupted first start: one bundle directory without a manifest (a crash 
    ingests and builds the index.
 D  an unknown source id in FOOTYMIND_SOURCES and an unreadable bundle file: the unknown id
    is logged and skipped, the server still starts, and the unreadable match answers 503
-   while the other matches keep working.
+   while the other matches keep working. Then a restart on that damaged volume with the
+   index deleted: the server starts and the index is built from the readable bundles.
 
 Only Metrica sample games are used (1-3). Exits non-zero on the first failed check.
 """
@@ -307,7 +308,11 @@ def scenario_c(r: Runner) -> None:
         check_match_works(r, mid)
     check_similar(r, "metrica-sample-3")
     logs = r.stop()
-    check("metrica-sample-2" in logs and "metrica-sample-3" in logs, "missing sources ingested")
+    line = next((x for x in logs.splitlines() if "ingesting outdated or missing sources:" in x), "")
+    check(
+        "metrica-sample-2" in line and "metrica-sample-3" in line,
+        "the entrypoint ingested the partial and the missing source",
+    )
     check("building the metrica similar-moments index" in logs, "missing index was built")
 
 
@@ -326,6 +331,17 @@ def scenario_d(r: Runner) -> None:
         check_match_works(r, mid)
     logs = r.stop()
     check("not registered sources" in logs and "skillcorner-0000000" in logs, "unknown id logged")
+    check("Traceback" not in logs, "no traceback in the logs")
+    # start again on the damaged volume, with the index gone: the entrypoint must still start
+    # the server and build the index from the readable bundles only
+    r.sh('rm -f "$D/processed/similarity_metrica.parquet"')
+    run_once(r, {"FOOTYMIND_SOURCES": " ".join(ALL3)}, "damaged volume, no index")
+    check(served_ids(r) == ALL3, "the damaged match stays listed (its manifest is valid)")
+    code, _ = get(r.base, "/api/matches/metrica-sample-3/possessions")
+    check(code == 503, f"the damaged match still answers 503 ({code})")
+    check_similar(r, "metrica-sample-1")
+    logs = r.stop()
+    check("metrica-sample-3 could not be read; left out" in logs, "index build skipped it")
     check("Traceback" not in logs, "no traceback in the logs")
 
 

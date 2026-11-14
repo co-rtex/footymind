@@ -256,8 +256,8 @@ def _load_match(match_id: str, root: Path, token: tuple[int, int, int] | None) -
     manifest = json.loads((d / "manifest.json").read_text())
     if manifest["pipeline_version"] != PIPELINE_VERSION:
         raise StaleBundleError(
-            f"{d} built by pipeline v{manifest['pipeline_version']}, expected v{PIPELINE_VERSION}."
-            f" Re-run `footymind ingest {match_id}`."
+            f"{match_id}: bundle built by pipeline v{manifest['pipeline_version']}, expected "
+            f"v{PIPELINE_VERSION}. Re-run `footymind ingest {match_id}`."
         )
     z = np.load(d / "tracking.npz")
     players = [
@@ -294,6 +294,20 @@ def available_matches(root: Path | None = None) -> list[str]:
     return sorted(p.name for p in root.iterdir() if (p / "manifest.json").exists())
 
 
+def is_servable(match_id: str, root: Path | None = None) -> bool:
+    """The bundle has a readable manifest object from this pipeline version (one cached read).
+
+    Bundles that are not servable (another pipeline version, an unreadable or malformed
+    manifest) are left out of the match list and of the similar-moments index, and need
+    ``footymind ingest``. A damaged data file under a valid manifest is only found on load.
+    """
+    try:
+        m = read_manifest(match_id, root)
+        return isinstance(m, dict) and m.get("pipeline_version") == PIPELINE_VERSION
+    except Exception:  # any unreadable or malformed manifest
+        return False
+
+
 def pending_ingest(wanted: list[str] | None = None, root: Path | None = None) -> list[str]:
     """Registered sources to (re)ingest so that every bundle can be served.
 
@@ -307,10 +321,7 @@ def pending_ingest(wanted: list[str] | None = None, root: Path | None = None) ->
     have = available_matches(root)
     todo = set()
     for m in have:
-        try:
-            if read_manifest(m, root).get("pipeline_version") != PIPELINE_VERSION:
-                todo.add(m)
-        except (OSError, ValueError):
+        if not is_servable(m, root):  # another version, or an unreadable/malformed manifest
             todo.add(m)
     todo |= {m for m in wanted or [] if m not in have}
     unknown = sorted(m for m in todo if m not in sources.SOURCES)

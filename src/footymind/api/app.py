@@ -30,6 +30,7 @@ from footymind.data.store import (
     MatchBundle,
     StaleBundleError,
     available_matches,
+    is_servable,
     load_match,
     read_manifest,
 )
@@ -115,7 +116,7 @@ app.add_middleware(GZipMiddleware, minimum_size=2048)
 _origins = os.environ.get("FOOTYMIND_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o for o in _origins.split(",") if o],
+    allow_origins=[o.strip() for o in _origins.split(",") if o.strip()],
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
@@ -173,11 +174,7 @@ def _bundle(match_id: str) -> MatchBundle:
 
 
 def _servable(match_id: str) -> bool:
-    """A bundle with a readable manifest from this pipeline version (one cached read)."""
-    try:
-        return read_manifest(match_id)["pipeline_version"] == PIPELINE_VERSION
-    except (OSError, ValueError, KeyError, TypeError):
-        return False
+    return is_servable(match_id)
 
 
 def _source(b: MatchBundle) -> S.SourceInfo:
@@ -656,7 +653,9 @@ def _similarity_validation(provider: str) -> dict[str, Any] | None:
     except (OSError, ValueError) as e:  # JSONDecodeError is a ValueError
         # The served estimate is justified by this file: fail clearly instead of dropping it.
         raise HTTPException(
-            503, f"validation results experiments/results/{name}/results.json unreadable: {e}"
+            503,
+            f"validation results experiments/results/{name}/results.json unreadable "
+            f"({type(e).__name__})",
         ) from e
     return {
         "ref": f"experiments/results/{name}/results.json",

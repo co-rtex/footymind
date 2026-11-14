@@ -1,7 +1,7 @@
 {
   "name": "footymind-web",
   "private": true,
-  "version": "2.0.0-dev",
+  "version": "1.0.0",
   "type": "module",
   "description": "FootyMind 2.0 web lab: tactical replay, spatial analysis and constrained scenarios on real tracking data.",
   "scripts": {

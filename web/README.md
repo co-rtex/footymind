@@ -59,7 +59,7 @@ and the Vite server unless they are already running, so export
 production build served by FastAPI instead. With a preinstalled Chromium the
 config falls back to `/opt/pw-browsers/chromium`, or you can set `PW_CHROMIUM`.
 
-**Data the e2e suite needs.** The Metrica matches above, plus SkillCorner bundles
+**Data the e2e suite needs.** The Metrica matches above for every test except those tagged `@skillcorner` (CI runs `npx playwright test --grep-invert @skillcorner`), plus SkillCorner bundles
 for the broadcast tests (the broadcast featured card, estimated off-camera
 positions, team names and the screenshots use `skillcorner-1899585` and other
 SkillCorner matches). On a Metrica-only setup those tests fail: first run

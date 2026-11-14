@@ -214,8 +214,9 @@ Every committed result records the code revision it came from. One experiment:
 uv run footymind experiment experiments/configs/pass_outcome_v1.json
 ```
 
-Every committed artefact, in dependency order (needs path 2's data; the recorded run times of
-the committed results add up to about 1.6 h for Metrica and 4.4 h for SkillCorner):
+The committed artefacts in dependency order (all except the superseded C23 runs and the
+latency benchmark; needs path 2's data; the recorded run times of the committed results add
+up to about 1.6 h for Metrica and 4.4 h for SkillCorner):
 
 ```bash
 scripts/reproduce.sh --dry-run     # list the steps
@@ -271,7 +272,7 @@ built frontend. There is no database or queue (ADR-0001). See
 scripts/check.sh                                   # every CI gate: ruff, format, mypy, pytest; web typecheck, lint, vitest, build
 cd web && npx playwright test --trace off          # end-to-end journeys against the real API (needs processed data)
 scripts/container_smoke.sh                         # build the image, run it, check the API and the lab end to end
-scripts/reproduce.sh --dry-run                     # every committed research artefact, in dependency order
+scripts/reproduce.sh --dry-run                     # the committed research artefacts, in dependency order
 ```
 
 The latest verified counts and CI status are in [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md).
@@ -304,5 +305,7 @@ downloaded at setup and is not redistributed in this repository. See
 
 ## History
 
-FootyMind v1, a match-outcome predictor trained on a small synthetic sample, is archived
-with an audit of its limitations in [`legacy/match_outcome_predictor`](legacy/match_outcome_predictor).
+An earlier prototype, a match-outcome predictor trained on a small synthetic sample (called
+"v1" in its own folder), is archived with an audit of its limitations in
+[`legacy/match_outcome_predictor`](legacy/match_outcome_predictor). It is not part of
+FootyMind 1.0.

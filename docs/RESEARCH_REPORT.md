@@ -364,8 +364,8 @@ convention, not by defender reactions.
 
 ## 8. Reproducibility
 
-* `scripts/reproduce.sh --dry-run` lists every committed research artefact in dependency
-  order. The script refuses to run with uncommitted source changes.
+* `scripts/reproduce.sh --dry-run` lists the committed research artefacts in dependency
+  order (all but the superseded C23 runs and the hardware-dependent latency benchmark). The script refuses to run with uncommitted source changes.
 * Every results file records its `code_revision` and the input data hashes.
 * The checksum-pinned data download, the deterministic ingestion and the fixed seeds make every
   number regenerable from public data. Session-4 results that predate the pipeline version 3

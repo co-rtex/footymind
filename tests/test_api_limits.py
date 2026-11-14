@@ -74,3 +74,23 @@ def test_option_model_without_or_with_another_provider_is_refused(
     with pytest.raises(HTTPException) as e:
         _provider_model("metrica-sample-1")
     assert e.value.status_code == 503 and "refused" in str(e.value.detail)
+
+
+def test_cors_origins_are_trimmed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """FOOTYMIND_CORS_ORIGINS="a, b" allows both origins (whitespace after commas is common)."""
+    import importlib
+
+    import footymind.api.app as app_module
+
+    monkeypatch.setenv("FOOTYMIND_CORS_ORIGINS", "http://a.example, http://b.example ,")
+    mod = importlib.reload(app_module)
+    try:
+        c = TestClient(mod.app)
+        for origin in ("http://a.example", "http://b.example"):
+            r = c.get("/api/health", headers={"Origin": origin})
+            assert r.headers.get("access-control-allow-origin") == origin
+        r = c.get("/api/health", headers={"Origin": "http://c.example"})
+        assert "access-control-allow-origin" not in r.headers
+    finally:
+        monkeypatch.delenv("FOOTYMIND_CORS_ORIGINS")
+        importlib.reload(app_module)

@@ -14,7 +14,7 @@ uv run pytest -q                          # all tests; real-data tests skip if d
 scripts/check.sh                          # every CI gate locally (Python + web); run before committing
 uv run footymind serve                    # API on :8000 (serves web/dist at / if built)
 uv run footymind experiment experiments/configs/pass_outcome_v3.json
-scripts/reproduce.sh --dry-run            # every committed research artefact, in dependency order
+scripts/reproduce.sh --dry-run            # the committed research artefacts, in dependency order
 cd web && npm ci && npm run dev           # frontend on :5173 (proxies /api to the API)
 ```
 

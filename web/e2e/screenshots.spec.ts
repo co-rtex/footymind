@@ -43,7 +43,7 @@ function pickAttacker(a: Analysis & { attack_sign?: number }) {
 test.describe("desktop", () => {
   test.use({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: DPR });
 
-  test("landing", async ({ page }) => {
+  test("landing", { tag: "@skillcorner" }, async ({ page }) => {
     await page.goto("/");
     await expect(page.getByTestId("possession-table").locator("tbody tr").first()).toBeVisible();
     // the featured numbers are live; capture once they are in
@@ -107,7 +107,7 @@ test.describe("desktop, experimental layer", () => {
   });
 });
 
-test.describe("desktop, broadcast tracking", () => {
+test.describe("desktop, broadcast tracking", { tag: "@skillcorner" }, () => {
   test.use({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: DPR });
 
   test("SkillCorner possession with observed and extrapolated players", async ({ page }) => {

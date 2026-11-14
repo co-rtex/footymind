@@ -128,26 +128,61 @@ class SimilarityIndex:
         return self.rows[idx.tolist()], d[idx]
 
 
-def build_index(provider: str, match_ids: list[str]) -> Path:
-    """Build and save the provider's index from the research dataset rows (rules v2)."""
+def _created(match_id: str) -> str | None:
+    """The bundle's creation stamp, or None if its manifest cannot be read."""
+    try:
+        return str(store.read_manifest(match_id)["created_utc"])
+    except Exception:
+        return None
+
+
+def indexable_matches(provider: str) -> tuple[list[str], list[str]]:
+    """The provider's servable bundles that load, and those that are servable but do not.
+
+    Bundles the server would refuse (another pipeline version, an unreadable manifest) are in
+    neither list: they need ``footymind ingest`` first.
+    """
+    ok: list[str] = []
+    broken: list[str] = []
+    for m in store.available_matches():
+        if not m.startswith(provider + "-") or not store.is_servable(m):
+            continue
+        try:
+            store.load_match(m)
+            ok.append(m)
+        except Exception:  # a damaged data file under a valid manifest
+            broken.append(m)
+    return ok, broken
+
+
+def build_index(provider: str, match_ids: list[str], skipped: list[str] | None = None) -> Path:
+    """Build and save the provider's index from the research dataset rows (rules v2).
+
+    ``skipped`` are servable bundles that could not be read; they are recorded so that the
+    index is reported stale once they are repaired (re-ingested), and not before.
+    """
     from footymind.research.pass_dataset import build
 
-    if any(not m.startswith(provider + "-") for m in match_ids):
+    if any(not m.startswith(provider + "-") for m in [*match_ids, *(skipped or [])]):
         raise ValueError("an index must contain a single provider's matches")
     # recorded before reading the bundles: if one is re-ingested during the build, the index
     # keeps the older timestamp and is reported stale, never stored as fresh
-    meta = index_metadata(provider, match_ids)
+    meta = index_metadata(provider, match_ids, skipped)
     df = build(match_ids, similarity_dataset_config())
     return write_index(df, provider, match_ids, meta)
 
 
-def index_metadata(provider: str, match_ids: list[str]) -> dict[str, str]:
+def index_metadata(
+    provider: str, match_ids: list[str], skipped: list[str] | None = None
+) -> dict[str, str]:
     """What an index is built from: provider, pipeline version and each bundle's creation."""
     bundles = {m: str(store.read_manifest(m)["created_utc"]) for m in sorted(match_ids)}
+    left_out = {m: _created(m) for m in sorted(skipped or [])}
     return {
         META_PREFIX + "provider": provider,
         META_PREFIX + "pipeline_version": store.PIPELINE_VERSION,
         META_PREFIX + "bundles": json.dumps(bundles, sort_keys=True),
+        META_PREFIX + "skipped": json.dumps(left_out, sort_keys=True),
     }
 
 
@@ -180,17 +215,30 @@ def check_index_metadata(meta: dict[str, str], provider: str) -> None:
         )
     if meta.get(META_PREFIX + "provider") != provider:
         raise StaleIndexError(f"similarity index {name} is not a {provider} index; {fix}")
-    built = json.loads(meta.get(META_PREFIX + "bundles", "{}"))
-    present = set(store.available_matches())
-    changed = sorted(
+    built: dict[str, str] = json.loads(meta.get(META_PREFIX + "bundles", "{}"))
+    skipped: dict[str, str | None] = json.loads(meta.get(META_PREFIX + "skipped", "{}"))
+    # Only bundles the server serves count: one stale or unreadable bundle must not take the
+    # index down for every other match of the provider.
+    servable = [
         m
-        for m, created in built.items()
-        if m in present and str(store.read_manifest(m).get("created_utc")) != created
-    )
+        for m in store.available_matches()
+        if m.startswith(provider + "-") and store.is_servable(m)
+    ]
+    changed = sorted(m for m in servable if m in built and _created(m) != built[m])
     if changed:
         more = " and others" if len(changed) > 3 else ""
         raise StaleIndexError(
             f"similarity index {name} predates a re-ingest of {', '.join(changed[:3])}{more}; {fix}"
+        )
+    # a match added (or repaired) since the build would silently be missing from everyone's
+    # neighbours; one left out at build time because it could not be read is not "new"
+    missing = sorted(
+        m for m in servable if m not in built and (m not in skipped or _created(m) != skipped[m])
+    )
+    if missing:
+        more = " and others" if len(missing) > 3 else ""
+        raise StaleIndexError(
+            f"similarity index {name} does not include {', '.join(missing[:3])}{more}; {fix}"
         )
 
 

@@ -94,6 +94,7 @@ def test_pipeline_version_change_is_not_served_from_cache(
     assert c.get(f"/api/matches/{MID}").status_code == 503
     r = c.get(f"/api/matches/{MID}/possessions")
     assert r.status_code == 503 and "footymind ingest" in r.json()["detail"]
+    assert str(data_dir) not in r.text  # no server paths in error bodies
     with pytest.raises(store.StaleBundleError):
         store.load_match(MID)
 
@@ -129,6 +130,7 @@ def test_unreadable_bundle_file_is_503_not_500(
     c = TestClient(app, raise_server_exceptions=False)
     r = c.get(f"/api/matches/{MID}/possessions")
     assert r.status_code == 503 and "footymind ingest" in r.json()["detail"]
+    assert str(data_dir) not in r.text
     assert not list((data_dir / MID).glob(".*.tmp"))  # atomic writes leave no temporaries
 
 
@@ -196,6 +198,53 @@ def test_index_older_than_a_reingest_is_refused(
     assert similarity.load_index("metrica") is not None
     _rewrite_manifest(data_dir, created_utc="2099-01-01T00:00:00+00:00")
     with pytest.raises(similarity.StaleIndexError, match="re-ingest of metrica-syn"):
+        similarity.load_index("metrica")
+
+
+def test_one_bad_bundle_does_not_take_the_index_down(
+    data_dir: Path, synthetic_metrica: dict[str, Path]
+) -> None:
+    """Final review M1: an unreadable or stale manifest of another match leaves the index
+    serving the healthy matches (SYNTHETIC bundles)."""
+    _write(synthetic_metrica)
+    _write(synthetic_metrica, mid="metrica-syn2")
+    similarity.write_index(_index_rows(), "metrica", [MID, "metrica-syn2"])
+    assert similarity.load_index("metrica") is not None
+    bad = data_dir / "metrica-syn2" / "manifest.json"
+    bad.write_text("{truncated")  # SYNTHETIC damage
+    _touch(bad)
+    assert similarity.load_index("metrica") is not None
+    bad.write_text("null")  # parses, but is not a manifest object
+    _touch(bad)
+    assert similarity.load_index("metrica") is not None
+    assert store.pending_ingest([]) == []  # unregistered synthetic id: reported, not raised
+
+
+def test_a_new_match_makes_the_index_stale_but_a_skipped_unchanged_one_does_not(
+    data_dir: Path, synthetic_metrica: dict[str, Path]
+) -> None:
+    """Final review L1: a match added after the build would silently be missing from every
+    neighbour list, so the index is reported stale; a match the build had to skip (damaged
+    data file) is not, until it is re-ingested (SYNTHETIC bundles)."""
+    _write(synthetic_metrica)
+    similarity.write_index(_index_rows(), "metrica", [MID])
+    assert similarity.load_index("metrica") is not None
+    _write(synthetic_metrica, mid="metrica-syn2")
+    with pytest.raises(similarity.StaleIndexError, match="does not include metrica-syn2"):
+        similarity.load_index("metrica")
+    # the build skips a servable bundle whose data file is damaged, and records it
+    (data_dir / "metrica-syn2" / "tracking.npz").write_bytes(b"damaged")  # SYNTHETIC damage
+    store.load_match.cache_clear()
+    ok, broken = similarity.indexable_matches("metrica")
+    assert ok == [MID] and broken == ["metrica-syn2"]
+    meta = similarity.index_metadata("metrica", ok, broken)
+    similarity.write_index(_index_rows(), "metrica", ok, meta)
+    assert similarity.load_index("metrica") is not None
+    _write(synthetic_metrica, mid="metrica-syn2")  # repaired by a re-ingest (a later stamp)
+    man = data_dir / "metrica-syn2" / "manifest.json"
+    man.write_text(json.dumps({**json.loads(man.read_text()), "created_utc": "2099-01-01"}))
+    _touch(man)
+    with pytest.raises(similarity.StaleIndexError, match="does not include metrica-syn2"):
         similarity.load_index("metrica")
 
 

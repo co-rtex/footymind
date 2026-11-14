@@ -32,9 +32,9 @@ jobs:
       - run: uv run pytest -q
 
   data:
-    name: Real-data ingestion and tests (Metrica sample)
+    name: Real-data ingestion, tests and browser tests (Metrica sample)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     needs: python
     steps:
       - uses: actions/checkout@v4
@@ -52,6 +52,20 @@ jobs:
       - run: uv run footymind download metrica-sample-1 metrica-sample-2 metrica-sample-3
       - run: uv run footymind ingest metrica-sample-1 metrica-sample-2 metrica-sample-3
       - run: uv run pytest -q
+      # Browser tests against the real API on the Metrica data above: every Playwright test
+      # except those tagged @skillcorner (broadcast data is too large for every CI run).
+      - run: uv run footymind build-similarity-index --provider metrica
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: npx playwright test --trace off --grep-invert @skillcorner
+        working-directory: web
 
   legacy:
     name: Legacy v1 predictor (historical reproduction)

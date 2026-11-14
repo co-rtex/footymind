@@ -18,7 +18,7 @@ async function landingFacts(page: Page): Promise<{ obs: string; hyp: string }> {
   return { obs: m![1]!, hyp: m![2]! };
 }
 
-test("landing explains the idea and computes the featured numbers live", async ({ page }) => {
+test("landing explains the idea and computes the featured numbers live", { tag: "@skillcorner" }, async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));

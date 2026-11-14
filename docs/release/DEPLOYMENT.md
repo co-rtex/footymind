@@ -39,7 +39,10 @@ Warm latency is in C67 (frame analysis about 70 ms p50; a scenario with the 24-m
 about 0.5 s).
 
 **Health.** `GET /api/health` answers 200 with `matches` (servable) and `unavailable` (bundles
-that need `footymind ingest`). The image's `HEALTHCHECK` polls it with a 300 s start period,
+whose manifest is from another pipeline version or unreadable; they need `footymind ingest`).
+A source that was never ingested appears in neither list. A damaged data file under a valid
+manifest stays listed and answers 503 with the fix when opened; the similar-moments index is
+built from the readable bundles only. The image's `HEALTHCHECK` polls it with a 300 s start period,
 long enough for a first start that downloads and indexes.
 
 **Limits.** Request bodies over 1 MB get 413; every query and body parameter is bounded and
@@ -56,8 +59,8 @@ The entrypoint (`docker/entrypoint.sh`) makes the volume servable before startin
   similar-moments index. A failure here stops the container (nothing to serve).
 * **Existing volume:** re-ingest bundles written by another pipeline version (an image
   upgrade), ingest any source in `FOOTYMIND_SOURCES` that has no bundle (a first start that
-  failed part-way), one source at a time, and rebuild a missing or stale index. A source that
-  fails is logged and left out of `/api/matches`; the server still starts.
+  failed part-way), one source at a time, and rebuild a missing or stale index (also when a
+  match was added). A source that fails is logged and is not served; the server still starts.
 
 These paths are tested in the built image in CI (`scripts/container_recovery.py`, four
 scenarios; see [`VERIFICATION.md`](VERIFICATION.md)).

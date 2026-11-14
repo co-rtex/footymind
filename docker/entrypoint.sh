@@ -6,8 +6,9 @@
 #   ~90 MB each) and the groups metrica / skillcorner / all. A failure here stops the container.
 # * Existing volume: re-ingest bundles built by another pipeline version (an image upgrade),
 #   and ingest any source in FOOTYMIND_SOURCES (same default) that has no bundle yet, one
-#   source at a time. A failure is reported and the server still starts; the affected matches
-#   are left out of /api/matches (listed under "unavailable" in /api/health) and answer 503.
+#   source at a time. A failure is reported and the server still starts: a source whose
+#   download failed has no bundle and is not served; a bundle left at another pipeline version
+#   is listed under "unavailable" in /api/health, left out of /api/matches and answers 503.
 # * Then build each provider's similar-moments index if it is missing or no longer matches
 #   the bundles (pipeline version, re-ingested bundles).
 set -eu

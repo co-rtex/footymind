@@ -125,16 +125,26 @@ def main(argv: list[str] | None = None) -> int:
         m = train(ids)
         print(json.dumps({k: m.meta[k] for k in ("n_train", "lomo_pooled", "code_revision")}))
     elif args.cmd == "build-similarity-index":
-        from footymind.data.store import available_matches
-        from footymind.research.similarity import build_index
+        from footymind.data.store import available_matches, is_servable
+        from footymind.research.similarity import build_index, indexable_matches
 
         for prov in args.provider:
-            ids = [m for m in available_matches() if m.startswith(prov + "-")]
+            ids, broken = indexable_matches(prov)
+            stale = [
+                mid
+                for mid in available_matches()
+                if mid.startswith(prov + "-") and not is_servable(mid)
+            ]
+            for mid in stale:
+                print(f"{prov}: {mid} needs `footymind ingest {mid}`; left out of the index")
+            for mid in broken:
+                print(f"{prov}: {mid} could not be read; left out (`footymind ingest {mid}`)")
             if not ids:
-                print(f"{prov}: no processed matches; skipped")
+                print(f"{prov}: no servable matches; skipped")
                 continue
             t0 = time.time()
-            print(f"{prov}: {build_index(prov, ids)} ({len(ids)} matches, {time.time() - t0:.0f}s)")
+            out = build_index(prov, ids, skipped=broken)
+            print(f"{prov}: {out} ({len(ids)} matches, {time.time() - t0:.0f}s)")
     elif args.cmd == "train-response-model":
         from footymind.research.train_response_model import train as train_response
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Rebuild every committed research artefact from raw data, in dependency order.
+# Rebuild the committed research artefacts from raw data, in dependency order. Not rebuilt: the
+# superseded SkillCorner adapter-v1 runs behind C23 (pass_outcome_skillcorner_v1*) and the
+# hardware-dependent latency benchmark (scripts/api_latency.py, C67).
 #   scripts/reproduce.sh            # run everything (~2 GB download; several hours)
 #   scripts/reproduce.sh --dry-run  # print the steps only
 #   PROVIDERS=metrica scripts/reproduce.sh   # Metrica only (~180 MB; 1-2 hours)

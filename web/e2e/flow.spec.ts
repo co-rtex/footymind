@@ -156,7 +156,7 @@ test("defensive shadow layer ranks the suppressive defender at the featured fram
   await expect(toggle).toBeDisabled();
 });
 
-test("broadcast tracking: extrapolated SkillCorner positions are marked as estimates", async ({ page }) => {
+test("broadcast tracking: extrapolated SkillCorner positions are marked as estimates", { tag: "@skillcorner" }, async ({ page }) => {
   const errors: string[] = [];
   page.on("console", (m) => {
     if (m.type() === "error") errors.push(m.text());
@@ -224,7 +224,7 @@ test("a Metrica-only match list shows no broadcast featured card and requests no
   expect(failed).toEqual([]);
 });
 
-test("featured broadcast scenario opens with detected key players and a robust change", async ({ page }) => {
+test("featured broadcast scenario opens with detected key players and a robust change", { tag: "@skillcorner" }, async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("featured-broadcast-link").click();
   await expect(page).toHaveURL(/#\/at\/skillcorner-1899585\?f=39177&move=home_25,22.46,-5.77/);
@@ -445,7 +445,7 @@ test("similar moments: on demand, observed outcomes with links, quiet empty stat
   expect(errors).toEqual([]);
 });
 
-test("team names: SkillCorner matches are named, Metrica stays anonymised", async ({ page }) => {
+test("team names: SkillCorner matches are named, Metrica stays anonymised", { tag: "@skillcorner" }, async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   const sc = (await (await page.request.get("/api/matches/skillcorner-1874553")).json()) as {
