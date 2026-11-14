@@ -554,6 +554,39 @@ validated defender-response model (the session-3 response-policy work) and a
 possession-value target. More tuning of run value against receiver identity would not
 help.
 
+## Similar moments: retrieval of comparable pass decisions (session 3)
+
+**What it is.** For a pass decision, the product shows the `k` most similar decision-time
+situations from *other* matches of the same provider, with their **observed** outcomes and
+deep links (`research/similarity.py`, `GET /api/matches/{id}/frames/{frame}/similar`).
+Similarity is Euclidean distance on standardised RQ2 features (decision-time spatial context,
+event timing, time-on-ball, 1 s movement history), read **0.2 s before the release**
+(ADR-0007). Neighbours never come from the query's own match or another provider.
+
+**Pre-registered validation** (`research/similarity_validation.py`, rev c90e67e).
+Leave-one-match-out kNN with k = 50, shrunk toward the training base rate with 2
+pseudo-counts. The criterion for showing neighbours in the product was fixed beforehand:
+kNN must beat the base rate.
+
+| provider (n) | base rate LL | kNN LL (AUC) | logistic `Bdt_tt` LL (AUC) | kNN − base | kNN − logistic |
+|---|---|---|---|---|---|
+| Metrica (3,592) | 0.508 | 0.452 (0.734) | 0.442 (0.750) | **−0.057** [−0.066, −0.047] | +0.010 [+0.001, +0.020] |
+| SkillCorner (15,893) | 0.439 | 0.388 (0.742) | 0.387 (0.747) | **−0.051** [−0.056, −0.046] | +0.0005 [−0.003, +0.004] |
+
+The criterion is met on both providers (C36). Neighbour outcomes carry real information
+about how comparable decisions ended. On SkillCorner they are as informative as the
+logistic model, and on Metrica slightly less. The panel still presents the share completed
+as a *comparison of observed outcomes*, not a prediction for the current pass.
+
+## Evidence-grounded explanations (session 3)
+
+`spatial/explain.py` turns one frame's computed metrics into plain-language statements
+(pressure, last-second trends, passing options, caveats). It is deterministic and uses no
+language model. Each statement names the metric it comes from, its value, its provenance
+and the players it mentions. Without the metric there is no statement. The API serves them
+with the frame analysis, and a test checks that the served temporal context equals the
+research dataset's columns (train/serve consistency).
+
 ## Featured Possession Multiverse example (verified 2026-11-13)
 
 Selection procedure (`scratchpad` search, reproducible via the API): 140 randomly sampled
