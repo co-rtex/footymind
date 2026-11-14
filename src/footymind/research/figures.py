@@ -282,7 +282,7 @@ def rq2(path: Path) -> None:
         fontsize=10,
         loc="left",
     )
-    ax.legend(frameon=False, fontsize=7.5, loc="lower left", labelcolor=INK)
+    ax.legend(frameon=False, fontsize=7.5, loc="upper right", labelcolor=INK)
     fig.tight_layout()
     fig.savefig(path, facecolor=SURFACE)
     plt.close(fig)

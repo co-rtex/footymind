@@ -529,25 +529,29 @@ before any match data was analysed, and the saturation is confirmed below.
 
 Possession-clustered 95% CIs. Claims C31, C32.
 
-**Findings.**
+**Findings (revised after the second independent review, 2026-11-14).**
 
-* **H-G1 supported on both providers (cat and mouse).** In the second before a pass,
-  off-ball attacking movement raises the best progressive option and defensive movement
-  takes back about as much again. On average the picture changes little because the two
-  sides cancel, not because nobody moves.
-* **H-G2 supported on both providers (identifiability).** The interaction is large: its
-  typical size is 58–68% of the attack effect, and it is not an extrapolation artefact (the
-  detected-only subset gives the same ratio). The value of an attacker's movement depends
-  strongly on what the defenders did at the same time. This is the structural reason the
-  run-value design (attackers moved, defenders held at their observed positions) is not a
-  well-defined credit. A different but equally reasonable convention (defenders held at
-  their earlier positions) gives a materially different number. Per-player off-ball
-  credit therefore needs a model of how defenders would have responded. It cannot be
-  recovered by accounting identities from a single observed trajectory.
-* **Interpretation limits.** The mixed states (`V10`, `V01`) never happened, and the option
-  model extrapolates to them. The decomposition is model-based and descriptive. It says how
-  the *model's* opportunity picture moves, not what caused the pass outcome. It also
-  assigns team-level, not player-level, effects.
+* **H-G1 is supported on both providers (on average).** In the second before a pass,
+  off-ball attacking movement raises the best progressive option, and defensive movement takes
+  about as much back. Pass by pass the two effects are almost uncorrelated (corr ≈ 0 on
+  Metrica, −0.05 on SkillCorner), so this is a statement about averages. It is not evidence
+  that defenders cancel each run.
+* **H-G2 clears its pre-registered bar, but mostly for a model reason.** A placebo that keeps
+  each defender's real displacement size and randomises its direction (v2, guard frame)
+  gives an interaction ratio of 0.51 (Metrica) and 0.53 (SkillCorner), against 0.58 and 0.64
+  for the real movement. Real − placebo: +0.07 [−0.01, +0.16] on Metrica and +0.11 [+0.08,
+  +0.14] on SkillCorner. So most of the interaction is the option model's own
+  non-additivity (max over options, nearest-defender features, the progressive cut-off). On
+  broadcast data a small, significant amount of genuine attacker–defender coupling sits on
+  top. The SkillCorner match-level CI for the real ratio is [0.56, 0.73].
+* **What survives.** Per-pass credit for a run depends on a convention (holding defenders at
+  their observed positions, as `run_value` does, or at their earlier ones), because the
+  serving model is strongly non-additive under displacements of this size. Averaged over
+  passes, the conventions differ much less than pass by pass. The detected-only
+  SkillCorner subset rules out *provider* extrapolation as the cause. It does not test the
+  option model's extrapolation to the mixed states, which never happened.
+* **Interpretation limits.** It is model-based, descriptive and team-level. It says how
+  the *model's* opportunity picture moves, not what caused the pass outcome.
 
 **Consequence for the roadmap.** Off-ball valuation should be built on an explicit,
 validated defender-response model (the session-3 response-policy work) and a
@@ -707,6 +711,26 @@ calibration. Strata (`temporal_v1_strata`, descriptive): open play −0.016 [−
 * **H-T3 is supported, and C20 is unchanged by the guard.** The decision-time spatial gain does
   not depend on the release frame on optical tracking.
 
+### RQ2 results: SkillCorner (20 matches; primary = 0.2 s guard, 15,893 passes; rev c90e67e)
+
+| comparison | 0.2 s guard (primary) | match-level CI, matches better |
+|---|---|---|
+| `Adt → Adt_tob` (H-T1, time-on-ball) | **−0.0022** [−0.0034, −0.0012] | [−0.0039, −0.0006], 15/20 |
+| `Bdt_tob → Bdt_tt` (H-T2, LR) | **−0.0091** [−0.0113, −0.0071] | [−0.0119, −0.0063], **20/20** |
+| `Bdt_tob → Bdt_tt` (GBM) | **−0.0089** [−0.0110, −0.0069] | |
+| `Adt_tob → Bdt_tob` (H-T3) | **−0.0196** [−0.0226, −0.0164] | [−0.0238, −0.0148], 20/20 |
+| `Adt → Bdt` (C28 re-test) | **−0.0214** [−0.0245, −0.0180] | [−0.0255, −0.0166], 20/20 |
+
+AUC: Adt 0.661 → Bdt 0.725 → Bdt_tt 0.747; ECE stays small (0.006–0.017). The release-frame
+run (`temporal_skillcorner_v1`) is secondary by design (ADR-0007). Claim C35.
+
+**Reading (both providers).** H-T2 replicates: the last second of movement adds information
+beyond static positions and time-on-ball on optical and broadcast tracking (Metrica −0.014,
+SkillCorner −0.009, both at the guard frame), in every SkillCorner match. The gain is in
+discrimination. **The headline decision-time spatial result (C20/C28) is unchanged when
+every feature is read before the kick.** Time-on-ball is small (H-T1): significant with
+SkillCorner's sample size, not robust on Metrica's. Event timing alone carries nothing.
+
 ## Opponent response policies and kinematic envelopes (ADR-0006)
 
 **Why.** The Possession Multiverse used to relocate players on a frozen frame, with one toy
@@ -838,27 +862,40 @@ therefore the on-camera ones, near the ball (a selection effect). Only pass-star
 used. The CIs reflect within-match sampling (3 Metrica matches). The model is linear. The
 differential-response semantics is a modelling choice, not an empirical finding.
 
-### Observational check of the rule policies (session 3, pre-registered)
+### Observational check of the rule policies (session 3; v2 after the second review)
 
-`research/rule_response_check.py` gives the rule policies the only test real data allows:
-treat the attackers' *real* movement over the next second as the intervention (the carrier
-for `press_carrier`/`zonal_shift`, all off-ball attackers for `lane_cover`/`marker_follows`).
+`research/rule_response_check.py` gives the rule policies the only test real data allows.
+The attackers' *real* movement over the next second is the intervention (the carrier for
+`press_carrier`/`zonal_shift`, all off-ball attackers for `lane_cover`/`marker_follows`).
 Each rule's simulated displacement is added to the moved defenders' constant-velocity
-forecasts and compared with where they really went (SkillCorner: detected positions only).
+forecasts and compared with where they really went: Δ FDE in metres, possession-clustered
+95% CI, 0.2 s guard frame, and on SkillCorner defenders detected at both ends. β is the
+least-squares slope of the real residual on the simulated move (1 = right size).
 
-| policy | Metrica Δ FDE (m) | SkillCorner Δ FDE (m) |
-|---|---|---|
-| press_carrier | +0.049 [+0.011, +0.092] | +0.037 [+0.011, +0.064] |
-| zonal_shift | +0.229 [+0.199, +0.257] | +0.162 [+0.146, +0.179] |
-| lane_cover | +0.062 [+0.051, +0.074] | +0.073 [+0.064, +0.083] |
-| marker_follows | +0.579 [+0.539, +0.619] | +0.545 [+0.514, +0.578] |
+| policy | design | Metrica Δ (β) | SkillCorner Δ (β) |
+|---|---|---|---|
+| marker_follows | innovation | **−0.095** [−0.111, −0.079] (1.03) | **−0.144** [−0.154, −0.133] (1.30) |
+| | placebo | −0.026 [−0.039, −0.012] | −0.060 [−0.070, −0.050] |
+| lane_cover | innovation | **−0.033** [−0.042, −0.022] (1.24) | **−0.031** [−0.038, −0.025] (1.05) |
+| | placebo | −0.011 [−0.021, −0.002] | −0.016 [−0.021, −0.010] |
+| press_carrier | innovation | −0.025 [−0.050, −0.002] (0.99) | +0.007 [−0.009, +0.024] (0.28) |
+| zonal_shift | innovation | +0.081 [+0.058, +0.103] (0.22) | +0.087 [+0.075, +0.100] (0.13) |
+| all four | full (v1 design, at the guard) | +0.03 to +0.65, β 0.04–0.21 | +0.01 to +0.60, β 0.02–0.47 |
 
-**Negative on both providers (C37).** Every rule moves defenders in ways that make forecasts
-of real play worse. Real defenders do not shift by these amounts in response to real
-attacker movement, at least beyond what their current velocity already implies. The test
-may double-count reactions already under way at `t`, so it constrains the *size* of the
-simulated moves rather than proving their direction wrong. The served assumptions for these
-four policies now state this finding, and they stay labelled experimental.
+* **The v1 conclusion ("every rule makes forecasts worse") was a design artefact.** With the
+  full real displacement as the intervention, the response double counts motion that is
+  already in the defenders' current velocity (β near 0). Using only the attackers'
+  *innovation* (real minus their own constant-velocity forecast) removes the double count.
+* **`marker_follows` and `lane_cover` pass on both providers.** Real defenders move in about the
+  direction and size these rules simulate (β ≈ 1.0–1.3), and the gain is several times the
+  permuted-innovation placebo. That makes the signal specific to the attacker–defender pairing.
+  `press_carrier` passes on Metrica only. `zonal_shift` overshoots: real blocks shift
+  0.13–0.22 of its simulated move.
+* This is a **necessary** condition. It says the rules resemble how defenders react to
+  unexpected attacker movement in real play. It cannot say how they would react to
+  interventions that never happened. The served assumptions state the per-policy result
+  (C37). The rules stay `experimental`, because the pre-registered `validated` flag (ADR-0006)
+  is reserved for forecasting against constant velocity.
 
 ## Prior art and references
 * Spearman, W., Basye, A., Dick, G., Hotovy, R., Pop, P. (2017). *Physics-Based Modeling of Pass Probabilities in Soccer.* MIT Sloan Sports Analytics Conference.
@@ -883,6 +920,7 @@ four policies now state this finding, and they stay labelled experimental.
 
 ## Log
 * **2026-11-13**: Second independent review (SkillCorner): C23 held but its baseline lacked context. Adapter v2 / pipeline 2. Restated replication −0.021 [−0.025, −0.018], 20/20.
+* **2026-11-14**: RQ2 temporal context (C33–C35): 1 s movement history improves decision-time pass prediction on both providers at the guard frame (Metrica −0.014, SkillCorner −0.009, 20/20 matches); time-on-ball is small; C20/C28 survive the guard. Two independent reviews: censoring, kick leakage on broadcast frames (ADR-0007, C38), decomposition placebo (C31/C32 revised), rule-check double counting (C37 revised: marker_follows and lane_cover pass on both providers).
 * **2026-11-14**: Attack vs defense movement decomposition (C31, C32): attacking and defensive off-ball movement roughly cancel in the second before a pass, and their interaction is 58–68% of the attack effect on both providers, so attacker credit with defenders held fixed (run value) is not well defined without a response model.
 * **2026-11-14**: Defensive Shadow outcome validation extended to all 20 SkillCorner matches: shadow at chance, worse than nearest-defender in 18/20 matches (top-3 −0.099 [−0.137, −0.060]); C29 updated. Data-quality audit across all matches (C30).
 * **2026-11-13**: Defensive Shadow outcome validation on SkillCorner (8 matches): the shadow is at chance and worse than nearest-defender (top-3 −0.095); non-replication (C29). Fixed a units bug (recovery window in frames, 5 s at 10 fps) found while diagnosing a first, uninformative run.

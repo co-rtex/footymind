@@ -57,20 +57,29 @@ Metrica (3 matches, optical, 25 Hz) and SkillCorner (20 A-League matches, broadc
   misspecified. The experimental *Defensive Shadow* metric is robust to tracking noise and
   finds interceptors at 2× chance on Metrica, but it is **not** better than "nearest defender", and
   on SkillCorner it is at chance (the 2× signal does not replicate).
-* **Why off-ball credit is hard (session 3).** In the second before a pass, attacking off-ball
-  movement raises the best progressive option (+0.048 Metrica, +0.029 SkillCorner) and
-  defensive movement takes about as much back (−0.042, −0.036). Their interaction is 58–68% of
-  the attack effect, so crediting a run while holding defenders fixed is not well defined
-  without a response model. This explains the failed run-value metric (C31, C32).
+* **The last second matters (session 3, RQ2).** Adding 1 s of movement history (pressure
+  building, ball travel, team and defensive-line movement) to decision-time spatial context
+  improves held-out prediction on both providers: **Δ −0.014** on Metrica and **Δ −0.009** on
+  SkillCorner, better in 20/20 matches. Every feature is read **0.2 s before the release**,
+  because on broadcast tracking the event frame often already contains the kick (ADR-0007).
+  The headline spatial result above is unchanged under that guard (C33–C35, C38).
+* **Off-ball credit is convention-dependent.** In the second before a pass, attacking movement
+  raises the best progressive option and defensive movement takes about as much back, on
+  average. The option model is so non-additive that per-pass credit for a run depends on
+  which side is held fixed. A placebo shows this is mostly the model, with a small
+  genuine coupling on SkillCorner (C31, C32).
 * **Opponent responses.** A learned short-horizon model forecasts real defender movement better
-  than constant velocity on both providers (C40–C44), but it is nearly inert under hypothetical
-  edits. The interpretable rule policies make forecasts of real play *worse* when real attacker
-  movement is treated as the intervention (C37), so they stay experimental illustrations.
-* **Similar moments are informative.** Outcomes of the 50 most similar decisions from other
-  matches beat the base rate held-out on both providers (−0.057 / −0.051 log loss) and match
-  the logistic model on SkillCorner (C36).
+  than constant velocity (C40–C44) but is nearly inert under hypothetical edits. Of the
+  interpretable rules, `marker_follows` and `lane_cover` move defenders the way real defenders
+  react to unexpected attacker movement on both providers. `zonal_shift` overshoots (C37). All
+  rules stay experimental.
+* **Similar moments are informative.** The completion rate among the 50 most similar decisions
+  from other matches beats the base rate held-out on both providers (−0.057 / −0.051 log loss)
+  and matches the logistic model on SkillCorner (C36).
 
 ![Cross-provider replication of the main effects](docs/figures/replication_v1.png)
+
+![RQ2: temporal context at the release frame and at the 0.2 s guard frame, per provider](docs/figures/rq2_temporal_v1.png)
 
 These results are consistent with established findings (Power et al. 2017; Anzer & Bauer 2022)
 on open data, with an explicit leakage audit and a cross-provider replication. They are not a

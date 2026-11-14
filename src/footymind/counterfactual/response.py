@@ -124,12 +124,23 @@ _WHO = (
     "move, in player-id order)."
 )
 _NOT_WHAT = "This is not what the defender would have done; no ground truth exists for it."
-_OBS_CHECK = (
-    "Observational check (claim C37): when attackers' real movement is treated as the "
-    "intervention, this rule's simulated displacements make forecasts of where defenders "
-    "really went worse than constant velocity, on both providers. Treat its moves as an "
-    "illustration of the assumption, not as a plausible response."
-)
+# Observational check (claim C37, v2 design; research/rule_response_check.py): attackers'
+# real movement *beyond their own constant velocity* is treated as the intervention, and the
+# rule's simulated moves are compared with where defenders really went.
+_OBS_HEAD = "Observational check (C37): "
+_OBS_CHECK = {
+    "marker_follows": _OBS_HEAD + "with attackers' unexpected real movement as the intervention, "
+    "this rule's moves match how real markers moved (about the right direction and size) on "
+    "both providers, beyond a permuted placebo. Still a rule, not a prediction.",
+    "lane_cover": _OBS_HEAD + "with attackers' unexpected real movement as the intervention, "
+    "this rule's moves match real defender movement in direction and size on both providers, "
+    "beyond a permuted placebo. Still a rule, not a prediction.",
+    "press_carrier": _OBS_HEAD + "consistent with real pressing on Metrica, but not supported "
+    "on SkillCorner broadcast data. Treat its moves as an illustration of the assumption.",
+    "zonal_shift": _OBS_HEAD + "real defensive blocks shift much less than this rule assumes "
+    "(real movement is 0.13-0.22 of its simulated moves), on both providers. Treat its moves as an "
+    "illustration of the assumption, not as a plausible response.",
+}
 
 
 @dataclass(frozen=True)
@@ -157,7 +168,7 @@ def _specs(limits: KinematicLimits = DEFAULT_LIMITS) -> dict[str, PolicySpec]:
                 "One marker per relocated attacker; no kinematic limit is applied (the move "
                 "is still feasibility-checked like user moves).",
                 _NOT_WHAT,
-                _OBS_CHECK,
+                _OBS_CHECK["marker_follows"],
             ),
         ),
         "press_carrier": PolicySpec(
@@ -168,7 +179,7 @@ def _specs(limits: KinematicLimits = DEFAULT_LIMITS) -> dict[str, PolicySpec]:
             (
                 "Only one defender presses; teammates do not cover the space it leaves.",
                 *common,
-                _OBS_CHECK,
+                _OBS_CHECK["press_carrier"],
             ),
         ),
         "zonal_shift": PolicySpec(
@@ -181,7 +192,7 @@ def _specs(limits: KinematicLimits = DEFAULT_LIMITS) -> dict[str, PolicySpec]:
                 "The shift fractions are a priori assumptions, not fitted to data.",
                 "Triggered only when the ball moves (i.e. the carrier is relocated).",
                 *common,
-                _OBS_CHECK,
+                _OBS_CHECK["zonal_shift"],
             ),
         ),
         "lane_cover": PolicySpec(
@@ -193,7 +204,7 @@ def _specs(limits: KinematicLimits = DEFAULT_LIMITS) -> dict[str, PolicySpec]:
                 "One defender per relocated attacker, chosen by reachability of the lane.",
                 "The lane is a straight segment to the attacker's position (no lead pass).",
                 *common,
-                _OBS_CHECK,
+                _OBS_CHECK["lane_cover"],
             ),
         ),
         "learned": PolicySpec(
