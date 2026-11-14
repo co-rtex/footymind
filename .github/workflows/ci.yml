@@ -82,7 +82,7 @@ jobs:
       - run: npm audit --omit=dev
 
   docker:
-    name: Docker image builds
+    name: Docker image builds, starts and serves (Metrica sample)
     runs-on: ubuntu-latest
     needs: [python, web]
     steps:
@@ -92,6 +92,25 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: footymind:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      # First start on an EMPTY volume, as documented: the entrypoint downloads two Metrica games
+      # (checksum-verified, ~120 MB), ingests them and builds the similar-moments index; then the
+      # smoke checks call the real API (analysis, scenario with a response policy, similar moments
+      # with the validated estimate) and the web lab. No data is faked or baked into the image.
+      - name: Start the container
+        run: |
+          docker run -d --name fm -p 127.0.0.1:8000:8000 -v fm-data:/data \
+            -e FOOTYMIND_SOURCES="metrica-sample-1 metrica-sample-2" footymind:ci
+      - name: Smoke-check the running container
+        run: |
+          python3 scripts/smoke_api.py http://127.0.0.1:8000 --wait 900 \
+            --expect-matches metrica-sample-1 metrica-sample-2 --require-similar
+      - name: Docker HEALTHCHECK reports healthy
+        run: |
+          timeout 120 sh -c 'until [ "$(docker inspect -f "{{.State.Health.Status}}" fm)" = healthy ]; do sleep 3; done'
+      - name: Container logs
+        if: always()
+        run: docker logs fm 2>&1 | tail -n 100; docker rm -f fm || true
