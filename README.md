@@ -31,7 +31,11 @@ observed state, and reported with its sensitivity to the model's assumptions.
 | Calibrated option model | Logistic model over per-option features incl. lead-pass targets, evaluated leave-one-match-out (v2: log loss 0.414, AUC 0.796, ECE 0.019), served as plain-JSON coefficients with bootstrap uncertainty | ✅ |
 | Interactive lab (web) | Canvas replay at 60 fps, overlays, drag-to-edit scenarios, observed/hypothetical/difference views, evidence panel | ✅ |
 | Research: does spatial context matter? | Leakage-audited attempted-pass outcome study with event-only, spatial and interaction model families, ablations and sensitivity analyses | ✅ v1 |
-| Ghost Value: Defensive Shadow | Per-defender suppression of passing value against nearby alternative positions | 🧪 experimental (API + UI layer; partly validated, see findings) |
+| Ghost Value: Defensive Shadow | Per-defender suppression of passing value against nearby alternative positions | 🧪 experimental (API + UI layer; not better than nearest-defender, at chance on SkillCorner) |
+| Opponent response policies | Defender reactions to a scenario edit (`press_carrier`, `zonal_shift`, `lane_cover`, `marker_follows`, `learned`) limited by a kinematic envelope (reaction delay, acceleration, top speed), with a static-vs-response comparison in the lab | ✅ `learned` validated as a short-horizon forecast of real play; rule policies 🧪 experimental |
+| Temporal context | Causal time-on-ball and last-second movement history at a guard frame before the release (ADR-0007), served with the frame analysis | ✅ research study RQ2 (see findings) |
+| Why this moment | Deterministic, evidence-grounded statements: each sentence is tied to one computed metric, its provenance and the players it mentions | ✅ |
+| Similar moments | The most similar pass decisions from *other* matches of the same provider, with observed outcomes and deep links | ✅ validated held-out (beats the base rate on both providers) |
 
 ## Key research findings
 
