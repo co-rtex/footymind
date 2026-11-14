@@ -196,6 +196,10 @@ def _specs(limits: KinematicLimits = DEFAULT_LIMITS) -> dict[str, PolicySpec]:
                 "The model forecasts how defenders moved in real play (observational). Its "
                 "validation does not cover responses to hypothetical interventions.",
                 "Forecast horizon is capped at the longest trained horizon (1.0 s).",
+                "The fitted model is dominated by the defender's own velocity (close to damped "
+                "constant velocity), so its responses to interventions are very small "
+                "(centimetres; docs/RESEARCH.md). Validated forecasting does not make it a "
+                "strong response model.",
                 "Linear in causal features: own velocity, ball offset and velocity, "
                 "nearest-attacker offset, own-goal offset.",
                 *common,
