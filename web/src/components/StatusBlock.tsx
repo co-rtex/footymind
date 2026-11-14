@@ -17,9 +17,25 @@ interface Props {
   /** extra action (for example a link back to the possession list) */
   action?: ReactNode;
   compact?: boolean;
+  /**
+   * The block is the whole page (a lab link that failed or is still loading): its title is then
+   * the page's level-one heading, so the page is not left without one.
+   */
+  pageHeading?: boolean;
 }
 
-export function StatusBlock({ kind, title, detail, error, subject, onRetry, action, compact = false }: Props) {
+export function StatusBlock({
+  kind,
+  title,
+  detail,
+  error,
+  subject,
+  onRetry,
+  action,
+  compact = false,
+  pageHeading = false,
+}: Props) {
+  const Title = pageHeading ? "h1" : "p";
   const view = error ? describeError(error, subject) : null;
   const showRetry = onRetry && (!view || view.retryable);
   return (
@@ -30,7 +46,7 @@ export function StatusBlock({ kind, title, detail, error, subject, onRetry, acti
     >
       {kind === "loading" ? <span className="spinner" aria-hidden="true" /> : null}
       <div className="status-body">
-        <p className="status-title">{title}</p>
+        <Title className="status-title">{title}</Title>
         {view ? <p className="status-detail">{view.message}</p> : detail ? <p className="status-detail">{detail}</p> : null}
         {view?.technical ? <p className="status-technical">{view.technical}</p> : null}
       </div>

@@ -470,6 +470,8 @@ kbd {
 .status-title {
   color: var(--c-text);
   font-weight: 600;
+  font-size: inherit;
+  line-height: inherit;
 }
 .status-detail {
   font-size: var(--fs-sm);
