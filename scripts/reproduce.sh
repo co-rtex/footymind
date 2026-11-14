@@ -32,6 +32,7 @@ run uv run python -m footymind.research.calibrate_physics
 run uv run python -m footymind.research.shadow_stability
 run uv run python -m footymind.research.shadow_validation metrica
 run uv run python -m footymind.research.run_value_validation metrica
+run uv run python -m footymind.research.movement_decomposition_study metrica
 run uv run footymind train-option-model --provider metrica
 
 if [[ " $PROVIDERS " == *" skillcorner "* ]]; then
@@ -41,6 +42,7 @@ if [[ " $PROVIDERS " == *" skillcorner "* ]]; then
   run uv run python -m footymind.research.shadow_validation skillcorner
   run uv run python -m footymind.research.data_quality_audit
   run uv run python -m footymind.research.run_value_validation skillcorner
+  run uv run python -m footymind.research.movement_decomposition_study skillcorner
   run uv run footymind train-option-model --provider skillcorner
 fi
 

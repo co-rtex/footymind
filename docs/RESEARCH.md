@@ -503,6 +503,57 @@ is not tuned on this data. A meaningful off-ball valuation probably needs simula
 defender responses (for example learned ghosting, Le et al. 2017) and a possession-value
 target rather than next-receiver identity.
 
+## Why off-ball credit is hard: attack vs defense movement decomposition (session 3)
+
+**Question.** Run value (above) credits an attacker's last second of movement while holding
+defenders at their observed positions. It fails as a ranking. Is that because the metric
+is tuned badly, or because the quantity is not well defined? Pre-registered in
+`research/movement_decomposition_study.py` (H-G1, H-G2), definitions in
+`ghost/movement_decomposition.py`.
+
+**Method.** At each sampled pass release, the team's passing opportunity `V(A, D)` is
+evaluated with the option model, with off-ball attackers `A` and defenders `D` each placed
+either now or 1 s earlier. The carrier and the ball are fixed. A two-factor Shapley
+decomposition splits `V11 − V00` into an attack effect and a defense effect, plus an
+interaction `V11 − V10 − V01 + V00`. The primary measure is the best *progressive* option
+(teammates > 5 m ahead of the ball). The plain best option is dominated by safe backward
+passes with p ≈ 1, which no run can change. This was found on a constructed test case
+before any match data was analysed, and the saturation is confirmed below.
+
+| provider (n passes) | attack effect | defense effect | mean \|interaction\| / mean \|attack\| |
+|---|---|---|---|
+| Metrica (448) | **+0.048** [+0.032, +0.066] | **−0.042** [−0.049, −0.036] | **0.58** [0.48, 0.72] |
+| SkillCorner (2,959) | **+0.029** [+0.025, +0.034] | **−0.036** [−0.038, −0.034] | **0.68** [0.62, 0.75] |
+| SkillCorner, ≥ 80% detected (2,269) | +0.030 [+0.025, +0.036] | −0.035 [−0.038, −0.033] | 0.66 [0.59, 0.73] |
+| *plain best option*, SkillCorner | +0.002 | −0.010 | (saturated) |
+
+Possession-clustered 95% CIs. Claims C31, C32.
+
+**Findings.**
+
+* **H-G1 supported on both providers (cat and mouse).** In the second before a pass,
+  off-ball attacking movement raises the best progressive option and defensive movement
+  takes back about as much again. On average the picture changes little because the two
+  sides cancel, not because nobody moves.
+* **H-G2 supported on both providers (identifiability).** The interaction is large: its
+  typical size is 58–68% of the attack effect, and it is not an extrapolation artefact (the
+  detected-only subset gives the same ratio). The value of an attacker's movement depends
+  strongly on what the defenders did at the same time. This is the structural reason the
+  run-value design (attackers moved, defenders held at their observed positions) is not a
+  well-defined credit. A different but equally reasonable convention (defenders held at
+  their earlier positions) gives a materially different number. Per-player off-ball
+  credit therefore needs a model of how defenders would have responded. It cannot be
+  recovered by accounting identities from a single observed trajectory.
+* **Interpretation limits.** The mixed states (`V10`, `V01`) never happened, and the option
+  model extrapolates to them. The decomposition is model-based and descriptive. It says how
+  the *model's* opportunity picture moves, not what caused the pass outcome. It also
+  assigns team-level, not player-level, effects.
+
+**Consequence for the roadmap.** Off-ball valuation should be built on an explicit,
+validated defender-response model (the session-3 response-policy work) and a
+possession-value target. More tuning of run value against receiver identity would not
+help.
+
 ## Featured Possession Multiverse example (verified 2026-11-13)
 
 Selection procedure (`scratchpad` search, reproducible via the API): 140 randomly sampled
@@ -594,6 +645,7 @@ sensitivity runs show.
 
 ## Log
 * **2026-11-13**: Second independent review (SkillCorner): C23 held but its baseline lacked context. Adapter v2 / pipeline 2. Restated replication −0.021 [−0.025, −0.018], 20/20.
+* **2026-11-14**: Attack vs defense movement decomposition (C31, C32): attacking and defensive off-ball movement roughly cancel in the second before a pass, and their interaction is 58–68% of the attack effect on both providers, so attacker credit with defenders held fixed (run value) is not well defined without a response model.
 * **2026-11-14**: Defensive Shadow outcome validation extended to all 20 SkillCorner matches: shadow at chance, worse than nearest-defender in 18/20 matches (top-3 −0.099 [−0.137, −0.060]); C29 updated. Data-quality audit across all matches (C30).
 * **2026-11-13**: Defensive Shadow outcome validation on SkillCorner (8 matches): the shadow is at chance and worse than nearest-defender (top-3 −0.095); non-replication (C29). Fixed a units bug (recovery window in frames, 5 s at 10 fps) found while diagnosing a first, uninformative run.
 * **2026-11-13**: Run value replicated on SkillCorner: tiny positive association (+0.004) but at-chance ranking. The negative result is confirmed. Decision-time importance: defensive structure relative to the ball and attacking width.
