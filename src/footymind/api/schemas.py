@@ -202,6 +202,17 @@ class ModelInfo(BaseModel):
     params: dict[str, float]
 
 
+class StatementOut(BaseModel):
+    """One evidence-grounded explanation statement (deterministic; see spatial/explain.py)."""
+
+    kind: Literal["pressure", "trend", "option", "caveat"]
+    text: str
+    metric: str = Field(description="the computed metric this statement is generated from")
+    value: float | int | str | None
+    provenance: ProvenanceLabel
+    players: list[str]
+
+
 class FrameAnalysisOut(BaseModel):
     match_id: str
     frame: int
@@ -224,6 +235,15 @@ class FrameAnalysisOut(BaseModel):
     model: ModelInfo
     option_model: ModelInfo | None = None
     warnings: list[str]
+    temporal: dict[str, float | None] | None = Field(
+        default=None,
+        description="causal temporal context for the carrier (DERIVED; frames at or before this "
+        "frame only). Observed frames only; null for hypothetical states.",
+    )
+    explanations: list[StatementOut] = Field(
+        default_factory=list,
+        description="evidence-grounded statements, each tied to one computed metric",
+    )
 
 
 class InterventionIn(BaseModel):

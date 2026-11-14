@@ -31,9 +31,11 @@ from footymind.ghost.defensive_shadow import NOISE_FLOOR as SHADOW_NOISE_FLOOR
 from footymind.ghost.defensive_shadow import defensive_shadow
 from footymind.paths import PROCESSED_DIR, REPO_ROOT
 from footymind.spatial.analysis import FrameAnalysis, analyze
+from footymind.spatial.explain import explain
 from footymind.spatial.option_model import load_default
 from footymind.spatial.pitch_control import DEFAULT_GRID, DEFAULT_PARAMS
 from footymind.spatial.state import attacking_team_at, frame_state
+from footymind.spatial.temporal import temporal_context
 from footymind.tracking.model import TrackingData
 
 MAX_REPLAY_FRAMES = 4000
@@ -441,8 +443,18 @@ def frame_possession(match_id: str, frame: int) -> S.PossessionSummary:
 @app.get("/api/matches/{match_id}/frames/{frame}/analysis", response_model=S.FrameAnalysisOut)
 def frame_analysis(match_id: str, frame: int, grid: bool = True) -> S.FrameAnalysisOut:
     _frame_or_404(match_id, frame)
-    a = analyze(frame_state(match_id, frame), DEFAULT_PARAMS, DEFAULT_GRID if grid else None)
-    return _analysis_out(a)
+    st = frame_state(match_id, frame)
+    a = analyze(st, DEFAULT_PARAMS, DEFAULT_GRID if grid else None)
+    out = _analysis_out(a)
+    temporal = None
+    if st.attacking_team is not None and st.carrier is not None:
+        td = _bundle(match_id).tracking
+        temporal = temporal_context(
+            td, td.index_of_frame(frame), st.attacking_team, st.carrier, st.is_gk
+        )
+        out.temporal = {k: _f(v, 3) for k, v in temporal.items()}
+    out.explanations = [S.StatementOut(**s.to_dict()) for s in explain(a, temporal)]
+    return out
 
 
 def _summary(d: dict[str, object]) -> dict[str, float | int | str | None]:
