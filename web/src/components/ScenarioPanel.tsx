@@ -11,8 +11,10 @@ import type {
 import { MAX_INTERVENTIONS } from "../api/types";
 import { fmtMetres, fmtSigned, humaniseIds, playerLabel } from "../lib/format";
 import { agreementSentence } from "../lib/agreement";
+import { HORIZON_S } from "../lib/scenario";
 import { optionModelLabel, PHYSICS_LABEL, valueModelLabel } from "../lib/models";
-import { isExperimental, policyLabel, STATIC_POLICY } from "../lib/policies";
+import { POLICY_BADGE_TEXT, policyBadge, policyFitRange, policyLabel, STATIC_POLICY } from "../lib/policies";
+import { PolicyBadge } from "./PolicyBadge";
 import { OptionDeltaTable } from "./OptionDeltaTable";
 import { PolicyComparison } from "./PolicyComparison";
 import { ProvBadge } from "./ProvBadge";
@@ -96,10 +98,16 @@ function FeasibilityLine({ f, players }: { f: FeasibilityOut; players: Map<strin
         <strong>{playerLabel(f.player_id, players)}</strong> moved {fmtMetres(f.displacement_m)}
         <span className={`pill ${f.supported ? "pill--ok" : "pill--bad"}`}>{f.supported ? "supported" : "not supported"}</span>
       </span>
-      <span className="small muted">
-        {f.reachable ? "Reachable" : "Not reachable"} within {fmtMetres(f.reachable_radius_m)} of the observed position 1.5 s
-        earlier · {f.inside_pitch ? "inside the pitch" : "outside the pitch"} · nearest other player{" "}
-        {fmtMetres(f.min_separation_m)}
+      <span className="small muted" data-testid="feasibility-detail">
+        {f.reachable ? "Reachable" : "Not reachable"}: {f.reachable ? "within" : "more than"} {fmtMetres(f.reachable_radius_m)}{" "}
+        of the observed position {HORIZON_S} s earlier (the scenario&apos;s horizon) ·{" "}
+        {f.inside_pitch ? "inside the pitch" : "outside the pitch"} · nearest other player {fmtMetres(f.min_separation_m)}
+        {typeof f.kinematic_reachable === "boolean" ? (
+          <span data-testid="feasibility-kinematic">
+            {" "}
+            · {f.kinematic_reachable ? "inside" : "outside"} the kinematic envelope (diagnostic only)
+          </span>
+        ) : null}
       </span>
       {f.notes.length > 0 ? (
         <ul className="small muted feas-notes">
@@ -117,17 +125,23 @@ function PolicyPicker({
   policies,
   info,
   onPolicy,
+  beyondFit,
+  players,
 }: {
   policy: ResponsePolicy;
   policies: PolicyInfo[];
   info: PolicyInfo | null;
   onPolicy: (p: ResponsePolicy) => void;
+  /** moved players whose displacement exceeds the policy's fitted range (current result only) */
+  beyondFit: FeasibilityOut[];
+  players: Map<string, PlayerOut>;
 }) {
   const id = "policy-select";
-  const options = policies.some((q) => q.name === policy)
+  const options: PolicyInfo[] = policies.some((q) => q.name === policy)
     ? policies
-    : [...policies, { name: policy, description: "", assumptions: [], validated: false, validation_ref: null }];
-  const experimental = isExperimental(info);
+    : [...policies, { name: policy, description: "", assumptions: [], validated: false, validation_ref: null, status: null }];
+  const badge = policyBadge(info);
+  const fit = policy !== STATIC_POLICY ? policyFitRange(info) : null;
   return (
     <div className="policy-picker" data-testid="policy-picker">
       <div className="policy-picker-row">
@@ -142,34 +156,56 @@ function PolicyPicker({
           data-testid="policy-select"
           aria-describedby={`${id}-desc`}
         >
-          {options.map((q) => (
-            <option key={q.name} value={q.name}>
-              {policyLabel(q.name)}
-              {isExperimental(q) ? " (experimental)" : ""}
-            </option>
-          ))}
+          {options.map((q) => {
+            const b = policyBadge(q);
+            return (
+              <option key={q.name} value={q.name} data-badge={b ?? ""}>
+                {policyLabel(q.name)}
+                {b ? ` (${b})` : ""}
+              </option>
+            );
+          })}
         </select>
-        {experimental ? (
-          <span
-            className="badge badge--experimental"
-            data-testid="policy-experimental"
-            title="Not validated against how defenders actually moved in the tracking data"
-          >
-            experimental
-          </span>
+        <PolicyBadge info={info} testId="policy-badge" />
+      </div>
+      <div id={`${id}-desc`} className="small muted policy-note" data-testid="policy-description">
+        <p>
+          {info?.description ||
+            (policy === STATIC_POLICY ? "Only the players you move change position." : "No description available.")}
+        </p>
+        {badge ? (
+          <p data-testid="policy-verdict-note">
+            <strong>{badge}:</strong> {POLICY_BADGE_TEXT[badge]}
+            {info?.status ? (
+              <>
+                {" "}
+                <span data-testid="policy-status">Backend verdict: {info.status}.</span>
+              </>
+            ) : null}
+            {info?.validation_ref ? <> Evidence: {info.validation_ref}.</> : null}
+          </p>
+        ) : null}
+        {fit ? (
+          <p className="policy-fit" data-testid="policy-fit-range">
+            <strong>Fitted range:</strong> {fit.sharePct}% of the real unexpected attacker movement it was fitted on is
+            under about {fit.limitM} m in {fit.horizonS} s. Edits larger than about {fit.limitM} m go beyond that, so its
+            response to them is an extrapolation.
+            {beyondFit.length > 0 ? (
+              <span data-testid="policy-fit-exceeded">
+                {" "}
+                This edit moves{" "}
+                {beyondFit.map((f, i) => (
+                  <span key={f.player_id}>
+                    {i > 0 ? ", " : ""}
+                    {playerLabel(f.player_id, players)} {fmtMetres(f.displacement_m)}
+                  </span>
+                ))}
+                .
+              </span>
+            ) : null}
+          </p>
         ) : null}
       </div>
-      <p id={`${id}-desc`} className="small muted" data-testid="policy-description">
-        {info?.description ||
-          (policy === STATIC_POLICY ? "Only the players you move change position." : "No description available.")}
-        {policy !== STATIC_POLICY ? (
-          experimental ? (
-            <> Not validated against observed defender movement: treat its moves as one possible reaction.</>
-          ) : info?.validation_ref ? (
-            <> Validated: {info.validation_ref}.</>
-          ) : null
-        ) : null}
-      </p>
     </div>
   );
 }
@@ -187,6 +223,12 @@ export function ScenarioPanel(p: Props) {
   // Policy-specific statements only once the result for the current choice has arrived.
   const fresh = p.status === "success";
   const simulated = fresh ? (scenario?.movements.filter((m) => m.provenance === "simulated") ?? []) : [];
+  const fit = p.policy !== STATIC_POLICY ? policyFitRange(policyInfo) : null;
+  const beyondFit =
+    fresh && fit && scenario
+      ? // compared at the precision shown (0.1 m), so "2.5 m" is never listed as beyond "about 2.5 m"
+        scenario.feasibility.filter((f) => f.kind !== "simulated" && Math.round(f.displacement_m * 10) / 10 > fit.limitM)
+      : [];
 
   return (
     <section className="card card--scenario" aria-labelledby="sc-title" data-testid="scenario-panel" data-status={p.status}>
@@ -200,8 +242,9 @@ export function ScenarioPanel(p: Props) {
       {p.interventions.length === 0 ? (
         <div className="howto">
           <p>
-            <strong>Drag any player</strong> to a new position. While you drag, the dashed circle shows where that player
-            could have reached at up to 7 m/s from their observed position 1.5 s earlier.
+            <strong>Drag any player</strong> to a new position. While you drag, the dashed circle shows the region the
+            backend marks as reachable for that player: a top-speed limit applied from their observed position a moment
+            earlier. Each moved player&apos;s reach radius is listed under Evidence &amp; assumptions.
           </p>
           <p className="small muted">
             Up to {MAX_INTERVENTIONS} players. The model is re-run on the edited frame and compared with the observed one.
@@ -212,7 +255,14 @@ export function ScenarioPanel(p: Props) {
         </div>
       ) : null}
 
-      <PolicyPicker policy={p.policy} policies={p.policies} info={policyInfo} onPolicy={p.onPolicy} />
+      <PolicyPicker
+        policy={p.policy}
+        policies={p.policies}
+        info={policyInfo}
+        onPolicy={p.onPolicy}
+        beyondFit={beyondFit}
+        players={players}
+      />
 
       <Segmented<ValueModel>
         label="Compare using"

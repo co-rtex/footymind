@@ -1,5 +1,11 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { dragPlayer, fetchAnalysis, openGoalPossession, pickDefender, waitForAnalysis } from "./helpers";
+
+/** Review screenshots of the defender-response picker, only when SHOT_POLICY_DIR is set. */
+async function shotPolicy(page: Page, name: string): Promise<void> {
+  const dir = process.env.SHOT_POLICY_DIR;
+  if (dir) await page.getByTestId("policy-picker").screenshot({ path: `${dir}/policy-picker-${name}.png` });
+}
 
 /**
  * Flagship flow against the real backend and real Metrica tracking data:
@@ -189,6 +195,32 @@ test("broadcast tracking: extrapolated SkillCorner positions are marked as estim
   expect(errors).toEqual([]);
 });
 
+test("a Metrica-only match list shows no broadcast featured card and requests nothing it lacks", async ({ page }) => {
+  // The real /api/matches, with every non-Metrica match removed (as on the README quick start).
+  await page.route("**/api/matches", async (route) => {
+    const res = await route.fetch();
+    const all = (await res.json()) as { match_id: string }[];
+    await route.fulfill({ response: res, json: all.filter((m) => m.match_id.startsWith("metrica-")) });
+  });
+  const failed: string[] = [];
+  page.on("response", (r) => {
+    if (r.url().includes("/api/") && r.status() >= 400) failed.push(`${r.status()} ${r.url()}`);
+  });
+  const asked: string[] = [];
+  page.on("request", (r) => {
+    if (r.url().includes("/api/")) asked.push(r.url());
+  });
+  await page.goto("/");
+  const section = page.getByTestId("featured-section");
+  await expect(section.getByTestId("featured-link")).toBeVisible();
+  await expect(section.getByTestId("featured-response-link")).toBeVisible();
+  await expect(page.getByTestId("featured-broadcast-link")).toHaveCount(0);
+  await expect(page.getByTestId("featured-missing")).toContainText("not loaded on this server");
+  await expect(section.getByTestId("featured-facts").first()).toBeVisible({ timeout: 30_000 });
+  expect(asked.filter((u) => u.includes("skillcorner"))).toEqual([]);
+  expect(failed).toEqual([]);
+});
+
 test("featured broadcast scenario opens with detected key players and a robust change", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("featured-broadcast-link").click();
@@ -231,23 +263,43 @@ test("keyboard edit with a defender response: selector, simulated moves and stat
   await expect(page.getByTestId("option-deltas")).toBeVisible();
   await expect(page.getByTestId("policy-static-hint")).toBeVisible();
 
-  // The selector lists at least the two policies every backend accepts, static first.
+  // The selector lists every policy the backend serves, static first, each option carrying the
+  // verdict badge its served status implies (the static baseline has none).
+  const served = (await (await page.request.get("/api/response-policies?match_id=metrica-sample-1")).json()) as {
+    name: string;
+    status: string;
+  }[];
   const select = page.getByTestId("policy-select");
-  const values = await select.locator("option").evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value));
-  expect(values[0]).toBe("none");
-  expect(values).toContain("marker_follows");
-  await expect(page.getByTestId("policy-experimental")).toHaveCount(0);
+  const options = await select
+    .locator("option")
+    .evaluateAll((os) => os.map((o) => ({ value: (o as HTMLOptionElement).value, text: o.textContent ?? "", badge: o.getAttribute("data-badge") })));
+  expect(options[0]).toMatchObject({ value: "none", badge: "" });
+  expect(options.map((o) => o.value).sort()).toEqual(served.map((p) => p.name).sort());
+  const badges = Object.fromEntries(options.map((o) => [o.value, o.badge]));
+  expect(badges).toEqual({
+    none: "",
+    marker_follows: "observational",
+    lane_cover: "observational",
+    learned_innovation: "observational",
+    learned: "forecaster",
+    press_carrier: "not supported",
+    zonal_shift: "not supported",
+  });
+  for (const o of options) if (o.badge) expect(o.text).toContain(`(${o.badge})`);
+  await expect(page.getByTestId("policy-badge")).toHaveCount(0);
 
-  // A response policy: provenance-labelled simulated moves (or an explicit "moved nobody"),
-  // the experimental badge unless the backend reports it validated, and the static comparison.
+  // A response policy: provenance-labelled simulated moves (or an explicit "moved nobody"), its
+  // verdict badge with the backend's own status text, and the static comparison.
   await select.selectOption("marker_follows");
   await expect(panel).toHaveAttribute("data-status", "success", { timeout: 30_000 });
   const comparison = page.getByTestId("policy-comparison");
   await expect(comparison).toBeVisible({ timeout: 30_000 });
-  const description = page.getByTestId("policy-description");
-  if (!/Validated:/.test((await description.textContent()) ?? "")) {
-    await expect(page.getByTestId("policy-experimental")).toBeVisible();
-  }
+  await expect(page.getByTestId("policy-badge")).toHaveText("observational");
+  await expect(page.getByTestId("policy-status")).toContainText(served.find((p) => p.name === "marker_follows")!.status);
+  await expect(page.getByTestId("policy-description")).toContainText("not a causal effect");
+  await expect(page.getByTestId("policy-description")).not.toContainText("Not validated against observed defender movement");
+  await expect(page.getByTestId("policy-fit-range")).toHaveCount(0);
+  await shotPolicy(page, "marker-follows");
   await expect(page.getByTestId("policy-verdict")).not.toBeEmpty();
   const sims = page.getByTestId("simulated-move");
   if ((await sims.count()) > 0) {
@@ -258,6 +310,18 @@ test("keyboard edit with a defender response: selector, simulated moves and stat
     await expect(page.getByTestId("no-simulated-moves")).toBeVisible();
   }
   await expect(page.getByTestId("evidence")).toContainText("not what would have happened in the match");
+
+  // A rule the observational check does not support, then the learned reaction with its fitted range.
+  await select.selectOption("zonal_shift");
+  await expect(panel).toHaveAttribute("data-status", "success", { timeout: 30_000 });
+  await expect(page.getByTestId("policy-badge")).toHaveText("not supported");
+  await shotPolicy(page, "zonal-shift");
+  await select.selectOption("learned_innovation");
+  await expect(panel).toHaveAttribute("data-status", "success", { timeout: 30_000 });
+  await expect(page.getByTestId("policy-badge")).toHaveText("observational");
+  await expect(page.getByTestId("policy-fit-range")).toContainText("under about 2.5 m in 1 s");
+  await expect(page.getByTestId("policy-fit-range")).toContainText("extrapolation");
+  await shotPolicy(page, "learned-innovation");
 
   // Back to static: the comparison goes away and the hint returns.
   await select.selectOption("none");

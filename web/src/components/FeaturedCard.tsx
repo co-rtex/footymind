@@ -3,7 +3,8 @@ import { featuredFacts, featuredHref, type FeaturedFacts, type FeaturedScenario,
 import { fmtMetres, fmtProb, fmtSigned } from "../lib/format";
 import { useAsync } from "../lib/hooks";
 import { featuredScenarios, featuredShadow } from "../lib/featuredLive";
-import { isExperimental, policyLabel } from "../lib/policies";
+import { policyLabel } from "../lib/policies";
+import { PolicyBadge } from "./PolicyBadge";
 import { hasTeamNames, matchTeams, matchTitle, teamName, type TeamNames } from "../lib/teams";
 import { ProvBadge } from "./ProvBadge";
 import { StatusBlock } from "./StatusBlock";
@@ -51,8 +52,8 @@ function ResponseCompare({
   const name = policyLabel(r.policy);
   const agree = agreementText(facts, r, name);
   const rows = [
-    { key: "static", label: "Defenders stand still", pass: facts.pass, experimental: false },
-    { key: "response", label: name, pass: r.pass, experimental: isExperimental(r.info) },
+    { key: "static", label: "Defenders stand still", pass: facts.pass, info: null },
+    { key: "response", label: name, pass: r.pass, info: r.info ?? { name: r.policy, validated: false, status: null } },
   ];
   return (
     <div className="fact" data-testid="featured-response">
@@ -71,10 +72,10 @@ function ResponseCompare({
               <tr key={row.key} data-testid={`featured-response-${row.key}`}>
                 <th scope="row">
                   {row.label}
-                  {row.experimental ? (
+                  {row.info ? (
                     <>
                       {" "}
-                      <span className="badge badge--experimental">experimental</span>
+                      <PolicyBadge info={row.info} testId="featured-policy-badge" />
                     </>
                   ) : null}
                 </th>

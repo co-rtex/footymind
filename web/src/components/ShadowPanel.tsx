@@ -1,6 +1,6 @@
 import type { DefensiveShadowOut, PlayerOut } from "../api/types";
 import { fmtSigned, playerLabel } from "../lib/format";
-import { rankShadow, SHADOW_CAVEAT, shadowStanding, suppressedReceiver } from "../lib/shadow";
+import { rankShadow, ringText, shadowCaveat, shadowStanding, suppressedReceiver } from "../lib/shadow";
 import { ProvBadge } from "./ProvBadge";
 import { StatusBlock } from "./StatusBlock";
 
@@ -41,11 +41,11 @@ export function ShadowPanel({ playing, status, shadow, unavailable, error, onRet
         <ProvBadge prov="estimated">experimental estimate</ProvBadge>
       </div>
       <p className="small shadow-caveat" data-testid="shadow-caveat">
-        {SHADOW_CAVEAT}
+        {shadowCaveat(shadow?.alt_radius_m)}
       </p>
 
       {playing ? (
-        <p className="muted small">Pause to compute the defensive shadow for a frame (about 0.4 s per frame).</p>
+        <p className="muted small">Pause to compute the defensive shadow for a frame (it takes under a second).</p>
       ) : status === "error" && error ? (
         <StatusBlock kind="error" title="Defensive shadow failed" error={error} onRetry={onRetry} compact />
       ) : unavailable ? (
@@ -53,7 +53,7 @@ export function ShadowPanel({ playing, status, shadow, unavailable, error, onRet
           Not available at this frame: {unavailable}.
         </p>
       ) : !shadow ? (
-        <StatusBlock kind="loading" title="Computing defensive shadow (about 0.4 s)" compact />
+        <StatusBlock kind="loading" title="Computing defensive shadow (under a second)" compact />
       ) : (
         <>
           <p className="muted small tabular">
@@ -73,13 +73,13 @@ export function ShadowPanel({ playing, status, shadow, unavailable, error, onRet
                   <li key={d.player_id} className={`shadow-row shadow-row--${standing}`} data-testid="shadow-row">
                     <span className="shadow-swatch" aria-hidden="true" />
                     <span className="shadow-who">{playerLabel(d.player_id, players)}</span>
-                    <span className="shadow-val tabular" title="shadow_sum: mean summed option value at alternative positions (3.5 m ring) minus observed (+ = this position suppresses more)">
+                    <span className="shadow-val tabular" title={`shadow_sum: mean summed option value at alternative positions (${ringText(d.alt_radius_m)}) minus observed (+ = this position suppresses more)`}>
                       {fmtSigned(d.shadow_sum)}
                     </span>
                     <span className="shadow-detail small">
                       {standing === "suppressive" ? (
                         rec ? (
-                          <span title="most_suppressed_delta: how much this receiver's option value would rise, on average, if the defender stood at its alternative positions (3.5 m ring)">
+                          <span title={`most_suppressed_delta: how much this receiver's option value would rise, on average, if the defender stood at its alternative positions (${ringText(d.alt_radius_m)})`}>
                             suppresses {playerLabel(rec, players)} most ({`+${d.most_suppressed_delta.toFixed(2)}`})
                           </span>
                         ) : (
@@ -95,8 +95,8 @@ export function ShadowPanel({ playing, status, shadow, unavailable, error, onRet
             </ol>
           )}
           <p className="small muted">
-            Value is shadow_sum: the summed option-model pass value at the defender&apos;s alternative positions (3.5 m ring)
-            minus the observed value. Positive means this position suppresses more.
+            Value is shadow_sum: the summed option-model pass value at the defender&apos;s alternative positions (
+            {ringText(shadow.alt_radius_m)}) minus the observed value. Positive means this position suppresses more.
           </p>
           <details className="model-note">
             <summary>Assumptions ({shadow.assumptions.length})</summary>

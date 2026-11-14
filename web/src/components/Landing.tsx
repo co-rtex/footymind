@@ -1,7 +1,7 @@
 import { useMemo, useState, type MouseEvent } from "react";
 import { api } from "../api/client";
 import type { MatchSummary, PossessionSummary, Team } from "../api/types";
-import { FEATURED, featuredHref } from "../lib/featured";
+import { availableFeatured, FEATURED, featuredHref } from "../lib/featured";
 import { fmtClock, matchClockSeconds, titleCase } from "../lib/format";
 import { hasTeamNames, matchFacts, matchTeams, matchTitle, teamName } from "../lib/teams";
 import { routeHash, useAsync } from "../lib/hooks";
@@ -44,10 +44,12 @@ const PILLARS: { title: string; text: string; prov: "estimated" | "derived" | "h
 ];
 
 export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Props) {
-  const tour = FEATURED[0]!;
   const summaries = useMemo(() => new Map(matches.map((m) => [m.match_id, m])), [matches]);
-  const tourTeams = matchTeams(summaries.get(tour.matchId) ?? null);
-  const steps = tour.steps(tourTeams);
+  // only situations whose match this server has (a Metrica-only setup has no broadcast match)
+  const featured = useMemo(() => availableFeatured(summaries.keys()), [summaries]);
+  const tour = featured.find((f) => f.id === FEATURED[0]!.id) ?? featured[0] ?? null;
+  const steps = tour ? tour.steps(matchTeams(summaries.get(tour.matchId) ?? null)) : null;
+  const nMissing = FEATURED.length - featured.length;
   return (
     <div className="landing">
       <section className="hero" aria-labelledby="hero-title">
@@ -64,9 +66,11 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
             observed.
           </p>
           {/* stacked layouts only: the tour card is further down there */}
-          <a className="btn btn--primary btn--lg hero-cta" href={featuredHref(tour, "tour")} data-testid="tour-link-hero">
-            Start the guided tour <span aria-hidden="true">→</span>
-          </a>
+          {tour ? (
+            <a className="btn btn--primary btn--lg hero-cta" href={featuredHref(tour, "tour")} data-testid="tour-link-hero">
+              Start the guided tour <span aria-hidden="true">→</span>
+            </a>
+          ) : null}
           <dl className="pillars" aria-label="What FootyMind shows">
             {PILLARS.map((p) => (
               <div key={p.title} className={`pillar pillar--${p.prov}`}>
@@ -79,70 +83,85 @@ export function Landing({ matches, match, onSelectMatch, onOpenPossession }: Pro
           </dl>
         </div>
 
-        <section className="tour-card" aria-labelledby="tour-title" data-testid="tour-card">
-          <p className="eyebrow">New here? Start with one real moment</p>
-          <h2 id="tour-title" className="h-section">
-            A three-step guided tour
-          </h2>
-          <p className="small muted">{tour.title}</p>
-          <ol className="tour-steps">
-            <li>
-              <span className="step-n" aria-hidden="true">
-                1
-              </span>
-              <span>
-                <strong>Watch</strong> {steps.watch}
-              </span>
-            </li>
-            <li>
-              <span className="step-n" aria-hidden="true">
-                2
-              </span>
-              <span>
-                <strong>Understand</strong> {steps.why}
-              </span>
-            </li>
-            <li>
-              <span className="step-n" aria-hidden="true">
-                3
-              </span>
-              <span>
-                <strong>Test a what-if</strong> {steps.move}
-              </span>
-            </li>
-          </ol>
-          <a className="btn btn--primary btn--lg" href={featuredHref(tour, "tour")} data-testid="tour-link">
-            Start the guided tour <span aria-hidden="true">→</span>
-          </a>
-          <a className="small tour-skip" href="#explore" onClick={skipToExplore}>
-            Or browse every match and possession
-          </a>
-        </section>
+        {tour && steps ? (
+          <section className="tour-card" aria-labelledby="tour-title" data-testid="tour-card">
+            <p className="eyebrow">New here? Start with one real moment</p>
+            <h2 id="tour-title" className="h-section">
+              A three-step guided tour
+            </h2>
+            <p className="small muted">{tour.title}</p>
+            <ol className="tour-steps">
+              <li>
+                <span className="step-n" aria-hidden="true">
+                  1
+                </span>
+                <span>
+                  <strong>Watch</strong> {steps.watch}
+                </span>
+              </li>
+              <li>
+                <span className="step-n" aria-hidden="true">
+                  2
+                </span>
+                <span>
+                  <strong>Understand</strong> {steps.why}
+                </span>
+              </li>
+              <li>
+                <span className="step-n" aria-hidden="true">
+                  3
+                </span>
+                <span>
+                  <strong>Test a what-if</strong> {steps.move}
+                </span>
+              </li>
+            </ol>
+            <a className="btn btn--primary btn--lg" href={featuredHref(tour, "tour")} data-testid="tour-link">
+              Start the guided tour <span aria-hidden="true">→</span>
+            </a>
+            <a className="small tour-skip" href="#explore" onClick={skipToExplore}>
+              Or browse every match and possession
+            </a>
+          </section>
+        ) : null}
       </section>
 
-      <section className="section" aria-labelledby="featured-title">
-        <div className="section-head">
-          <h2 id="featured-title" className="h-section">
-            Featured situations
-          </h2>
-          <p className="small muted">
-            Three real passes, each picked by a documented search: two for robust model changes, one for a change that
-            depends on how the defenders are assumed to respond. The numbers are
-            computed live from the tracking data when this page loads. Each what-if is a model-based comparison, not a
-            claim about what would have happened in the match.
-          </p>
-        </div>
-        <div className="feature-grid">
-          {FEATURED.map((f) => (
-            <FeaturedCard
-              key={f.id}
-              f={f}
-              match={summaries.get(f.matchId) ?? null}
-              testId={f.id === "press" ? "featured-link" : `featured-${f.id}-link`}
-            />
-          ))}
-        </div>
-      </section>
+      {featured.length > 0 ? (
+        <section className="section" aria-labelledby="featured-title" data-testid="featured-section">
+          <div className="section-head">
+            <h2 id="featured-title" className="h-section">
+              Featured situations
+            </h2>
+            <p className="small muted">
+              {nMissing === 0
+                ? "Three real passes, each picked by a documented search: two for robust model changes, one for a change that depends on how the defenders are assumed to respond."
+                : "Real passes, each picked by a documented search."}{" "}
+              The numbers are computed live from the tracking data when this page loads. Each what-if is a model-based
+              comparison, not a claim about what would have happened in the match.
+            </p>
+            {nMissing > 0 ? (
+              <p className="small muted" data-testid="featured-missing">
+                {nMissing === 1 ? "One more featured situation needs" : `${nMissing} more featured situations need`} data
+                that is not loaded on this server (
+                {FEATURED.filter((f) => !featured.includes(f))
+                  .map((f) => f.source)
+                  .join("; ")}
+                ).
+              </p>
+            ) : null}
+          </div>
+          <div className="feature-grid">
+            {featured.map((f) => (
+              <FeaturedCard
+                key={f.id}
+                f={f}
+                match={summaries.get(f.matchId) ?? null}
+                testId={f.id === "press" ? "featured-link" : `featured-${f.id}-link`}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="section" aria-labelledby="labels-title">
         <div className="section-head">

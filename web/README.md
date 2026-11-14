@@ -30,9 +30,13 @@ uv run footymind serve                                  # API on :8000
 
 # 2. frontend dev server (proxies /api to :8000)
 cd web
-npm install
+npm ci                 # exact versions from package-lock.json
 npm run dev            # http://localhost:5173
 ```
+
+With only the Metrica matches ingested (as above, and the Docker default), the
+landing page shows the featured situations whose match is in `GET /api/matches`
+and notes that the broadcast example needs SkillCorner data.
 
 Production: `npm run build` writes `web/dist`, which FastAPI mounts at `/` when it
 exists, so `http://127.0.0.1:8000/` serves the app and API from one origin.
@@ -55,6 +59,19 @@ and the Vite server unless they are already running, so export
 production build served by FastAPI instead. With a preinstalled Chromium the
 config falls back to `/opt/pw-browsers/chromium`, or you can set `PW_CHROMIUM`.
 
+**Data the e2e suite needs.** The Metrica matches above, plus SkillCorner bundles
+for the broadcast tests (the broadcast featured card, estimated off-camera
+positions, team names and the screenshots use `skillcorner-1899585` and other
+SkillCorner matches). On a Metrica-only setup those tests fail: first run
+`uv run footymind download` and `uv run footymind ingest` with no ids (every
+registered match, about 2 GB) and `uv run footymind build-similarity-index`. `npx playwright install` is not needed where a
+Chromium is preinstalled.
+
+`src/test/api/` holds the key names of real API responses and the real
+`GET /api/response-policies` payload (no tracking data), which the contract test
+compares with `types.ts`. Refresh them after a schema change with
+`FOOTYMIND_API=http://127.0.0.1:8000 node scripts/capture-api-samples.mjs`.
+
 ## Using the lab
 
 0. **New here?** Start the guided tour from the landing page. It opens a featured
@@ -75,9 +92,16 @@ config falls back to `/opt/pw-browsers/chromium`, or you can set `PW_CHROMIUM`.
    column. Jump links at the top of the analysis column reach "Why this moment",
    pass options, similar moments, events and the labels key.
 4. **Edit scenario**: drag up to four players. While you drag, the dashed circle
-   shows where the player could have reached (7 m/s from the observed position
-   1.5 s earlier). On drop, the backend re-runs the model. You can choose the
-   defender response, compare by the option model or the physics heuristic, switch
+   shows the reachable region the API computes for that player (its radius,
+   `reach_radius_m`, is a top-speed limit from the observed position shortly
+   before; the evidence list repeats each moved player's radius). On drop, the
+   backend re-runs the model. You can choose the defender response, each labelled
+   with its verdict from the API's `status`: *observational* (consistent with real
+   defender reactions in an observational check; not causal), *forecaster*
+   (validated as a forecast of real play, not of reactions), *not supported* (the
+   check does not support the rule) or *experimental* (no verdict). The learned
+   reaction also warns when an edit exceeds the attacker movement it was fitted
+   on. You can compare by the option model or the physics heuristic, switch
    between observed, hypothetical and difference views, and read the deltas with
    their 10–90% ensemble ranges, sign agreement and the evidence and assumptions.
    The response models react to a moved attacker or ball carrier; when only

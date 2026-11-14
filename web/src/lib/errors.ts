@@ -16,6 +16,14 @@ export interface ErrorView {
 export function describeError(e: Error, subject = "this item"): ErrorView {
   const technical = e.message;
   if (e instanceof ApiError) {
+    if (e.timedOut) {
+      return {
+        message: "The FootyMind server did not answer in time (timed out). It may be busy or stuck; try again.",
+        technical,
+        retryable: true,
+        notFound: false,
+      };
+    }
     if (e.unreachable || e.status === 0) {
       return {
         message: "The FootyMind server is not responding. Check that it is running, then try again.",

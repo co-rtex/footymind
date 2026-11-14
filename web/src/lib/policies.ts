@@ -23,6 +23,7 @@ export const FALLBACK_POLICIES: PolicyInfo[] = [
     assumptions: ["Unmoved players keep their observed positions and velocities."],
     validated: false,
     validation_ref: null,
+    status: null,
   },
   {
     name: "marker_follows",
@@ -31,6 +32,7 @@ export const FALLBACK_POLICIES: PolicyInfo[] = [
     assumptions: ["A simple hand-written rule, not fitted to how defenders actually move."],
     validated: false,
     validation_ref: null,
+    status: null,
   },
 ];
 
@@ -55,6 +57,71 @@ export function policyLabel(name: string): string {
 /** A behaviour model that has not been validated against observed defender movement. The static baseline is not a behaviour model. */
 export function isExperimental(p: Pick<PolicyInfo, "name" | "validated"> | null | undefined): boolean {
   return !!p && p.name !== STATIC_POLICY && !p.validated;
+}
+
+/**
+ * One badge vocabulary for every policy verdict, derived from the backend's `status` text and
+ * `validated` flag (never from the policy name):
+ * - "observational": consistent with how real defenders reacted in an observational check (or a
+ *   validated forecast of reactions given attackers' real movement). An association, not causal.
+ * - "forecaster": validated as a short-horizon forecast of real play, not as a response model.
+ * - "not supported": the observational check does not support the rule.
+ * - "experimental": no recognised verdict (also the fallback for older backends without `status`).
+ * The static baseline ("no response") gets no badge.
+ */
+export type PolicyBadgeKind = "observational" | "forecaster" | "not supported" | "experimental";
+
+const NEGATIVE = /\bnot supported\b|\bunsupported\b|\bovershoot|\bundershoot|\bnot consistent\b|\binconsistent\b|\bfails?\b/;
+
+export function policyBadge(
+  p: Pick<PolicyInfo, "name" | "validated" | "status"> | null | undefined,
+): PolicyBadgeKind | null {
+  if (!p) return null;
+  const s = (p.status ?? "").trim().toLowerCase();
+  if (/^no response\b/.test(s)) return null;
+  // older backends send no status: only the static baseline is recognisable without one
+  if (!s) return p.name === STATIC_POLICY ? null : "experimental";
+  if (NEGATIVE.test(s)) return "not supported";
+  if (p.validated && /^validated\b/.test(s)) return /\bobservational\b/.test(s) ? "observational" : "forecaster";
+  if (/\bconsistent with\b/.test(s) && /\bobservational\b/.test(s)) return "observational";
+  return "experimental";
+}
+
+/** What each badge means, for its tooltip and accessible description. */
+export const POLICY_BADGE_TEXT: Record<PolicyBadgeKind, string> = {
+  observational:
+    "Consistent with how real defenders reacted in an observational check of the tracking data. An association, not a causal effect, and not a test of reactions to hypothetical edits.",
+  forecaster:
+    "Validated as a short-horizon forecast of real play, not as a model of reactions to an edit: its responses are very small.",
+  "not supported":
+    "The observational check of the tracking data does not support this rule: treat its moves as an illustration of the assumption.",
+  experimental:
+    "No verdict from an observational check of real defender movement: treat its moves as one possible reaction.",
+};
+
+/**
+ * The largest relocation a linear, data-fitted response was fitted to cover, read from the
+ * policy's own assumptions (for example "99% of attacker innovations are below about 2.5 m in
+ * 1 s"). Null when the policy states no such limit.
+ */
+export interface FitRange {
+  /** the stated share of real movement below the limit, e.g. 99 */
+  sharePct: number;
+  limitM: number;
+  horizonS: number;
+}
+
+const FIT_RANGE = /(\d+(?:\.\d+)?)\s*%[^.;]*?\bbelow about (\d+(?:\.\d+)?)\s*m in (\d+(?:\.\d+)?)\s*s\b/i;
+
+export function policyFitRange(p: Pick<PolicyInfo, "assumptions"> | null | undefined): FitRange | null {
+  for (const a of p?.assumptions ?? []) {
+    if (!/extrapolat/i.test(a)) continue;
+    const m = FIT_RANGE.exec(a);
+    if (!m) continue;
+    const [sharePct, limitM, horizonS] = [Number(m[1]), Number(m[2]), Number(m[3])];
+    if ([sharePct, limitM, horizonS].every((v) => Number.isFinite(v) && v > 0)) return { sharePct, limitM, horizonS };
+  }
+  return null;
 }
 
 /** Keep the static baseline first, then the backend's order. */
