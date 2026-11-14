@@ -209,11 +209,11 @@ product shows this validated estimate, separately from the short list of example
   better than constant velocity on both providers (C40, C42). Under hypothetical interventions
   it is nearly inert, moving defenders by centimetres (C44). It is a good forecaster but not an
   intervention model.
-* Four interpretable rules were tested observationally (C37), by treating the attackers'
+* Four interpretable rules were tested observationally (C37; under envelope v2, C64), by treating the attackers'
   *unexpected* real movement (beyond their own constant velocity) as the intervention:
   * `marker_follows` and `lane_cover` reduce forecast error on both providers. The fitted size
     slope is about 1, and the gain is several times larger than a permuted placebo's.
-  * `press_carrier` passes only on Metrica.
+  * `press_carrier` passed only on Metrica under the v1 envelope, and passes nowhere under v2 (C64).
   * `zonal_shift` overshoots: real blocks shift 0.13–0.22 of its move.
   * A first version of this check concluded that every rule was wrong. That was a
     double-counting artefact, corrected after review.
@@ -223,7 +223,17 @@ to an intervention that never happened.
 
 **Physical constraints.** The a-priori kinematic envelope (0.25 s reaction delay, 3.5 m/s²,
 7.5 m/s) contains only 73% (Metrica) and 61% (SkillCorner) of real 1 s defender positions
-(C41, C43). The reaction-delay assumption is the main cause. Session 4 re-examines it in §5.8.
+(C41, C43). The reaction delay is the main cause (C57). A pre-registered envelope v2 drops the
+delay, uses direction-dependent acceleration limits, and adds lag and noise margins. It covers
+about 99.9% of real positions and still rejects 96–98% of 5 m shifts at 1 s (C55, C56). At
+the 1.5 s scenario default, most 5 m shifts are physically reachable under any bound.
+
+**Learning responses.** The learned position model is inert because positions barely predict
+defenders' deviations from their own motion (C61). Reactions are visible only in co-movement.
+An innovation model that conditions on attackers' unexpected movement beats constant velocity
+and a placebo on both providers. It is served as `learned_innovation`, with the label
+"observational", not causal (C62). Under envelope v2, `marker_follows` and `lane_cover` still
+pass the rule check; `press_carrier` no longer does (C64).
 
 ### 5.6 RQ5: "invisible" player metrics
 
@@ -254,7 +264,9 @@ _See §5.8–5.9, filled in from session-4 results._
 | Run value (off-ball credit, defenders fixed) | at chance as a receiver ranking on both providers | C22, C25 |
 | Off-ball interaction | mostly model non-additivity (placebo) | C31, C32 |
 | Learned response model as an intervention model | inert under edits | C44 |
-| `zonal_shift` response rule | overshoots real block movement | C37 |
+| `zonal_shift` response rule | overshoots real block movement | C37, C64 |
+| `press_carrier` response rule | not supported under envelope v2 | C64 |
+| Kinematic envelope v1 | missed 27–39% of real 1 s positions (reaction delay) | C41, C43, C57 |
 | Interaction features (GBM) | no gain on 3 matches; −0.004 on 20 | C12, C28 |
 | Time-on-ball | small; not robust on Metrica | C34, C35 |
 

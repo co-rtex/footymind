@@ -931,6 +931,37 @@ real markers do in the observational check (C37), the modelled gain disappears. 
 model-based illustration of response-dependence, not evidence about this match (C39).
 `tests/test_featured_response_example.py` guards the direction of both changes.
 
+## Session 4: physical constraints and learnable responses (full write-up: [`research/simulation_session4.md`](research/simulation_session4.md))
+
+* **Kinematic envelope v2 (C55–C58).** The a-priori v1 envelope missed 27–39% of real 1 s
+  defender positions. Ablations show why. The 0.25 s reaction delay is the main cause, because
+  players are already moving and reacting. The second cause is the 3.5 m/s² bound, which was a
+  high-intensity threshold rather than a maximum. v2 was pre-registered before its coverage was
+  evaluated. It drops the delay, uses a direction-dependent force–velocity acceleration limit
+  (braking and turning up to 7 m/s², speeding up 7(1 − v/9) m/s², at most 9 m/s), and adds
+  velocity-lag and per-provider measurement-noise margins estimated from stationary players.
+  It covers about 99.9% of real positions on both providers. It still rejects 96–98% of real
+  positions shifted by 5 m at 1.0 s, and 99% of positions swapped between defenders. At the
+  1.5 s scenario default, every physical bound accepts most 5 m shifts. v2 now limits the
+  response policies. The `supported` flag still uses the documented 7 m/s disc (a one-line
+  switch, deliberately not taken, because the lab draws the disc).
+* **Why the learned response model is inert (C61).** Defenders' positions relative to the ball
+  and attackers barely predict how they will deviate from their own motion. Constant velocity
+  explains R² 0.87 / 0.82 of 1 s displacement, and the v1 inputs explain only 12–23% of the
+  remainder. A model of positions therefore learns damped constant velocity, and moving a player
+  changes almost nothing. The intervened inputs are not out of distribution. The data simply do
+  not identify reactions from a single instant.
+* **What can be learned (C62, C63).** Reactions show up in *co-movement*. A ridge model that
+  forecasts defenders' deviation from their own motion from the attackers' unexpected movement
+  beats constant velocity and a permuted placebo on both providers (20/20 SkillCorner matches).
+  It is served as `learned_innovation` and labelled observational. It moves defenders by about
+  1.3–1.5 m under a 5 m edit. That is a two-way association, not a causal response, and it is
+  applied to edits larger than most real innovations.
+* **Rule policies under envelope v2 (C64, revising C37).** `marker_follows` and `lane_cover`
+  still pass the innovation-design check on both providers (`lane_cover` against a near-zero
+  placebo on Metrica). `press_carrier` no longer passes, and `zonal_shift` still overshoots.
+  The served statuses say this per policy.
+
 ## Prior art and references
 * Spearman, W., Basye, A., Dick, G., Hotovy, R., Pop, P. (2017). *Physics-Based Modeling of Pass Probabilities in Soccer.* MIT Sloan Sports Analytics Conference.
 * Spearman, W. (2018). *Beyond Expected Goals.* MIT Sloan SAC. (Pitch control; off-ball scoring opportunity.)

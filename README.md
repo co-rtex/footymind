@@ -68,11 +68,12 @@ Metrica (3 matches, optical, 25 Hz) and SkillCorner (20 A-League matches, broadc
   average. The option model is so non-additive that per-pass credit for a run depends on
   which side is held fixed. A placebo shows this is mostly the model, with a small
   genuine attacker–defender coupling on both providers (C31, C32).
-* **Opponent responses.** A learned short-horizon model forecasts real defender movement better
-  than constant velocity (C40–C44) but is nearly inert under hypothetical edits. Of the
-  interpretable rules, `marker_follows` and `lane_cover` move defenders the way real defenders
-  react to unexpected attacker movement on both providers. `zonal_shift` overshoots (C37). All
-  rules stay experimental.
+* **Opponent responses.** A learned position model forecasts real defender movement better than
+  constant velocity but is inert under edits. Positions barely predict how defenders deviate
+  from their own motion (C61). A model of *co-movement* with attackers' unexpected movement
+  beats constant velocity and a placebo on both providers and is served as an observational
+  response (C62). Of the interpretable rules, `marker_follows` and `lane_cover` match real
+  reactions on both providers; `press_carrier` and `zonal_shift` do not (C64).
 * **Similar moments are informative.** The completion rate among the 50 most similar decisions
   from other matches beats the base rate held-out on both providers (−0.057 / −0.051 log loss)
   and matches the logistic model on SkillCorner (C36).

@@ -34,14 +34,15 @@ families `A/B/C`, `Adt/Bdt`, and the temporal variants) are documented in
 | policy | what it does | evidence | served status |
 |---|---|---|---|
 | `none` | no response | — | no response simulated |
-| `marker_follows` | the nearest marker shifts with a moved attacker | passes the observational innovation check on both providers, β ≈ 1.07 / 1.30 (C37) | experimental |
-| `lane_cover` | the best-placed defender moves toward the new passing lane | passes on both providers, β ≈ 1.19 / 1.05 (C37) | experimental |
-| `press_carrier` | the nearest defender closes on a moved carrier | Metrica only, marginal (C37) | experimental |
-| `zonal_shift` | the block shifts with the ball | overshoots real movement, β 0.13–0.26 (C37) | experimental, illustration only |
-| `learned` | ridge forecast of short-horizon defender displacement | beats constant velocity at forecasting real play (C40, C42); nearly inert under edits (C44) | validated **as a forecaster only** |
+| `marker_follows` | the nearest marker shifts with a moved attacker | passes the observational innovation check on both providers, β ≈ 1.07 / 1.30 (C64) | experimental (consistent with real reactions) |
+| `lane_cover` | the best-placed defender moves toward the new passing lane | passes on both providers, β ≈ 0.77 / 0.80 (C64) | experimental (consistent with real reactions) |
+| `press_carrier` | the nearest defender closes on a moved carrier | not supported under envelope v2 (C64) | experimental |
+| `zonal_shift` | the block shifts with the ball | overshoots real movement, β 0.13–0.25 (C64) | experimental, illustration only |
+| `learned` | ridge forecast of short-horizon defender displacement | beats constant velocity at forecasting real play (C40, C42); nearly inert under edits (C44, C61) | validated **as a forecaster only** |
+| `learned_innovation` | ridge model of defenders' deviation from their own motion given attackers' unexpected movement | beats constant velocity and a permuted placebo on both providers (C62); moves defenders about 1.3–1.5 m under a 5 m edit (C63) | validated (observational association, not causal) |
 
-All moves are limited by a kinematic envelope (reaction delay, acceleration, top speed) and
-labelled **simulated**. No policy has been validated as a response to an intervention that
+All moves are limited by the kinematic envelope v2 (direction-dependent acceleration,
+9 m/s top speed, lag and noise margins; C55–C58) and labelled **simulated**. No policy has been validated as a response to an intervention that
 never happened. There is no ground truth for that, and the served assumptions say so.
 
 ## 4. Similar-moment retrieval
