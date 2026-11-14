@@ -10,6 +10,9 @@ counts of conditions that can bias analyses:
 * passes where the ball is already leaving the passer at the event's start frame (moving
   away faster than ``KICK_UNDERWAY_MPS`` between the previous frame and the start frame).
   Release-frame features then contain the start of the kick (independent review, 2026-11-14);
+* possessions whose end frame lies in a different tracking period than their start (event and
+  tracking period boundaries disagree), possessions longer than ``LONG_POSSESSION_S``
+  (unsplit stoppages), and possessions overlapping the next one (seconds);
 * SkillCorner only: the share of on-pitch positions that are detected (not extrapolated) at
   pass starts, overall and within 25 m of the ball (cross-provider distribution shift).
 
@@ -30,6 +33,7 @@ from footymind.paths import EXPERIMENTS_DIR
 
 NEAR_BALL_M = 25.0
 KICK_UNDERWAY_MPS = 3.0
+LONG_POSSESSION_S = 120.0
 
 
 def audit_match(mid: str) -> dict[str, Any]:
@@ -67,8 +71,25 @@ def audit_match(mid: str) -> dict[str, Any]:
                 near = on[i] & (np.linalg.norm(td.xy[i] - ball[None, :], axis=1) < NEAR_BALL_M)
                 if near.any():
                     det_near.append(float(td.detected[i][near].mean()))
+    poss = b.possessions.sort("start_frame")
+    cross = long_p = 0
+    for s0, e0 in poss.select("start_frame", "end_frame").iter_rows():
+        if (e0 - s0) / td.fps > LONG_POSSESSION_S:
+            long_p += 1
+        if s0 in frames and e0 in frames:
+            cross += int(
+                td.period[td.index_of_frame(int(s0))] != td.period[td.index_of_frame(int(e0))]
+            )
+    st, en = poss["start_frame"].to_numpy(), poss["end_frame"].to_numpy()
+    ov = (en[:-1] - st[1:]) / td.fps
+    ov = ov[ov > 0]
     return {
         "provider": mid.split("-")[0],
+        "n_possessions": poss.height,
+        "possessions_crossing_tracking_period": cross,
+        "possessions_longer_than_120s": long_p,
+        "possessions_overlapping_next": int(ov.size),
+        "possession_overlap_s_max": float(ov.max()) if ov.size else 0.0,
         "n_frames": td.n_frames,
         "n_events": ev.height,
         "n_passes": passes.height,
@@ -103,6 +124,10 @@ def main() -> dict[str, Any]:
             "pass_ends_in_other_period",
             "pass_kick_underway_at_start",
             "pass_kick_checked",
+            "n_possessions",
+            "possessions_crossing_tracking_period",
+            "possessions_longer_than_120s",
+            "possessions_overlapping_next",
         ):
             agg[k] = int(sum(r[k] for r in rows))
         agg["share_kick_underway_at_start"] = agg["pass_kick_underway_at_start"] / max(
