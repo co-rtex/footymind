@@ -219,6 +219,12 @@ class DatasetConfig:
     # Leakage guard (session 3): compute the temporal features this many seconds BEFORE the
     # release frame, so no frame near the kick can enter them. 0 = at the release frame.
     temporal_offset_s: float = 0.0
+    # Leakage guard for the *static* decision-time features (positions, pressure, structure):
+    # read the frame this many seconds before the release frame. On SkillCorner (10 fps) the
+    # ball is often already leaving the foot at the event's start frame (independent review,
+    # 2026-11-14), so release-frame positions can carry the start of the kick. Release and
+    # label features are unaffected.
+    static_offset_s: float = 0.0
     ray_length_m: float = 40.0
 
 
@@ -345,7 +351,10 @@ def _features_for(
     if cfg.rules == "v2" and speed > cfg.max_release_speed:
         return None
 
-    s = frame_state(mid, f0)
+    i_s = i0 - round(cfg.static_offset_s * td.fps)
+    if i_s < 0 or td.period[i_s] != td.period[i0]:
+        return None
+    s = frame_state(mid, int(td.frame[i_s]))
     team = r["team"]
     sign = td.attack_sign(team, int(r["period"]))
     passer = td.player_index(r["from_player_id"])
@@ -424,7 +433,7 @@ def _features_for(
     else:
         row.update(temporal_context(td, i_t, team, passer, s.is_gk, lookbacks))
     # tracking-quality metadata for stratified analysis (never a feature)
-    row["history_detected_frac"] = history_detected_fraction(td, i0)
+    row["history_detected_frac"] = history_detected_fraction(td, max(i_t, 0))
 
     att = s.team_mask(team) & s.on_pitch()
     dfn = (~s.team_mask(team)) & s.on_pitch()

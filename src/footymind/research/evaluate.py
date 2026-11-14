@@ -168,6 +168,15 @@ def model_specs() -> dict[str, ModelSpec]:
             "decision-time spatial + 1.0 s movement history only (no timing/time-on-ball)",
         ),
     }
+    # Control (independent review, 2026-11-14): the temporal block partly re-introduces
+    # header / first-time information that the decision-time sets deliberately exclude.
+    # Adding the executed-action annotations to BOTH sides measures the gain beyond them.
+    hc = ["is_head", "is_cross"]
+    temporal["Bdt_tob_hc"] = (bdt + te + tob + hc, "Bdt_tob + header/cross annotations (control)")
+    temporal["Bdt_tt_hc"] = (
+        bdt + te + tob + TEMPORAL_TRACK_FEATURES + hc,
+        "Bdt_tt + header/cross annotations (control)",
+    )
     for n, (feats, desc) in temporal.items():
         specs.append(
             ModelSpec(f"{n}_logreg", "temporal", feats, lambda s: _logreg(), desc + ", LR")

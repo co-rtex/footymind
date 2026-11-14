@@ -1,6 +1,6 @@
 {
   "name": "temporal_skillcorner_v1",
-  "description": "Temporal context (session 3, pre-registered in docs/RESEARCH.md before running). Primary hypotheses: H-T1 time-on-ball/event timing improves the decision-time event baseline (Adt -> Adt_tob); H-T2 1.0 s movement history improves decision-time spatial context beyond static positions + time-on-ball (Bdt_tob -> Bdt_tt); H-T3 the decision-time spatial gain survives the stronger temporal event baseline (Adt_tob -> Bdt_tob). 0.5 s / 2.0 s lookbacks and Bdt_ttonly are sensitivity analyses. Same rules v2, LOMO, a-priori hyperparameters and possession-clustered paired bootstrap as pass_outcome_v3.",
+  "description": "Temporal context (session 3, pre-registered in docs/RESEARCH.md before running). Primary hypotheses: H-T1 time-on-ball/event timing improves the decision-time event baseline (Adt -> Adt_tob); H-T2 1.0 s movement history improves decision-time spatial context beyond static positions + time-on-ball (Bdt_tob -> Bdt_tt); H-T3 the decision-time spatial gain survives the stronger temporal event baseline (Adt_tob -> Bdt_tob). 0.5 s / 2.0 s lookbacks and Bdt_ttonly are sensitivity analyses. Same rules v2, LOMO, a-priori hyperparameters and possession-clustered paired bootstrap as pass_outcome_v3. Revised before any valid run after the independent review (2026-11-14): time-on-ball is censored (NaN) when an unobserved ball ends the run; a header/cross control comparison is added; strata are restart vs open play.",
   "matches": [
     "skillcorner-1874553",
     "skillcorner-1886347",
@@ -44,7 +44,9 @@
     "Adt_tob_gbm",
     "Bdt_gbm",
     "Bdt_tob_gbm",
-    "Bdt_tt_gbm"
+    "Bdt_tt_gbm",
+    "Bdt_tob_hc_logreg",
+    "Bdt_tt_hc_logreg"
   ],
   "comparisons": [
     [
@@ -94,6 +96,10 @@
     [
       "Adt_logreg",
       "Bdt_logreg"
+    ],
+    [
+      "Bdt_tob_hc_logreg",
+      "Bdt_tt_hc_logreg"
     ]
   ],
   "calibration": [

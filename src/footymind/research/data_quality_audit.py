@@ -7,6 +7,9 @@ counts of conditions that can bias analyses:
 * events whose start frame is missing from tracking;
 * passes with no ball position at the start frame, or with no passer position there;
 * passes whose end frame falls in a different period;
+* passes where the ball is already leaving the passer at the event's start frame (moving
+  away faster than ``KICK_UNDERWAY_MPS`` between the previous frame and the start frame).
+  Release-frame features then contain the start of the kick (independent review, 2026-11-14);
 * SkillCorner only: the share of on-pitch positions that are detected (not extrapolated) at
   pass starts, overall and within 25 m of the ball (cross-provider distribution shift).
 
@@ -26,6 +29,7 @@ from footymind.data.store import available_matches, git_revision, load_match
 from footymind.paths import EXPERIMENTS_DIR
 
 NEAR_BALL_M = 25.0
+KICK_UNDERWAY_MPS = 3.0
 
 
 def audit_match(mid: str) -> dict[str, Any]:
@@ -35,7 +39,7 @@ def audit_match(mid: str) -> dict[str, Any]:
     on = ~np.isnan(td.xy).any(axis=2)
     frames = set(td.frame.tolist())
     passes = ev.filter(pl.col("type") == "PASS")
-    ball_nan = passer_absent = cross_period = 0
+    ball_nan = passer_absent = cross_period = kick_underway = kick_checked = 0
     det_all: list[float] = []
     det_near: list[float] = []
     for s, e, pid in passes.select("start_frame", "end_frame", "from_player_id").iter_rows():
@@ -46,6 +50,15 @@ def audit_match(mid: str) -> dict[str, Any]:
         ball_nan += int(np.isnan(ball).any())
         if pid is not None and np.isnan(td.xy[i, td.player_index(pid)]).any():
             passer_absent += 1
+        elif pid is not None and i > 0 and td.period[i - 1] == td.period[i]:
+            pxy, prev = td.xy[i, td.player_index(pid)], td.ball_xy[i - 1]
+            if not (np.isnan(ball).any() or np.isnan(prev).any()):
+                away = ball - pxy
+                n = np.linalg.norm(away)
+                if n > 1e-6:
+                    kick_checked += 1
+                    v = (ball - prev) * td.fps
+                    kick_underway += int(float(v @ (away / n)) > KICK_UNDERWAY_MPS)
         if e is not None and e in frames and td.period[td.index_of_frame(int(e))] != td.period[i]:
             cross_period += 1
         if td.detected is not None and on[i].any():
@@ -66,6 +79,8 @@ def audit_match(mid: str) -> dict[str, Any]:
         "pass_ball_unobserved_at_start": ball_nan,
         "pass_passer_unobserved_at_start": passer_absent,
         "pass_ends_in_other_period": cross_period,
+        "pass_kick_underway_at_start": kick_underway,
+        "pass_kick_checked": kick_checked,
         "detected_share_at_pass_start": float(np.mean(det_all)) if det_all else None,
         "detected_share_near_ball_at_pass_start": float(np.mean(det_near)) if det_near else None,
     }
@@ -86,8 +101,13 @@ def main() -> dict[str, Any]:
             "pass_ball_unobserved_at_start",
             "pass_passer_unobserved_at_start",
             "pass_ends_in_other_period",
+            "pass_kick_underway_at_start",
+            "pass_kick_checked",
         ):
             agg[k] = int(sum(r[k] for r in rows))
+        agg["share_kick_underway_at_start"] = agg["pass_kick_underway_at_start"] / max(
+            agg["pass_kick_checked"], 1
+        )
         agg["frames_over_11"] = int(sum(sum(r["frames_over_11"].values()) for r in rows))
         for k in ("detected_share_at_pass_start", "detected_share_near_ball_at_pass_start"):
             vals = [r[k] for r in rows if r[k] is not None]

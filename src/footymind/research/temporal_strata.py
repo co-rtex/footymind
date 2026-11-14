@@ -9,7 +9,9 @@ Strata (pre-registered in docs/RESEARCH.md, RQ2):
 
 * ``tracking_quality``: share of detected positions in the 1 s window, split at the
   provider median. It is constant (1.0) for optical tracking, so it is skipped there.
-* ``release``: quick release (time-on-ball < 1 s) vs slower.
+* ``situation``: restart vs open play. This replaced a quick-vs-slower release split after
+  the independent review (2026-11-14): ``quick_release`` is itself a model feature, so gains
+  inside its strata are partly mechanical. ``is_restart`` is in every model.
 
 These are descriptive. Strata are not used to select models, and no stratum result is a
 headline claim on its own.
@@ -45,8 +47,8 @@ def strata_masks(df: pl.DataFrame) -> dict[str, pl.Series]:
         med = float(q.median())  # type: ignore[arg-type]
         out["tracking_quality=low"] = q <= med
         out["tracking_quality=high"] = q > med
-    out["release=quick"] = df["quick_release"] == 1
-    out["release=slower"] = df["quick_release"] == 0
+    out["situation=open_play"] = df["is_restart"] == 0
+    out["situation=restart"] = df["is_restart"] == 1
     return out
 
 
@@ -56,9 +58,9 @@ def main(name: str, n_boot: int = 1000, seed: int = 0) -> dict[str, Any]:
     cfg = json.loads((res_dir / "results.json").read_text())["config"]
     oof = pl.read_parquet(res_dir / "oof_predictions.parquet")
     ds = build(cfg["matches"], DatasetConfig(**cfg.get("dataset", {})))
-    meta = ds.select("match_id", "event_id", "history_detected_frac", "quick_release")
+    meta = ds.select("match_id", "event_id", "history_detected_frac", "is_restart")
     joined = oof.join(meta, on=["match_id", "event_id"], how="left")
-    if joined["quick_release"].null_count():
+    if joined["is_restart"].null_count():
         raise ValueError("could not recover stratum columns for every out-of-fold row")
     out: dict[str, Any] = {}
     for key, mask in strata_masks(joined).items():

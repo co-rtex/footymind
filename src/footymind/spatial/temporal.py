@@ -65,18 +65,25 @@ def control_duration_s(passer_xy: F, ball_xy: F, fps: float) -> float:
     """Time the ball has been within ``CONTROL_RADIUS_M`` of the passer.
 
     ``passer_xy`` and ``ball_xy`` are (T, 2) histories that END at the decision frame.
-    The count stops at the first frame (going back) that is out of reach or unobserved.
-    NaN if the passer or the ball is unobserved at the decision frame itself: time-on-ball
-    is then unknown, not zero.
+    The count stops at the first frame (going back) where the ball is out of reach. It is
+    NaN (unknown, never a fabricated number) if the passer or the ball is unobserved at the
+    decision frame itself, or if the run is cut short by an *unobserved* frame (censored:
+    for example the dead-ball spell before a restart, independent review 2026-11-14).
     """
     if np.isnan(passer_xy[-1]).any() or np.isnan(ball_xy[-1]).any():
         return np.nan
     d = np.linalg.norm(ball_xy - passer_xy, axis=1)
-    ok = np.isfinite(d) & (d <= CONTROL_RADIUS_M)
+    observed = np.isfinite(d)
+    ok = observed & (d <= CONTROL_RADIUS_M)
     if not ok[-1]:
         return 0.0
-    run = int(np.argmin(ok[::-1])) if not ok.all() else ok.size
-    return float(min(run / fps, MAX_CONTROL_S))
+    if ok.all():
+        return float(min(ok.size / fps, MAX_CONTROL_S))
+    run = int(np.argmin(ok[::-1]))
+    if run / fps >= MAX_CONTROL_S:
+        return MAX_CONTROL_S
+    stop = ok.size - 1 - run  # index of the frame that ended the run
+    return np.nan if not observed[stop] else float(run / fps)
 
 
 def _open_lanes(passer: F, mates: F, defenders: F) -> float:
@@ -153,7 +160,8 @@ def movement_features(
     mates[passer] = False
     defenders = ~att & ~np.isnan(xy_now).any(axis=1)
     lanes_now = _open_lanes(p_now, xy_now[mates], xy_now[defenders])
-    lanes_then = _open_lanes(p_then, xy_then[mates], xy_then[~att])
+    # defenders on the pitch now, at their earlier positions (not off-pitch attackers)
+    lanes_then = _open_lanes(p_then, xy_then[mates], xy_then[defenders])
     if np.isfinite(lanes_now) and np.isfinite(lanes_then):
         out["open_lanes_change" + sfx] = lanes_now - lanes_then
     return out
@@ -221,6 +229,8 @@ def history_detected_fraction(
         return 1.0
     k = round(lookback_s * td.fps)
     lo = max(0, i0 - k)
+    while td.period[lo] != td.period[i0]:  # never cross a period boundary
+        lo += 1
     on = ~np.isnan(td.xy[lo : i0 + 1]).any(axis=2)
     det = td.detected[lo : i0 + 1] & on
     return float(int(det.sum()) / max(int(on.sum()), 1))

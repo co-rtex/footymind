@@ -35,7 +35,9 @@ def test_control_duration_counts_back_and_stops() -> None:
     ball[-1] = [5.0, 0.0]  # out of reach at the decision frame
     assert control_duration_s(passer, ball, FPS) == 0.0
     ball[-1] = [0.5, 0.0]
-    ball[-5] = np.nan  # an unobserved ball breaks the run (lower bound)
+    ball[-5] = np.nan  # a run cut short by an unobserved ball is censored: unknown
+    assert np.isnan(control_duration_s(passer, ball, FPS))
+    ball[-5] = [9.0, 0.0]  # cut short by the ball being out of reach: a real value
     assert control_duration_s(passer, ball, FPS) == pytest.approx(4 / FPS)
     # unobserved passer or ball at the decision frame: unknown, never a fabricated 0
     gone = passer.copy()

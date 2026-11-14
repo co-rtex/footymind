@@ -622,6 +622,25 @@ A hypothesis counts as supported only if the CI excludes zero in the stated dire
 lookback is not chosen from these results. The primary model stays at 1.0 s whatever the
 sensitivity runs show.
 
+**Amendment (2026-11-14, after an independent methodology review and before any valid run;
+the first Metrica run is discarded).** The review found:
+
+1. **The kick is already underway on SkillCorner.** At 10 fps the event's start frame is often
+   after the ball has left the foot. In 31.9% of SkillCorner passes the ball is already moving
+   away from the passer at > 3 m/s, against 1.3% on Metrica (re-measured reproducibly in
+   `data_quality_v1`). Release-frame features, the static decision-time ones used for C28
+   included, can therefore carry the start of the kick. **For SkillCorner the primary analysis is
+   the guarded run** (`temporal_guard_skillcorner_v1_02s`), in which *every* decision-time
+   feature is computed 0.2 s before the start frame. The guard runs also re-test C20/C28
+   (`Adt → Bdt`).
+2. **Time-on-ball was not censored.** A run cut short by an unobserved ball was a fabricated
+   short value (97% of Metrica restarts became "quick releases"). It is now NaN.
+3. **Header and first-time information.** The temporal block partly re-introduces the
+   executed-action information that the decision-time sets exclude. A control comparison
+   with `is_head`/`is_cross` on both sides (`Bdt_tob_hc → Bdt_tt_hc`) is added.
+4. Release strata used a model feature (`quick_release`). The descriptive strata are now
+   restart vs open play.
+
 ## Prior art and references
 * Spearman, W., Basye, A., Dick, G., Hotovy, R., Pop, P. (2017). *Physics-Based Modeling of Pass Probabilities in Soccer.* MIT Sloan Sports Analytics Conference.
 * Spearman, W. (2018). *Beyond Expected Goals.* MIT Sloan SAC. (Pitch control; off-ball scoring opportunity.)
