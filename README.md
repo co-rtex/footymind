@@ -103,7 +103,10 @@ Metrica (3 matches, optical, 25 Hz) and SkillCorner (20 A-League matches, broadc
   raises the best progressive option and defensive movement takes about as much back, on
   average. The option model is so non-additive that per-pass credit for a run depends on
   which side is held fixed. A placebo shows this is mostly the model, with a small
-  genuine attacker–defender coupling on both providers (C31, C32).
+  genuine attacker–defender coupling on both providers (C31, C32). Putting back the defenders'
+  reactions to a run changes its average credit by at most 0.0003, even with a fitted response that
+  moves the whole block; what decides the credit is where defenders are assumed to have been
+  otherwise (C45–C49).
 * **Opponent responses.** A learned position model forecasts real defender movement better than
   constant velocity but is inert under edits. Positions barely predict how defenders deviate
   from their own motion (C61). A model of *co-movement* with attackers' unexpected movement

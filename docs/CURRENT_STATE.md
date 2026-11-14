@@ -92,8 +92,13 @@ indexes on start.
   size-matched rotation placebo on both providers (paired, possession-clustered,
   match-stratified). `press_carrier` and `zonal_shift` do not; the lab labels them
   "not supported".
-* **Off-ball value under reactive defenders (C45–C49).** See the ledger rows and
-  `docs/research/offball_opportunity.md`.
+* **Off-ball value under reactive defenders (C45–C49, re-run under envelope v2 at a3c88d2).**
+  Real runs beat randomly directed ones (+0.0042 Metrica, +0.0037 SkillCorner). Putting back
+  defenders' reactions changes the credit by at most 0.0003 on average (`lane_cover` non-zero
+  but negative); a fitted response moving 8–9 defenders changes nothing either (positive
+  control, post-review). The credit depends on the constant-velocity vs observed background,
+  and no adjusted variant beats static on the outcome checks. Not exposed in the product
+  (`docs/research/offball_opportunity.md`).
 * **Similar moments (C36)**, **Defensive Shadow (C17, C29)**, **movement decomposition
   (C31, C32)** as before.
 * Session 4 ran one independent engineering review and one independent methodology review;

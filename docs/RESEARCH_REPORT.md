@@ -21,7 +21,10 @@ smaller gain on both providers (−0.014 and −0.009). Several more ambitious i
 survive evaluation, and they are reported as negative results:
 * a literature physics model of pitch control is structurally miscalibrated;
 * a defender "shadow" metric is no better than the nearest defender;
-* a simple off-ball "run value" ranks receivers near chance, far below simple baselines.
+* a simple off-ball "run value" ranks receivers near chance, far below simple baselines;
+* crediting a run with the defenders' reaction to it changes its modelled value by almost
+  nothing, under every response the data support; the credit depends on the background
+  convention instead.
 
 The counterfactual simulator ("Possession Multiverse") is therefore presented as a
 model-based comparison with explicit, partly validated opponent-response assumptions, never
@@ -263,9 +266,41 @@ pass the rule check; `press_carrier` no longer does (C64).
   non-additivity, with a small genuine attacker–defender coupling on both providers. Per-pass credit for a run
   therefore depends on which side is held fixed, a convention rather than a fact.
 
-### 5.7 Session 4 additions
+### 5.7 Off-ball value under reactive defenders (priority A)
 
-_See §5.8–5.9, filled in from session-4 results._
+**Question.** If an attacker's run in the second before a pass dragged defenders with it, does
+crediting the run with that reaction change its value? The study (pre-registered in
+`docs/research/offball_opportunity.md` before any full run) places one attacker back where they
+were 1 s earlier, at the 0.2 s guard frame, and values the team's best progressive option under
+four defender assumptions:
+
+* static (defenders where they ended up);
+* constant velocity (where they would have been had nobody reacted to anything);
+* `marker_follows` and `lane_cover` responses to the attacker's *unexpected* movement, the
+  attribution the rule check supports (C70).
+
+**Findings.**
+
+* **Runs are purposeful in the model's eyes.** Real runs beat randomly directed ones of the
+  same size on both providers: +0.0042 Metrica, +0.0037 SkillCorner (match-level
+  [+0.0021, +0.0055]). The effect is tiny on average and zero for most attackers (C45).
+* **Defenders' reactions barely change the credit.**
+  * `marker_follows` changes it by at most 0.0002.
+  * Under envelope v2, `lane_cover` lowers it by 0.0003 / 0.0001. That is non-zero, but in the
+    opposite direction to the hypothesised "drag credit" (C46).
+  * A post-review positive control removes a fitted response that moves 8–9 defenders. It
+    changes nothing either (C47). The null is therefore not an artefact of single-defender rules.
+  * It is not a strict positive control: no condition shows the measure detecting a known large
+    effect.
+* **The convention is what matters.** The spread across assumptions is about 0.65 of the static
+  change, almost all from the constant-velocity background. The attacker ranking is not robust
+  to it (C48).
+* **No adjusted variant tracks outcomes better.** None identifies the receiver or tracks
+  possession progress better than static (C49).
+
+So FootyMind does not expose a response-adjusted off-ball value. The negative result is the
+finding: under the responses the data support, off-ball credit is decided by the background
+convention, not by defender reactions.
 
 ## 6. Negative and limiting results (summary)
 
@@ -275,6 +310,7 @@ _See §5.8–5.9, filled in from session-4 results._
 | Defensive Shadow | not better than nearest defender; at chance on broadcast data | C17, C29 |
 | Run value (off-ball credit, defenders fixed) | near chance as a receiver ranking, far below simple baselines | C22, C25 |
 | Off-ball interaction | mostly model non-additivity (placebo) | C31, C32 |
+| Response-adjusted off-ball credit | reactions change it by ≤ 0.0003 (a fitted whole-block response too); credit depends on the background convention; no better on outcome checks | C46–C49 |
 | Learned response model as an intervention model | inert under edits | C44 |
 | `zonal_shift` response rule | overshoots real block movement | C37, C64 |
 | `press_carrier` response rule | not supported under envelope v2 | C64 |
