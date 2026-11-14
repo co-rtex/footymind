@@ -36,6 +36,8 @@ physically reachable move is not a tactically plausible one.
    policies are always `validated = false` (experimental): nothing observable tests them.
 
 ## Consequences
+* Results (docs/RESEARCH.md, C40–C44): `learned` meets the rule on both providers, but
+  it is close to damped constant velocity and responds to interventions by centimetres.
 * The validation is observational. It tests forecasts of real play, never responses to
   hypothetical interventions, for which no ground truth exists. The API states this next to
   `validated`.

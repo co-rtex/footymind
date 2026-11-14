@@ -65,7 +65,8 @@ flowchart LR
 | `spatial.lanes` | lane geometry + heuristic interception | done, uncalibrated |
 | `spatial.option_features`, `spatial.option_model` | shared per-option features (incl. lead-pass targets); per-provider JSON option models with bootstrap members; never pooled | done (v2) |
 | `spatial.analysis` | frame analysis: control grid, pass options (physics + option model), pressure | done |
-| `counterfactual.scenario` | constrained interventions, final-state feasibility (user + simulated moves), response rule, uncertainty ensemble | done |
+| `counterfactual.scenario` | constrained interventions, final-state feasibility (user + simulated moves), response policy plumbing, uncertainty ensemble | done |
+| `counterfactual.kinematics` / `.response` / `.response_model` | reachability envelopes; defender response policies (rules + learned ridge, differential and envelope-clipped; ADR-0006); per-provider JSON coefficients | done (rules experimental; learned validated as a forecaster only) |
 | `ghost.defensive_shadow`, `ghost.run_value` | experimental model-based sensitivities (partly / negatively validated) | experimental |
 | `research.*` | pass-outcome dataset (rules v1/v2), decision-time and action-conditioned families, LOMO evaluation, physics calibration, shadow/run-value validation, figures, failure modes | done |
 | `api.app`, `api.schemas` | HTTP contract | done |
@@ -133,6 +134,7 @@ Contract: `src/footymind/api/schemas.py`. Interactive docs: `GET /docs` when ser
 | GET | `/api/possessions/{pid}/replay?pad_s&step` | replay for one possession |
 | GET | `/api/matches/{id}/frames/{frame}/analysis?grid` | pitch control, pass options, pressure |
 | POST | `/api/scenarios` | constrained intervention + comparison + sensitivity |
+| GET | `/api/response-policies?match_id=` | response policies with description, assumptions and provider-specific `validated` |
 
 Measured latency (local, 4 vCPU): replay of a 356-frame possession is 29 ms / 122 KB before
 gzip. Frame analysis takes about 70 ms warm and about 0.3 s cold, because the first call
