@@ -194,6 +194,14 @@ describe("featured situations", () => {
     expect(featuredById("nope")).toBeNull();
   });
 
+  it("never calls broadcast tracking fully observed", () => {
+    const t = { home: "Home", away: "Away" };
+    const broadcast = featuredById("broadcast")!;
+    const text = [broadcast.story(t), ...Object.values(broadcast.steps(t))].join(" ");
+    expect(text).not.toMatch(/(every|all)[^.]*observed/i);
+    expect(text).toMatch(/estimate/);
+  });
+
   it("builds tour and scenario links that round-trip through the router", () => {
     expect(parseRoute(featuredHref(PRESS, "tour"))).toEqual({
       name: "at",

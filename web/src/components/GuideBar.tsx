@@ -63,7 +63,7 @@ export function GuideBar({ featured, teams, step, playing, defender, moved, onSt
       <div className="guide-body" aria-live="polite">
         {step === 1 ? (
           <>
-            <p>{text.watch} Everything you see in the replay is observed tracking data.</p>
+            <p>{text.watch}</p>
             <div className="guide-actions">
               <button type="button" className="btn btn--primary btn--sm" onClick={onWatch} data-testid="guide-watch">
                 {playing ? "Playing…" : "Play the possession"}
