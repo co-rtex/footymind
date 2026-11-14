@@ -119,12 +119,15 @@ class Dataset:
     xy: F
     excluded: dict[str, int]
     n_frames: int
+    frame: npt.NDArray[np.int64] = field(default_factory=lambda: np.zeros(0, dtype=np.int64))
 
 
-def build_match(match_id: str, excluded: dict[str, int]) -> tuple[Rows, int, float]:
+def build_match(
+    match_id: str, excluded: dict[str, int], max_horizon_s: float = MAX_HORIZON_S
+) -> tuple[Rows, int, float]:
     b = load_match(match_id)
     td = b.tracking
-    k_max = horizon_frames(MAX_HORIZON_S, td.fps)
+    k_max = horizon_frames(max_horizon_s, td.fps)
     vel = causal_velocities(match_id).astype(np.float64)
     bvel = ball_velocities(match_id)
     gk = goalkeepers(match_id)
@@ -209,7 +212,7 @@ def build_match(match_id: str, excluded: dict[str, int]) -> tuple[Rows, int, flo
     return rows, n_frames, td.fps
 
 
-def build(match_ids: list[str]) -> Dataset:
+def build(match_ids: list[str], max_horizon_s: float = MAX_HORIZON_S) -> Dataset:
     providers = {m.split("-", 1)[0] for m in match_ids}
     if len(providers) != 1:
         raise ValueError(f"refusing to pool providers {sorted(providers)}")
@@ -218,14 +221,14 @@ def build(match_ids: list[str]) -> Dataset:
     fps_set = set()
     n_frames = 0
     for m in match_ids:
-        rows, nf, fps = build_match(m, excluded)
+        rows, nf, fps = build_match(m, excluded, max_horizon_s)
         parts.append(rows)
         fps_set.add(fps)
         n_frames += nf
     if len(fps_set) != 1:
         raise ValueError(f"mixed frame rates {fps_set}")
     fps = fps_set.pop()
-    k_max = horizon_frames(MAX_HORIZON_S, fps)
+    k_max = horizon_frames(max_horizon_s, fps)
 
     def cat(attr: str) -> list[Any]:
         return [x for r in parts for x in getattr(r, attr)]
@@ -242,6 +245,7 @@ def build(match_ids: list[str]) -> Dataset:
         xy=np.array(cat("xy")),
         excluded=excluded,
         n_frames=n_frames,
+        frame=np.array(cat("frame"), dtype=np.int64),
     )
 
 
