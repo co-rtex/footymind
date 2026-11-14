@@ -39,12 +39,29 @@ from footymind.research.response_validation import ball_velocities
 from footymind.spatial.state import frame_state
 
 HORIZON_S = 1.0
+GUARD_S = 0.2  # v2: evaluate from the guard frame (ADR-0007)
+# v2 intervention designs (added after an independent review, 2026-11-14):
+#   full        the attackers' full real displacement (the v1 design). The defenders'
+#               constant-velocity forecast already contains their co-movement, so this can
+#               double count.
+#   innovation  only the part of each attacker's displacement that their own constant
+#               velocity did not predict (real minus constant-velocity position).
+#   placebo     the innovations permuted among the moved attackers of the same frame. This
+#               keeps team-wide movement and breaks the attacker-defender pairing.
+DESIGNS = ("full", "innovation", "placebo")
 CARRIER_POLICIES = ("press_carrier", "zonal_shift")
 ATTACKER_POLICIES = ("lane_cover", "marker_follows")
 
 
-def _rows(provider: str, n_per_match: int, seed: int) -> list[dict[str, Any]]:
+def _rows(
+    provider: str,
+    n_per_match: int,
+    seed: int,
+    guard_s: float = 0.0,
+    designs: tuple[str, ...] = ("full",),
+) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
+    rng = np.random.default_rng(seed)
     for mid in [m for m in available_matches() if m.startswith(provider + "-")]:
         b = load_match(mid)
         td = b.tracking
@@ -53,54 +70,91 @@ def _rows(provider: str, n_per_match: int, seed: int) -> list[dict[str, Any]]:
         ev = label_events(_prev_event_features(b.events), DatasetConfig())
         ev = ev.sample(min(n_per_match, ev.height), seed=seed)
         for r in ev.iter_rows(named=True):
-            f = int(r["start_frame"])
-            i = td.index_of_frame(f)
-            if i + k >= td.n_frames or td.period[i + k] != td.period[i]:
+            i = td.index_of_frame(int(r["start_frame"])) - round(guard_s * td.fps)
+            if i < 0 or i + k >= td.n_frames or td.period[i + k] != td.period[i]:
                 continue
+            f = int(td.frame[i])
             obs = frame_state(mid, f)
             if obs.attacking_team is None or obs.carrier is None or np.isnan(obs.ball).any():
                 continue
             future = td.xy[i + k].astype(np.float64)
             det = td.detected[i + k] if td.detected is not None else None
+            det_now = td.detected[i] if td.detected is not None else None
             att = np.flatnonzero(obs.team_mask(obs.attacking_team) & obs.on_pitch())
             ctx = ResponseContext(pitch=td.pitch, horizon_s=HORIZON_S, ball_velocity=bv[i])
-            for policy in (*CARRIER_POLICIES, *ATTACKER_POLICIES):
-                movers = (
-                    [obs.carrier]
-                    if policy in CARRIER_POLICIES
-                    else [a for a in att if a != obs.carrier]
-                )
-                ivs = [
-                    Intervention(obs.player_ids[a], float(future[a, 0]), float(future[a, 1]))
-                    for a in movers
-                    if not np.isnan(future[a]).any()
-                ]
-                if not ivs:
-                    continue
-                hyp = obs.copy()
-                for iv in ivs:
-                    j = obs.index(iv.player_id)
-                    if j == obs.carrier:
-                        hyp.ball = hyp.ball + (np.array([iv.x, iv.y]) - obs.xy[j])
-                    hyp.xy[j] = (iv.x, iv.y)
-                moves, _ = apply_response(obs, hyp, ivs, policy, ctx)
-                for m in moves:
-                    j = obs.index(m.player_id)
-                    if np.isnan(future[j]).any() or (det is not None and not det[j]):
-                        continue
-                    v = np.nan_to_num(obs.vel[j])
-                    cv = obs.xy[j] + v * HORIZON_S
-                    delta = np.array(m.to_xy) - np.array(m.from_xy)
-                    out.append(
-                        {
-                            "match_id": mid,
-                            "possession_id": r["possession_id"],
-                            "policy": policy,
-                            "move_m": float(np.linalg.norm(delta)),
-                            "err_cv": float(np.linalg.norm(cv - future[j])),
-                            "err_policy": float(np.linalg.norm(cv + delta - future[j])),
-                        }
+            for design in designs:
+                for policy in (*CARRIER_POLICIES, *ATTACKER_POLICIES):
+                    movers = (
+                        [obs.carrier]
+                        if policy in CARRIER_POLICIES
+                        else [a for a in att if a != obs.carrier]
                     )
+                    movers = [int(a) for a in movers if not np.isnan(future[a]).any()]
+                    if not movers:
+                        continue
+                    disp = {}
+                    for a in movers:
+                        full = future[a] - obs.xy[a]
+                        cv_a = np.nan_to_num(obs.vel[a]) * HORIZON_S
+                        disp[a] = full if design == "full" else full - cv_a
+                    if design == "placebo":
+                        pool = [
+                            int(a) for a in att if a != obs.carrier and int(a) in disp
+                        ] or movers
+                        if len(movers) == 1:  # carrier policies: borrow another attacker's
+                            others = [
+                                a for a in att if a != obs.carrier and not np.isnan(future[a]).any()
+                            ]
+                            if not others:
+                                continue
+                            donor = int(rng.choice(others))
+                            vb = np.nan_to_num(obs.vel[donor]) * HORIZON_S
+                            disp = {movers[0]: future[donor] - obs.xy[donor] - vb}
+                        else:
+                            perm = rng.permutation(len(pool))
+                            disp = {a: disp[pool[perm[n]]] for n, a in enumerate(pool)}
+                    ivs = [
+                        Intervention(
+                            obs.player_ids[a],
+                            float(obs.xy[a, 0] + disp[a][0]),
+                            float(obs.xy[a, 1] + disp[a][1]),
+                        )
+                        for a in movers
+                        if a in disp
+                    ]
+                    if not ivs:
+                        continue
+                    hyp = obs.copy()
+                    for iv in ivs:
+                        j = obs.index(iv.player_id)
+                        if j == obs.carrier:
+                            hyp.ball = hyp.ball + (np.array([iv.x, iv.y]) - obs.xy[j])
+                        hyp.xy[j] = (iv.x, iv.y)
+                    moves, _ = apply_response(obs, hyp, ivs, policy, ctx)
+                    for m in moves:
+                        j = obs.index(m.player_id)
+                        if np.isnan(future[j]).any():
+                            continue
+                        if det is not None and det_now is not None and not (det[j] and det_now[j]):
+                            continue
+                        v = np.nan_to_num(obs.vel[j])
+                        cv = obs.xy[j] + v * HORIZON_S
+                        delta = np.array(m.to_xy) - np.array(m.from_xy)
+                        resid = future[j] - cv
+                        out.append(
+                            {
+                                "match_id": mid,
+                                "possession_id": r["possession_id"],
+                                "design": design,
+                                "policy": policy,
+                                "move_m": float(np.linalg.norm(delta)),
+                                "err_cv": float(np.linalg.norm(resid)),
+                                "err_policy": float(np.linalg.norm(cv + delta - future[j])),
+                                # projection of the real residual on the simulated move
+                                "proj": float(resid @ delta),
+                                "move_sq": float(delta @ delta),
+                            }
+                        )
     return out
 
 
@@ -123,25 +177,42 @@ def _summary(df: pl.DataFrame, n_boot: int, seed: int) -> dict[str, Any]:
         "delta_m": float(d.mean()),
         "ci95": ci,
         "observationally_supported": bool(ci[1] < 0),
+        # least-squares slope of the real residual on the simulated move (1 = right size)
+        "beta": float(df["proj"].sum()) / max(float(df["move_sq"].sum()), 1e-12)
+        if "proj" in df.columns
+        else None,
     }
 
 
 def main(
-    provider: str = "metrica", n_per_match: int = 150, seed: int = 0, n_boot: int = 1000
+    provider: str = "metrica",
+    n_per_match: int = 150,
+    seed: int = 0,
+    n_boot: int = 1000,
+    version: int = 2,
 ) -> dict[str, Any]:
+    """v1: full design at the release frame (the original check). v2: all designs at the guard."""
     t0 = time.time()
-    df = pl.DataFrame(_rows(provider, n_per_match, seed))
+    guard, designs = (0.0, ("full",)) if version == 1 else (GUARD_S, DESIGNS)
+    df = pl.DataFrame(_rows(provider, n_per_match, seed, guard, designs))
+    by_design: dict[str, Any] = {}
+    for d in designs:
+        sub = df.filter(pl.col("design") == d)
+        by_design[d] = {
+            p: _summary(sub.filter(pl.col("policy") == p), n_boot, seed)
+            for p in (*CARRIER_POLICIES, *ATTACKER_POLICIES)
+            if (sub["policy"] == p).sum() > 20
+        }
     res: dict[str, Any] = {
-        "name": "rule_response_check_v1" + ("" if provider == "metrica" else f"_{provider}"),
+        "name": f"rule_response_check_v{version}"
+        + ("" if provider == "metrica" else f"_{provider}"),
         "provider": provider,
         "code_revision": git_revision(),
         "horizon_s": HORIZON_S,
+        "guard_s": guard,
         "n_per_match": n_per_match,
-        "policies": {
-            p: _summary(df.filter(pl.col("policy") == p), n_boot, seed)
-            for p in (*CARRIER_POLICIES, *ATTACKER_POLICIES)
-            if (df["policy"] == p).sum() > 20
-        },
+        "policies": by_design["full"],
+        "designs": by_design,
     }
     res["runtime_s"] = round(time.time() - t0, 1)
     out = EXPERIMENTS_DIR / "results" / res["name"]

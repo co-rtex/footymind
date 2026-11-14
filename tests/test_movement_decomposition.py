@@ -58,3 +58,16 @@ def test_best_option_saturates_on_safe_backward_pass() -> None:
     r = decompose(st, earlier, np.zeros_like(earlier))
     assert r.effects["any"].attack == pytest.approx(0, abs=1e-3)  # GK pass dominates
     assert r.effects["forward"].attack > 0.02
+
+
+def test_rotation_placebo_keeps_displacement_size_and_attackers() -> None:
+    from footymind.research.movement_decomposition_study import _rotate_defenders
+
+    st = _state((25.0, 8.0))
+    earlier = st.xy.copy()
+    earlier[3] = (12.0, 4.0)  # a defender moved 5 m
+    earlier[1] = (25.0, 0.5)
+    xy, _ = _rotate_defenders(st, earlier, np.zeros_like(earlier), np.random.default_rng(1))
+    assert np.linalg.norm(st.xy[3] - xy[3]) == pytest.approx(5.0)
+    assert not np.allclose(xy[3], earlier[3])  # the direction changed
+    assert np.allclose(xy[1], earlier[1])  # attackers untouched
