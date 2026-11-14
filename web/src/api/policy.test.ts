@@ -38,7 +38,7 @@ function scenario(extra: Record<string, unknown> = {}) {
 
 describe("parsePolicyInfo / parseResponsePolicies", () => {
   it("accepts a full policy and treats a missing validation_ref as null", () => {
-    expect(parsePolicyInfo(POLICY)).toEqual({ ...POLICY, status: null, verdict: null });
+    expect(parsePolicyInfo(POLICY)).toEqual({ ...POLICY, status: null, verdict: null, fitted_range: null });
     const noRef: Record<string, unknown> = { ...POLICY };
     delete noRef.validation_ref;
     expect(parsePolicyInfo(noRef).validation_ref).toBeNull();
@@ -54,6 +54,14 @@ describe("parsePolicyInfo / parseResponsePolicies", () => {
     expect(parsePolicyInfo(POLICY).status).toBeNull();
     expect(() => parsePolicyInfo({ ...POLICY, status: 3 })).toThrow(/status/);
     expect(parseResponsePolicies([{ ...POLICY, status: verdict }])[0]?.status).toBe(verdict);
+  });
+
+  it("parses a structured fitted range and rejects a malformed one (SYNTHETIC values)", () => {
+    const fr = { share: 0.99, limit_m: 2.29, horizon_s: 1, quantity: "synthetic", ref: "x/results.json" };
+    expect(parsePolicyInfo({ ...POLICY, fitted_range: fr }).fitted_range).toEqual(fr);
+    expect(parsePolicyInfo({ ...POLICY, fitted_range: null }).fitted_range).toBeNull();
+    expect(() => parsePolicyInfo({ ...POLICY, fitted_range: { ...fr, limit_m: -1 } })).toThrow(/limit_m/);
+    expect(() => parsePolicyInfo({ ...POLICY, fitted_range: { share: 0.99 } })).toThrow(/fitted_range/);
   });
 
   it("keeps a known machine-readable verdict and ignores an unknown one (SYNTHETIC values)", () => {
@@ -92,7 +100,7 @@ describe("parseScenario with and without a policy", () => {
 
   it("accepts a null policy and a well-formed policy", () => {
     expect(parseScenario(scenario({ policy: null })).policy).toBeNull();
-    expect(parseScenario(scenario({ policy: POLICY })).policy).toEqual({ ...POLICY, status: null, verdict: null });
+    expect(parseScenario(scenario({ policy: POLICY })).policy).toEqual({ ...POLICY, status: null, verdict: null, fitted_range: null });
     const withStatus = { ...POLICY, status: "experimental: synthetic verdict" };
     expect(parseScenario(scenario({ policy: withStatus })).policy?.status).toBe("experimental: synthetic verdict");
   });

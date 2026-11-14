@@ -136,7 +136,25 @@ export function parsePolicyInfo(raw: unknown, what = "policy"): PolicyInfo {
   // backend's vocabulary does not break the lab; the badge then falls back to the status text.
   const verdict = raw.verdict;
   need(verdict === undefined || verdict === null || typeof verdict === "string", `${what}.verdict is not a string or null`);
+  // Structured fitted range (newer backends); absent or null otherwise.
+  const fr = raw.fitted_range;
+  let fitted_range: PolicyInfo["fitted_range"] = null;
+  if (fr !== undefined && fr !== null) {
+    needKeys(fr, ["share", "limit_m", "horizon_s", "quantity", "ref"], `${what}.fitted_range`);
+    for (const k of ["share", "limit_m", "horizon_s"] as const) {
+      need(typeof fr[k] === "number" && Number.isFinite(fr[k]) && fr[k] > 0, `${what}.fitted_range.${k} is not a positive number`);
+    }
+    need(typeof fr.quantity === "string" && typeof fr.ref === "string", `${what}.fitted_range text is not a string`);
+    fitted_range = {
+      share: fr.share as number,
+      limit_m: fr.limit_m as number,
+      horizon_s: fr.horizon_s as number,
+      quantity: fr.quantity as string,
+      ref: fr.ref as string,
+    };
+  }
   return {
+    fitted_range,
     name: raw.name,
     description: raw.description,
     assumptions: raw.assumptions as string[],

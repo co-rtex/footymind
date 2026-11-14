@@ -45,7 +45,9 @@ indexes on start.
   inert), `learned_innovation` (observational co-movement model, session 4). Each policy carries
   a `status` sentence and a machine-readable `verdict` (`observational_supported`,
   `not_supported`, `forecast_validated`, `observational_validated`, `unchecked`,
-  `no_response`). Kinematic **envelope v2** clips every simulated move.
+  `no_response`). `learned_innovation` also serves its per-provider `fitted_range` (99% of real
+  1 s attacker innovations below 2.29 m Metrica / 2.48 m SkillCorner, read from
+  `response_diagnostics_v1*`). Kinematic **envelope v2** clips every simulated move.
 * Causal temporal context, guard frames (ADR-0007, calibrated, C38), evidence-grounded
   explanations, similar-moment retrieval with the validated k = 50 estimate (C36).
 * Research modules: rule response check v4 (paired, rotation placebo, C70), off-ball opportunity
@@ -63,7 +65,7 @@ indexes on start.
 ## Verification (end of session 4)
 | Gate | Result |
 |---|---|
-| `scripts/check.sh` (exit code 0, all 23 bundles at v3) | ruff, format, mypy, **339 pytest passed, 0 skipped**; web typecheck, lint, **211 vitest**, build |
+| `scripts/check.sh` (exit code 0, all 23 bundles at v3) | ruff, format, mypy, **340 pytest passed, 0 skipped**; web typecheck, lint, **213 vitest**, build |
 | `cd web && npx playwright test --trace off` | **27/27** against the real API on v3 data (flow, screenshots, broadcast tests) |
 | GitHub CI | every job green for 83d4830, including the container-runtime `docker` job; see the final report for the newest run |
 | `scripts/reproduce.sh --dry-run` | exit 0, every committed artefact in dependency order |
@@ -109,9 +111,7 @@ indexes on start.
    joint. A joint-innovation counterfactual with `learned_innovation` is the natural next study.
 2. **Possession-value target.** Replace the best-progressive-option measure with a
    possession-value model so off-ball credit is measured in a quantity that sees small moves.
-3. **Structured fitted-range fields.** `learned_innovation`'s fitted range is still prose that
-   the lab parses; expose share, limit and horizon as fields.
-4. **More Metrica-like data.** Three optical matches limit every Metrica CI to within-match
+3. **More Metrica-like data.** Three optical matches limit every Metrica CI to within-match
    sampling.
 
 ## Decisions needing the owner

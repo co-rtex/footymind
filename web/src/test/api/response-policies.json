@@ -8,7 +8,8 @@
     "validated": false,
     "validation_ref": null,
     "status": "no response simulated",
-    "verdict": "no_response"
+    "verdict": "no_response",
+    "fitted_range": null
   },
   {
     "name": "marker_follows",
@@ -21,7 +22,8 @@
     "validated": false,
     "validation_ref": null,
     "status": "experimental: consistent with real defender reactions in an observational check on both providers (not a forecast, not an intervention validation)",
-    "verdict": "observational_supported"
+    "verdict": "observational_supported",
+    "fitted_range": null
   },
   {
     "name": "press_carrier",
@@ -37,7 +39,8 @@
     "validated": false,
     "validation_ref": null,
     "status": "experimental: not supported by the observational check under the current kinematic envelope",
-    "verdict": "not_supported"
+    "verdict": "not_supported",
+    "fitted_range": null
   },
   {
     "name": "zonal_shift",
@@ -54,7 +57,8 @@
     "validated": false,
     "validation_ref": null,
     "status": "experimental: overshoots real defensive movement in the observational check",
-    "verdict": "not_supported"
+    "verdict": "not_supported",
+    "fitted_range": null
   },
   {
     "name": "lane_cover",
@@ -71,7 +75,8 @@
     "validated": false,
     "validation_ref": null,
     "status": "experimental: consistent with real defender reactions in an observational check on both providers (not a forecast, not an intervention validation)",
-    "verdict": "observational_supported"
+    "verdict": "observational_supported",
+    "fitted_range": null
   },
   {
     "name": "learned",
@@ -90,7 +95,8 @@
     "validated": true,
     "validation_ref": "experiments/results/response_validation_v1/results.json",
     "status": "validated: short-horizon forecasts of real play beat constant velocity",
-    "verdict": "forecast_validated"
+    "verdict": "forecast_validated",
+    "fitted_range": null
   },
   {
     "name": "learned_innovation",
@@ -98,7 +104,7 @@
     "assumptions": [
       "Observational association, not a causal effect: attackers and defenders share drivers in real play. A permuted-innovation placebo isolates the part specific to the attacker-defender geometry; the served status says whether the pre-registered rule was met for this provider.",
       "Response weights depend on distance at the analysed frame: nearest attacker, attackers within about 5 m and 15 m, and the attacking team as a whole.",
-      "Linear: a relocation larger than real unexpected movement (99% of attacker innovations are below about 2.5 m in 1 s) is an extrapolation.",
+      "Linear: a relocation larger than real unexpected movement (99% of attacker innovations are below about 2.3 m (Metrica) / 2.5 m (SkillCorner) in 1 s; exact values in fitted_range) is an extrapolation.",
       "Forecast horizon is capped at the longest trained horizon (1.0 s).",
       "Differential response: a defender moves by the change in the policy's target position caused by the intervention, so an unchanged situation produces no move.",
       "Each move is limited to the defender's kinematic envelope over the horizon (envelope v2: no reaction delay, <= 7.0 m/s^2 braking or turning, speeding up <= 7(1 - v/9) m/s^2, <= 9.0 m/s, 0.10 s velocity lag) from the observed position and causal velocity. A reachable move is not a tactically plausible one.",
@@ -108,6 +114,13 @@
     "validated": true,
     "validation_ref": "experiments/results/response_diagnostics_v1/results.json",
     "status": "validated (observational): given attackers' real unexpected movement, its defender forecasts beat constant velocity and a permuted placebo",
-    "verdict": "observational_validated"
+    "verdict": "observational_validated",
+    "fitted_range": {
+      "share": 0.99,
+      "limit_m": 2.29,
+      "horizon_s": 1,
+      "quantity": "off-ball attacker innovation (displacement beyond own constant velocity)",
+      "ref": "experiments/results/response_diagnostics_v1/results.json"
+    }
   }
 ]

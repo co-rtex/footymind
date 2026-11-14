@@ -190,6 +190,7 @@
   "PolicyInfo": [
     "assumptions",
     "description",
+    "fitted_range",
     "name",
     "status",
     "validated",

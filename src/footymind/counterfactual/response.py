@@ -278,7 +278,8 @@ def _specs(limits: Limits | None = None) -> dict[str, PolicySpec]:
                 "Response weights depend on distance at the analysed frame: nearest attacker, "
                 "attackers within about 5 m and 15 m, and the attacking team as a whole.",
                 "Linear: a relocation larger than real unexpected movement (99% of attacker "
-                "innovations are below about 2.5 m in 1 s) is an extrapolation.",
+                "innovations are below about 2.3 m (Metrica) / 2.5 m (SkillCorner) in 1 s; "
+                "exact values in fitted_range) is an extrapolation.",
                 "Forecast horizon is capped at the longest trained horizon (1.0 s).",
                 *common,
             ),
@@ -298,6 +299,43 @@ class PolicyInfo:
     validation_ref: str | None
     status: str
     verdict: str = "unchecked"
+    fitted_range: FittedRange | None = None
+
+
+@dataclass(frozen=True)
+class FittedRange:
+    """The range of real movement a linear, data-fitted response was fitted on.
+
+    A relocation beyond ``limit_m`` in ``horizon_s`` is an extrapolation of the model.
+    """
+
+    share: float  # share of real rows below the limit
+    limit_m: float
+    horizon_s: float
+    quantity: str
+    ref: str
+
+
+# 99th percentile of off-ball attackers' 1.0 s innovation (displacement beyond their own
+# constant velocity), measured on the training data of each provider's innovation model:
+# response_diagnostics_v1[_skillcorner] d3_innovation_scale["1.0s"].attacker_innovation_m.p99
+# (pinned to those files by tests/test_learned_innovation_policy.py).
+INNOVATION_FIT_RANGE = {
+    "metrica": FittedRange(
+        0.99,
+        2.29,
+        1.0,
+        "off-ball attacker innovation (displacement beyond own constant velocity)",
+        "experiments/results/response_diagnostics_v1/results.json",
+    ),
+    "skillcorner": FittedRange(
+        0.99,
+        2.48,
+        1.0,
+        "off-ball attacker innovation (displacement beyond own constant velocity)",
+        "experiments/results/response_diagnostics_v1_skillcorner/results.json",
+    ),
+}
 
 
 # Machine-readable verdicts (the ``status`` text says the same in words).
@@ -380,8 +418,14 @@ def policy_info(name: str, provider: str | None = None) -> PolicyInfo:
         status = _OBSERVATIONAL_STATUS[name]
     else:
         status = "experimental: not validated against tracking"
+    fit = None
+    if name == "learned_innovation":
+        keys = [provider] if provider else list(INNOVATION_FIT_RANGE)
+        ranges = [INNOVATION_FIT_RANGE[p] for p in keys if p in INNOVATION_FIT_RANGE]
+        # without a provider: the tightest; an unknown provider has no fitted model
+        fit = min(ranges, key=lambda r: r.limit_m) if ranges else None
     return PolicyInfo(
-        name, spec.description, list(spec.assumptions), validated, ref, status, verdict
+        name, spec.description, list(spec.assumptions), validated, ref, status, verdict, fit
     )
 
 

@@ -339,6 +339,18 @@ export interface PolicyInfo {
   status?: string | null;
   /** machine-readable form of `status` (newer backends); the badge prefers it when present */
   verdict?: PolicyVerdict | null;
+  /** for a linear, data-fitted response: the range of real movement it was fitted on (newer backends) */
+  fitted_range?: FittedRangeOut | null;
+}
+
+export interface FittedRangeOut {
+  /** share of real rows below limit_m, e.g. 0.99 */
+  share: number;
+  limit_m: number;
+  horizon_s: number;
+  quantity: string;
+  /** committed results.json the limit is read from */
+  ref: string;
 }
 
 export const POLICY_VERDICTS = [

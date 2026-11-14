@@ -99,6 +99,7 @@ const TS: Record<string, string[]> = {
   StatementOut: keysOf<StatementOut>({ kind: true, text: true, metric: true, value: true, provenance: true, players: true }),
   PolicyInfo: keysOf<PolicyInfo>({
     name: true, description: true, assumptions: true, validated: true, validation_ref: true, status: true, verdict: true,
+    fitted_range: true,
   }),
   ScenarioResponse: keysOf<ScenarioResponse>({
     observed: true, hypothetical: true, feasibility: true, movements: true, option_deltas: true,
@@ -178,8 +179,14 @@ describe("policy verdicts from the real GET /api/response-policies payload", () 
     for (const b of Object.values(badges)) if (b) expect(POLICY_BADGE_TEXT[b]).toBeTruthy();
   });
 
-  it("reads learned_innovation's fitted range from its own assumptions, and no other policy has one", () => {
-    expect(policyFitRange(byName.get("learned_innovation"))).toEqual({ sharePct: 99, limitM: 2.5, horizonS: 1 });
+  it("reads learned_innovation's fitted range from its served fitted_range, and no other policy has one", () => {
+    const served = realPolicies.find((p) => p.name === "learned_innovation")?.fitted_range;
+    if (!served) throw new Error("the captured payload has no fitted_range for learned_innovation");
+    expect(policyFitRange(byName.get("learned_innovation"))).toEqual({
+      sharePct: Math.round(served.share * 1000) / 10,
+      limitM: Math.round(served.limit_m * 10) / 10,
+      horizonS: served.horizon_s,
+    });
     for (const p of list) if (p.name !== "learned_innovation") expect(policyFitRange(p)).toBeNull();
   });
 });

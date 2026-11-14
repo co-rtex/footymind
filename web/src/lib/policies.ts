@@ -124,7 +124,13 @@ export interface FitRange {
 
 const FIT_RANGE = /(\d+(?:\.\d+)?)\s*%[^.;]*?\bbelow about (\d+(?:\.\d+)?)\s*m in (\d+(?:\.\d+)?)\s*s\b/i;
 
-export function policyFitRange(p: Pick<PolicyInfo, "assumptions"> | null | undefined): FitRange | null {
+export function policyFitRange(
+  p: Pick<PolicyInfo, "assumptions" | "fitted_range"> | null | undefined,
+): FitRange | null {
+  // the structured field (newer backends) wins; the prose is a fallback for older ones
+  const f = p?.fitted_range;
+  // the limit is shown and compared at 0.1 m ("about 2.3 m"), like the prose it replaces
+  if (f) return { sharePct: Math.round(f.share * 1000) / 10, limitM: Math.round(f.limit_m * 10) / 10, horizonS: f.horizon_s };
   for (const a of p?.assumptions ?? []) {
     if (!/extrapolat/i.test(a)) continue;
     const m = FIT_RANGE.exec(a);

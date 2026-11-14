@@ -371,6 +371,14 @@ class FeasibilityOut(BaseModel):
     )
 
 
+class FittedRangeOut(BaseModel):
+    share: float = Field(description="share of real rows below limit_m (e.g. 0.99)")
+    limit_m: float = Field(description="relocations larger than this are extrapolations")
+    horizon_s: float
+    quantity: str
+    ref: str = Field(description="committed results.json the limit is read from")
+
+
 class ResponsePolicyOut(BaseModel):
     name: ResponsePolicyName
     description: str
@@ -402,6 +410,13 @@ class ResponsePolicyOut(BaseModel):
             "reactions in the paired observational check, C70), not_supported, unchecked, or "
             "no_response (the static baseline). Never an intervention validation"
         )
+    )
+    fitted_range: FittedRangeOut | None = Field(
+        None,
+        description=(
+            "for a linear, data-fitted response: the range of real movement it was fitted on "
+            "(for this match's provider; without a match, the tightest over providers)"
+        ),
     )
 
 

@@ -825,6 +825,15 @@ def _policy_out(p: PolicyInfo) -> S.ResponsePolicyOut:
         validation_ref=p.validation_ref,
         status=p.status,
         verdict=p.verdict,  # type: ignore[arg-type]
+        fitted_range=None
+        if p.fitted_range is None
+        else S.FittedRangeOut(
+            share=p.fitted_range.share,
+            limit_m=p.fitted_range.limit_m,
+            horizon_s=p.fitted_range.horizon_s,
+            quantity=p.fitted_range.quantity,
+            ref=p.fitted_range.ref,
+        ),
     )
 
 

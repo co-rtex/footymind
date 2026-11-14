@@ -319,7 +319,8 @@ test("keyboard edit with a defender response: selector, simulated moves and stat
   await select.selectOption("learned_innovation");
   await expect(panel).toHaveAttribute("data-status", "success", { timeout: 30_000 });
   await expect(page.getByTestId("policy-badge")).toHaveText("observational");
-  await expect(page.getByTestId("policy-fit-range")).toContainText("under about 2.5 m in 1 s");
+  // the provider's own fitted range (served as fitted_range): 2.3 m on Metrica, 2.5 m on SkillCorner
+  await expect(page.getByTestId("policy-fit-range")).toContainText(/under about 2\.[35] m in 1 s/);
   await expect(page.getByTestId("policy-fit-range")).toContainText("extrapolation");
   await shotPolicy(page, "learned-innovation");
 

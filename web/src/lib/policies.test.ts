@@ -94,6 +94,13 @@ describe("policy labels and flags", () => {
     );
   });
 
+  it("prefers the structured fitted range over the prose (SYNTHETIC values)", () => {
+    const fitted_range = { share: 0.99, limit_m: 2.29, horizon_s: 1, quantity: "synthetic", ref: "x" };
+    const prose = ["Linear: 95% of synthetic innovations are below about 3.1 m in 0.5 s, so beyond is an extrapolation."];
+    expect(policyFitRange({ assumptions: prose, fitted_range })).toEqual({ sharePct: 99, limitM: 2.3, horizonS: 1 });
+    expect(policyFitRange({ assumptions: prose, fitted_range: null })).toEqual({ sharePct: 95, limitM: 3.1, horizonS: 0.5 });
+  });
+
   it("reads a fitted range only from an extrapolation statement in the assumptions", () => {
     const fit = (assumptions: string[]) => policyFitRange({ assumptions });
     expect(fit(["Linear: 95% of synthetic innovations are below about 3.1 m in 0.5 s, so beyond is an extrapolation."])).toEqual({

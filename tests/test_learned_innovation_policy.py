@@ -53,6 +53,25 @@ def test_new_policy_is_served() -> None:
     assert ALL_POLICY_NAMES == POLICY_NAMES
 
 
+def test_fitted_range_is_read_from_the_committed_diagnostics() -> None:
+    """The served extrapolation limit is the p99 of attackers' 1.0 s innovation in the
+    committed diagnostics of each provider (rounded to 1 cm), never a hand-picked number."""
+    import json
+
+    from footymind.counterfactual.response import INNOVATION_FIT_RANGE, policy_info
+    from footymind.paths import REPO_ROOT
+
+    for prov, fr in INNOVATION_FIT_RANGE.items():
+        res = json.loads((REPO_ROOT / fr.ref).read_text())
+        p99 = res["d3_innovation_scale"]["1.0s"]["attacker_innovation_m"]["p99"]
+        assert fr.limit_m == pytest.approx(p99, abs=0.005), prov
+        assert (fr.share, fr.horizon_s) == (0.99, 1.0)
+        assert policy_info("learned_innovation", prov).fitted_range == fr
+    tightest = min(INNOVATION_FIT_RANGE.values(), key=lambda r: r.limit_m)
+    assert policy_info("learned_innovation").fitted_range == tightest
+    assert policy_info("marker_follows", "metrica").fitted_range is None
+
+
 @pytest.mark.parametrize("who", [CARRIER, RECEIVER])
 def test_moves_only_outfield_defenders_by_a_visible_amount(who: int) -> None:
     s = state()
