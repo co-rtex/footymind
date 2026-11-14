@@ -25,7 +25,7 @@ the pipeline version and bundle timestamps and are refused when stale. After pul
 and rebuild:
 
 ```bash
-uv run footymind ingest            # all 23 sources if SkillCorner is downloaded
+uv run footymind ingest all        # all 23 sources (needs `footymind download all`, ~2 GB)
 uv run footymind build-similarity-index
 ```
 
@@ -126,7 +126,8 @@ indexes on start.
 ## Resume
 ```bash
 git checkout claude/loving-wright-i0shmp && uv sync && (cd web && npm ci)
-uv run footymind download && uv run footymind ingest && uv run footymind build-similarity-index
+uv run footymind download metrica && uv run footymind ingest metrica   # or `all` (~2 GB)
+uv run footymind build-similarity-index
 scripts/check.sh && (cd web && npx playwright test --trace off)
 scripts/reproduce.sh --dry-run
 ```

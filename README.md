@@ -144,55 +144,90 @@ and the [claims ledger](docs/CLAIMS_LEDGER.md).
 
 ## Quick start
 
+Four ways in, smallest first. Requirements: Python 3.11+ with [uv](https://docs.astral.sh/uv/),
+Node 22 for the web lab, Docker for the container. Data lives in `./data` unless
+`FOOTYMIND_DATA_DIR` points elsewhere; nothing is downloaded unless you name it.
+
+### 1. Minimal demo (recommended): three Metrica games
+
+About 180 MB of raw data and 70 MB of processed bundles, plus about 0.8 GB for the Python
+environment and 0.15 GB for `web/node_modules`.
+
 ```bash
 uv sync
-# Metrica sample games, SHA-256 verified (~180 MB), then processed bundles (~3 s per match)
-uv run footymind download metrica-sample-1 metrica-sample-2 metrica-sample-3
-uv run footymind ingest metrica-sample-1 metrica-sample-2 metrica-sample-3
-uv run footymind build-similarity-index --provider metrica   # "Similar moments" index (~40 s)
-uv run pytest -q             # unit + real-data tests
-uv run footymind serve       # API at http://127.0.0.1:8000 (docs at /docs)
+uv run footymind download metrica      # 3 sample games, SHA-256 verified (~180 MB)
+uv run footymind ingest metrica        # processed bundles, ~3 s per match
+uv run footymind build-similarity-index --provider metrica   # "Similar moments" (~40 s)
+uv run footymind serve                 # API at http://127.0.0.1:8000 (docs at /docs)
 ```
 
-Without match ids, `download` and `ingest` take **every** registered source, including the
-20 SkillCorner matches (about 1.8 GB more). Data lives in `./data` unless `FOOTYMIND_DATA_DIR`
-points elsewhere. Without the similarity index the API answers `/similar` with a 503 and the
-lab shows a "no index" note.
-
-Run the web lab (in a second terminal, with the API running):
+In a second terminal, the web lab:
 
 ```bash
-cd web && npm ci && npm run dev    # http://localhost:5173 (proxies /api to :8000)
+cd web && npm ci && npm run dev        # http://localhost:5173 (proxies /api to :8000)
 ```
 
-Or build it once (`cd web && npm run build`) and `footymind serve` will serve it at `/`.
-Backend and frontend checks are listed in [`CLAUDE.md`](CLAUDE.md) and [`web/README.md`](web/README.md).
+Or build it once (`cd web && npm run build`) and `footymind serve` serves it at `/`. Without
+the similarity index `/similar` answers 503 and the lab shows a "no index" note.
 
-Or run everything in one container (the first start downloads and ingests the three Metrica
-games and builds the similarity index, about a minute; set `FOOTYMIND_SOURCES` to choose
-other sources). On later starts it re-ingests bundles from an older pipeline version, adds
-missing `FOOTYMIND_SOURCES` and rebuilds a stale index; a running server picks up a re-ingest or
-an index rebuild without a restart:
+`download` and `ingest` take match ids (`metrica-sample-2`, `skillcorner-1874553`, ...) or the
+groups `metrica`, `skillcorner` and `all`. With no argument they stop and list these choices.
+
+### 2. Full research data: all 23 matches
+
+Adds the 20 SkillCorner broadcast matches: about 1.8 GB more raw data and 120 MB of bundles.
+The broadcast featured situation in the lab and the SkillCorner tests need it.
+
+```bash
+uv run footymind download all && uv run footymind ingest all
+uv run footymind build-similarity-index          # both providers (~3 min)
+```
+
+### 3. Docker
+
+One container serves the API and the lab. The first start on an empty volume downloads,
+ingests and indexes the three Metrica games (about a minute); set `FOOTYMIND_SOURCES` to
+choose other sources. Later starts re-ingest bundles from an older pipeline version, complete
+an interrupted first start and rebuild a stale index; a running server picks up a re-ingest or
+an index rebuild without a restart. These recovery paths are tested in CI
+(`scripts/container_recovery.py`, [`docs/release/VERIFICATION.md`](docs/release/VERIFICATION.md)).
 
 ```bash
 docker build -t footymind .
 docker run --rm -p 8000:8000 -v footymind-data:/data footymind   # http://localhost:8000
-scripts/container_smoke.sh   # build, run on a copy of local data and check it end to end
 ```
 
-`scripts/container_smoke.sh` seeds the container from your local `data/processed`. By default it
-mounts the three Metrica bundles **and** three SkillCorner bundles (1874553, 1899585, 2017461)
-and finishes with the Playwright flow, so it needs those SkillCorner bundles and Playwright
-(`cd web && npm ci && npx playwright install chromium`). For a Metrica-only check run
-`SMOKE_MATCHES="metrica-sample-1 metrica-sample-2 metrica-sample-3" scripts/container_smoke.sh --no-e2e`
-(other flags: `--no-build`, `--keep`; see the script header).
+`scripts/container_smoke.sh` builds the image, runs it on a copy of your local
+`data/processed` and checks it end to end. By default it mounts the three Metrica bundles
+**and** three SkillCorner bundles (1874553, 1899585, 2017461) and finishes with the Playwright
+flow, so it needs those bundles and Playwright (`cd web && npm ci && npx playwright install
+chromium`). Metrica only:
+`SMOKE_MATCHES="metrica-sample-1 metrica-sample-2 metrica-sample-3" scripts/container_smoke.sh --no-e2e`.
 
-Reproduce the research results:
+### 4. Reproduce the research
+
+Every committed result records the code revision it came from. One experiment:
 
 ```bash
 uv run footymind experiment experiments/configs/pass_outcome_v1.json
-uv run footymind experiment experiments/configs/pass_outcome_v1_ablation.json
 ```
+
+Every committed artefact, in dependency order (needs path 2's data; the recorded run times of
+the committed results add up to about 1.6 h for Metrica and 4.4 h for SkillCorner):
+
+```bash
+scripts/reproduce.sh --dry-run     # list the steps
+PROVIDERS=metrica scripts/reproduce.sh
+```
+
+### Tests
+
+```bash
+scripts/check.sh                   # lint, types, pytest, web typecheck/lint/vitest/build (as CI)
+cd web && npx playwright test --trace off   # browser tests against the real API (needs path 2's data)
+```
+
+Real-data tests skip when their data is absent, so path 1 runs the Metrica ones.
 
 Try a counterfactual through the API:
 

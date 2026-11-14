@@ -63,9 +63,9 @@ config falls back to `/opt/pw-browsers/chromium`, or you can set `PW_CHROMIUM`.
 for the broadcast tests (the broadcast featured card, estimated off-camera
 positions, team names and the screenshots use `skillcorner-1899585` and other
 SkillCorner matches). On a Metrica-only setup those tests fail: first run
-`uv run footymind download` and `uv run footymind ingest` with no ids (every
-registered match, about 2 GB) and `uv run footymind build-similarity-index`. `npx playwright install` is not needed where a
-Chromium is preinstalled.
+`uv run footymind download all && uv run footymind ingest all` (every registered
+match, about 2 GB) and `uv run footymind build-similarity-index`.
+`npx playwright install` is not needed where a Chromium is preinstalled.
 
 `src/test/api/` holds the key names of real API responses and the real
 `GET /api/response-policies` payload (no tracking data), which the contract test

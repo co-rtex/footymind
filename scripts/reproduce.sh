@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Rebuild every committed research artefact from raw data, in dependency order.
-#   scripts/reproduce.sh            # run everything (~2 GB download, roughly 45-60 min on 4 vCPU)
+#   scripts/reproduce.sh            # run everything (~2 GB download; several hours)
 #   scripts/reproduce.sh --dry-run  # print the steps only
-#   PROVIDERS=metrica scripts/reproduce.sh   # Metrica only (~180 MB, roughly 15 min)
+#   PROVIDERS=metrica scripts/reproduce.sh   # Metrica only (~180 MB; 1-2 hours)
+# (The recorded run times of the committed results sum to about 1.6 h for Metrica and 4.4 h for
+# SkillCorner on 4 vCPU, partly under load.)
 # Each results.json records the code revision it was produced at; run from a clean tree.
 set -euo pipefail
 cd "$(dirname "$0")/.."

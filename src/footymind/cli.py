@@ -7,16 +7,45 @@ import json
 import sys
 import time
 
+GROUPS_HELP = (
+    "match ids, or a group: 'metrica' (3 sample games, about 180 MB), 'skillcorner' "
+    "(20 broadcast matches, about 1.8 GB) or 'all'"
+)
+
+
+def resolve_sources(names: list[str]) -> list[str]:
+    """Expand ``metrica`` / ``skillcorner`` / ``all`` into registered match ids, in order.
+
+    Nothing is implied: an empty list is an error (a bare ``footymind download`` used to fetch
+    all 23 sources, about 2 GB), and so is an unknown id.
+    """
+    from footymind.data import sources
+
+    if not names:
+        raise SystemExit(f"name the sources: {GROUPS_HELP}")
+    out: list[str] = []
+    for n in names:
+        if n == "all":
+            ids = list(sources.SOURCES)
+        elif n in ("metrica", "skillcorner"):
+            ids = [m for m in sources.SOURCES if m.startswith(n + "-")]
+        elif n in sources.SOURCES:
+            ids = [n]
+        else:
+            raise SystemExit(f"unknown source {n!r}: {GROUPS_HELP}")
+        out += [m for m in ids if m not in out]
+    return out
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="footymind")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_dl = sub.add_parser("download", help="download raw provider data with checksum verification")
-    p_dl.add_argument("match_ids", nargs="*", help="default: all registered sources")
+    p_dl.add_argument("match_ids", nargs="*", help=GROUPS_HELP)
 
     p_in = sub.add_parser("ingest", help="build processed match bundles")
-    p_in.add_argument("match_ids", nargs="*", help="default: all registered sources")
+    p_in.add_argument("match_ids", nargs="*", help=GROUPS_HELP + " (run `download` first)")
 
     p_srv = sub.add_parser("serve", help="run the API server")
     p_srv.add_argument("--host", default="127.0.0.1")
@@ -47,18 +76,22 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "download":
         from footymind.data import sources
 
-        ids = args.match_ids or list(sources.SOURCES)
-        for mid in ids:
+        for mid in resolve_sources(args.match_ids):
             t0 = time.time()
             sources.download(sources.SOURCES[mid])
             print(f"{mid}: verified ({time.time() - t0:.1f}s)")
     elif args.cmd == "ingest":
         from footymind.data import sources, store
 
-        ids = args.match_ids or list(sources.SOURCES)
-        for mid in ids:
+        for mid in resolve_sources(args.match_ids):
             t0 = time.time()
-            out = store.ingest(mid)
+            try:
+                out = store.ingest(mid)
+            except FileNotFoundError as e:
+                raise SystemExit(
+                    f"{mid}: raw data missing ({e.filename or e}); "
+                    f"run `footymind download {mid}` first"
+                ) from e
             q = json.loads((out / "manifest.json").read_text())["quality"]["event_sync"]
             print(
                 f"{mid}: -> {out} ({time.time() - t0:.1f}s); passer-ball median "

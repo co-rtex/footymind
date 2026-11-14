@@ -110,8 +110,8 @@ served silently, healthy matches staying available) is covered by `tests/test_fr
 
 | Step | Finding | Fix |
 |---|---|---|
-| `uv run footymind download` | Without ids it fetches **all 23** sources (SkillCorner ~1.8 GB), not the "~180 MB" Metrica games the README promised (891 MB arrived in the first minute). | README lists the three Metrica ids explicitly and states the default. |
-| `uv run footymind ingest` | Without ids it ingests every source and **fails** (`FileNotFoundError`, non-zero exit) after the three Metrica bundles when SkillCorner is not downloaded. | Same. |
+| `uv run footymind download` | Without ids it fetches **all 23** sources (SkillCorner ~1.8 GB), not the "~180 MB" Metrica games the README promised (891 MB arrived in the first minute). | README lists the ids. **Since 1.0 a bare `download` stops and lists `metrica` / `skillcorner` / `all`** (`tests/test_cli.py`). |
+| `uv run footymind ingest` | Without ids it ingests every source and **fails** (`FileNotFoundError`, non-zero exit) after the three Metrica bundles when SkillCorner is not downloaded. | Same (a bare `ingest` stops too). |
 | Quick start | No similarity-index step: `/similar` is a 503 and the lab's "Similar moments" panel stays empty. | `footymind build-similarity-index --provider metrica` added. |
 | `uv run pytest -q` | Passes (Metrica only; SkillCorner tests skip). | none |
 | `footymind serve`, `/docs`, README `curl` scenario | Work. `/` is a 404 until `web/dist` is built, as documented. | none |
