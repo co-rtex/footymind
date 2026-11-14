@@ -1,15 +1,15 @@
 # Current state and session handoff
 
-_Last updated: 2026-11-14 03:34 UTC, end of session 3 (01:36:18–03:3x UTC). Keep this file
-factual and update it at every checkpoint._
+_Last updated: 2026-11-14, end of session 4 (overnight completion session, started 03:47:03 UTC).
+Keep this file factual and update it at every checkpoint._
 
 ## Branch and repository
 * Working branch: `claude/loving-wright-i0shmp` (pushed to `origin`). `main` is untouched, and
   no PR has been opened (the owner has not asked for one).
 * Commits are authored as Christian Cortez with no assistant trailers (see CLAUDE.md).
-* The specialist worktrees and their branches were merged and removed. Scratch experiment
-  worktrees (detached, outside the repo, in the session scratchpad) can be pruned with
-  `git worktree prune` once the scratchpad is gone.
+* All specialist worktrees and branches from session 4 were merged and removed. A detached
+  scratch worktree in the session scratchpad (`wt4`) was used only to run experiments from a
+  clean revision; `git worktree prune` removes its record once the scratchpad is gone.
 * **Stop-hook note.** The cloud environment runs a *managed* Stop hook
   (`~/.claude/stop-hook-git-check.sh`) that asks for commits to be re-authored as "Claude".
   That conflicts with the owner's authorship rule and is deliberately not done. Do not rewrite
@@ -17,83 +17,101 @@ factual and update it at every checkpoint._
 
 ## Data (local, not committed)
 `data/raw` holds Metrica (about 180 MB) and SkillCorner (about 1.8 GB). `data/processed`
-holds 23 bundles at **pipeline version 2**, plus the derived similarity indexes
-`similarity_{metrica,skillcorner}.parquet` (`footymind build-similarity-index`).
-All 20 SkillCorner bundles were re-ingested at the end of session 3 and carry the
-`ball_detected` mask. Positions are unchanged, so committed results stay valid. Bundles
-ingested before `ac0629f` load the mask as None.
+holds 23 bundles plus the derived similarity indexes `similarity_{metrica,skillcorner}.parquet`.
 
-## What exists (session 3 additions in bold)
-* Ingestion (Metrica CSV/EPTS, SkillCorner v2), canonical model with provenance, quality gates.
-* Spatial analytics, option model (per provider), Possession Multiverse.
-* **Opponent response policies** (`counterfactual/response.py`, `kinematics.py`, ADR-0006):
-  `none`, `marker_follows`, `press_carrier`, `zonal_shift`, `lane_cover`, `learned`. The
-  learned policy is validated as a short-horizon forecast of real play (C40–C44). The rule
-  policies are experimental. **An observational check of the rules is in
-  `research/rule_response_check.py`.**
-* **Causal temporal context** (`spatial/temporal.py`): time-on-ball (censored), last-second
-  movement history, guard frames (ADR-0007). Served with the frame analysis.
-* **Evidence-grounded explanations** (`spatial/explain.py`) and **similar-moment retrieval**
-  (`research/similarity.py`, `GET .../similar`), both shown in the lab.
-* **Attack vs defense movement decomposition** (`ghost/movement_decomposition.py`, C31/C32).
-* **Data-quality audit** (`research/data_quality_audit.py`, C30).
-* **Match facts** for SkillCorner (team short names, competition, round, date; no player
-  names).
-* Web lab: response-policy selector with static-vs-response comparison, "Why this moment",
-  "Similar moments", product-audit fixes (`docs/product/AUDIT_SESSION3.md`), Vitest 5.
+**Pipeline version 3** (session 4): SkillCorner event and possession ends stay inside their
+period (17 possessions, one per affected match, used to end in the next half). Bundles from
+another version are refused with a 503 naming `footymind ingest <id>`; similarity indexes record
+the pipeline version and bundle timestamps and are refused when stale. After pulling, re-ingest
+and rebuild:
 
-## Verification (end of session 3)
+```bash
+uv run footymind ingest            # all 23 sources if SkillCorner is downloaded
+uv run footymind build-similarity-index
+```
+
+Pass-dataset rows and values are identical at v2 and v3 (19,507 rows; 19,485 at the 0.2 s
+guard), so research results committed on v2 bundles are unaffected. The data-quality audit was
+re-run at v3 (C30). The Docker entrypoint re-ingests outdated bundles and rebuilds stale
+indexes on start.
+
+## What exists
+* Ingestion (Metrica CSV/EPTS at 25 Hz, SkillCorner v2 broadcast at 10 fps), canonical model with
+  provenance, quality gates, possession table, frame-rate-safe time constants (0.3 s
+  event-carrier tolerance).
+* Spatial analytics, per-provider calibrated option models, Possession Multiverse.
+* **Opponent response policies** (`counterfactual/response.py`, ADR-0006): `none`,
+  `marker_follows`, `press_carrier`, `zonal_shift`, `lane_cover`, `learned` (forecaster, nearly
+  inert), `learned_innovation` (observational co-movement model, session 4). Each policy carries
+  a `status` sentence and a machine-readable `verdict` (`observational_supported`,
+  `not_supported`, `forecast_validated`, `observational_validated`, `unchecked`,
+  `no_response`). Kinematic **envelope v2** clips every simulated move.
+* Causal temporal context, guard frames (ADR-0007, calibrated, C38), evidence-grounded
+  explanations, similar-moment retrieval with the validated k = 50 estimate (C36).
+* Research modules: rule response check v4 (paired, rotation placebo, C70), off-ball opportunity
+  under reactive defenders (`ghost/offball_opportunity.py`, `research/offball_study.py`),
+  guard calibration and ball fallback (C38), movement decomposition (C31/C32), Defensive Shadow
+  validation (C17/C29, status served per provider).
+* Web lab: guided tour with three featured situations (filtered to the matches served),
+  policy selector with verdict badges and the learned-innovation fitted-range warning,
+  API-sourced reach and shadow parameters, 30 s request timeout, similar moments, phone layout.
+* API hardening: strict JSON (no NaN/Infinity), 422 bodies without the input echoed, 1 MB
+  request-body cap (413), cache freshness after re-ingest.
+* Docker image verified at runtime (CI `docker` job: empty volume, Metrica 1–2 downloaded by
+  the entrypoint, `smoke_api.py --require-similar`, `HEALTHCHECK`).
+
+## Verification (end of session 4)
 | Gate | Result |
 |---|---|
-| `scripts/check.sh` (exit code 0) | ruff, format, mypy, **166 pytest**; web typecheck, lint, **130 vitest** (Vitest 5.1.0), build |
-| `cd web && npx playwright test --trace off` | **16/16** (11 flow tests + 5 screenshot tests) against the real API, also re-run after re-ingesting SkillCorner |
-| GitHub CI | green for every session-3 push checked (runs 28–33). Later runs were in progress at handoff; the `docker` job now copies `experiments/results` into the image |
-| SkillCorner bundles | re-ingested at the end of the session with `ball_detected`. An extrapolated ball is now *estimated* in the API and explanations |
+| `scripts/check.sh` (exit code 0, all 23 bundles at v3) | ruff, format, mypy, **339 pytest passed, 0 skipped**; web typecheck, lint, **211 vitest**, build |
+| `cd web && npx playwright test --trace off` | **27/27** against the real API on v3 data (flow, screenshots, broadcast tests) |
+| GitHub CI | every job green for 83d4830, including the container-runtime `docker` job; see the final report for the newest run |
+| `scripts/reproduce.sh --dry-run` | exit 0, every committed artefact in dependency order |
+| Container | built and run in CI on every push; locally verified in session 4 by the release-engineering agent (Playwright 11/11 against the container) |
 
-## Research status (numbers live in CLAIMS_LEDGER.md; session 3 = C30–C44)
-* **RQ2, temporal context (C33–C35, C38).** At the 0.2 s guard frame (ADR-0007), 1 s of movement
-  history improves decision-time pass prediction beyond static spatial context and time-on-ball:
-  Metrica −0.014 [−0.021, −0.007], SkillCorner −0.009 [−0.011, −0.007] (20/20 matches,
-  match-level CI). The gain is mainly discrimination. Time-on-ball is small (SkillCorner −0.002;
-  not robust on Metrica), and event timing alone is null. **C20/C28 are unchanged under the
-  guard.**
-* **Kick leakage on broadcast frames (C38).** At the event start frame the ball is already
-  leaving the passer in 62.7% of SkillCorner passes (1.8% Metrica). By −0.2 s the share reaches
-  the noise floor, so decision-time SkillCorner claims use the guard.
-* **Off-ball credit (C31/C32, revised).** Attack and defense movement roughly cancel on average.
-  The large interaction is mostly the option model's non-additivity (rotation placebo 0.51 /
-  0.53 vs 0.58 / 0.64), with a small genuine coupling on SkillCorner. Per-pass run credit depends
-  on the convention.
-* **Response policies (C37 revised, C40–C44).** `learned` forecasts real play better than constant
-  velocity but is nearly inert. Under the innovation design, `marker_follows` and `lane_cover`
-  match real reactions on both providers (β ≈ 1.0–1.3, beyond a placebo). `press_carrier`
-  passes on Metrica only, and `zonal_shift` overshoots. The served assumptions state this per
-  policy.
-* **Similar moments (C36).** A k = 50 shrunk neighbour rate beats the base rate held-out on both
-  providers. The API serves that exact estimate next to the 8 listed neighbours.
-* **Defensive Shadow (C29).** At chance on all 20 SkillCorner matches; worse than
-  nearest-defender in 18/20.
-* Two independent methodology reviews were run this session. Every major finding was fixed
-  or reported (see the RQ2 amendment and the "revised" ledger rows).
+## Research status (numbers live in CLAIMS_LEDGER.md; session 4 = C45–C50, C55–C58, C61–C71)
+* **RQ1/RQ2 unchanged and strengthened.** Spatial context improves decision-time pass prediction
+  on both providers (C20, C28), also with every feature read 0.2 s before the release (C34,
+  C35); the last second of movement adds a further gain at the guard frame (C33, C35).
+  Time-on-ball censoring at extrapolated balls does not change the temporal findings (C50).
+  Guarded option models (C71).
+* **Guard calibration (C38).** The SkillCorner kick-underway share is 0.627 at the event start
+  frame and reaches its floor by −0.2 s. Ball fallback at the guard is rare (Metrica 68 open-play
+  passes of 3,656, SkillCorner 15 of 16,006).
+* **Kinematic envelope v2 (C55–C58).** No reaction delay, speed-dependent acceleration, 9 m/s
+  top speed. It covers 0.998–1.000 of real defender positions at 0.5–1.5 s (v1 0.19–0.86) and
+  still rejects real positions shifted 5 m at 0.5–1.0 s (0.96–1.00), with a larger area (about
+  40 m² at 1.0 s against 3 m²). At the 1.5 s scenario default most 5 m shifts are reachable.
+* **Learning responses (C61, C62).** Positions barely predict defender deviations, so the
+  forecaster is inert; an innovation model conditioned on attackers' unexpected movement beats
+  constant velocity and a placebo on both providers and is served as `learned_innovation`
+  (observational, not causal). Response sizes under envelope v2: C63.
+* **Serving (C65–C69).** Container runtime, first start on an empty volume, API latency,
+  robustness (no NaN/Infinity, 422/404/503 contracts), per-provider model isolation.
+* **Rule check v4 (C70).** `marker_follows` and `lane_cover` beat constant velocity and a
+  size-matched rotation placebo on both providers (paired, possession-clustered,
+  match-stratified). `press_carrier` and `zonal_shift` do not; the lab labels them
+  "not supported".
+* **Off-ball value under reactive defenders (C45–C49).** See the ledger rows and
+  `docs/research/offball_opportunity.md`.
+* **Similar moments (C36)**, **Defensive Shadow (C17, C29)**, **movement decomposition
+  (C31, C32)** as before.
+* Session 4 ran one independent engineering review and one independent methodology review;
+  every blocker was fixed or reported (see the research report).
 
 ## Next executable actions (prioritised)
-1. **Off-ball value with a validated response.** Combine the innovation-validated rules
-   (`marker_follows`, `lane_cover`) or a richer learned model (conditioned on attacker
-   displacements) with a possession-value target. Re-run the decomposition with the placebo as
-   the null.
-2. **Response envelope v2.** The a-priori envelope contains only 61–73% of real 1 s positions
-   (C41, C43). Pre-register a v2 (shorter reaction delay) and re-validate.
-3. **Time-on-ball on broadcast.** `DatasetConfig(censor_undetected_ball=True)` (opt-in, tested)
-   censors time-on-ball at extrapolated-ball frames. Pre-register a SkillCorner guard re-run with
-   it, about 48 min under load (expect a change to H-T1 only).
-4. **Similar moments.** Pre-register and validate the displayed k = 8 list (Brier score) or
-   display k = 50.
-5. **Docker.** Build the image locally once with the new entrypoint (similarity index on first
-   start) and `FOOTYMIND_EXPERIMENTS_DIR`; CI builds it but does not run the container.
+1. **Multi-attacker responses.** The off-ball study moves one attacker at a time; real runs are
+   joint. A joint-innovation counterfactual with `learned_innovation` is the natural next study.
+2. **Possession-value target.** Replace the best-progressive-option measure with a
+   possession-value model so off-ball credit is measured in a quantity that sees small moves.
+3. **Structured fitted-range fields.** `learned_innovation`'s fitted range is still prose that
+   the lab parses; expose share, limit and horizon as fields.
+4. **More Metrica-like data.** Three optical matches limit every Metrica CI to within-match
+   sampling.
 
 ## Decisions needing the owner
 * Whether to host a public demo (Metrica has no licence file; SkillCorner is MIT with a
-  credit request, and the app now shows SkillCorner team names, competition and date).
+  credit request, and the app shows SkillCorner team names, competition and date).
 * Whether to open a PR from this branch to `main`.
 * Whether to change the managed stop hook or enable commit signing.
 
