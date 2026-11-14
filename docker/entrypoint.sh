@@ -11,4 +11,13 @@ if [ -z "$(ls -A "${FOOTYMIND_DATA_DIR}/processed" 2>/dev/null)" ]; then
   # shellcheck disable=SC2086
   footymind ingest ${SOURCES}
 fi
+# The similar-moments index is derived from the processed bundles. Build it once per provider
+# present (Metrica: about 30 s); the panel shows a quiet "no index" note until it exists.
+for prov in metrica skillcorner; do
+  if ls "${FOOTYMIND_DATA_DIR}/processed" 2>/dev/null | grep -q "^${prov}-" \
+     && [ ! -f "${FOOTYMIND_DATA_DIR}/processed/similarity_${prov}.parquet" ]; then
+    echo "footymind: building the ${prov} similar-moments index"
+    footymind build-similarity-index --provider "${prov}" || echo "footymind: index build failed (non-fatal)"
+  fi
+done
 exec "$@"
