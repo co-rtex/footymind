@@ -53,6 +53,8 @@ if [[ " $PROVIDERS " == *" skillcorner "* ]]; then
   run uv run python -m footymind.research.data_quality_audit
   run uv run python -m footymind.research.run_value_validation skillcorner
   run uv run python -m footymind.research.movement_decomposition_study skillcorner
+  run uv run python -m footymind.research.rule_response_check skillcorner 60
+  run uv run python -m footymind.research.similarity_validation skillcorner
   run uv run footymind train-option-model --provider skillcorner
   run uv run python -m footymind.research.response_validation skillcorner
   run uv run footymind train-response-model --provider skillcorner

@@ -804,6 +804,28 @@ therefore the on-camera ones, near the ball (a selection effect). Only pass-star
 used. The CIs reflect within-match sampling (3 Metrica matches). The model is linear. The
 differential-response semantics is a modelling choice, not an empirical finding.
 
+### Observational check of the rule policies (session 3, pre-registered)
+
+`research/rule_response_check.py` gives the rule policies the only test real data allows:
+treat the attackers' *real* movement over the next second as the intervention (the carrier
+for `press_carrier`/`zonal_shift`, all off-ball attackers for `lane_cover`/`marker_follows`).
+Each rule's simulated displacement is added to the moved defenders' constant-velocity
+forecasts and compared with where they really went (SkillCorner: detected positions only).
+
+| policy | Metrica Δ FDE (m) | SkillCorner Δ FDE (m) |
+|---|---|---|
+| press_carrier | +0.049 [+0.011, +0.092] | +0.037 [+0.011, +0.064] |
+| zonal_shift | +0.229 [+0.199, +0.257] | +0.162 [+0.146, +0.179] |
+| lane_cover | +0.062 [+0.051, +0.074] | +0.073 [+0.064, +0.083] |
+| marker_follows | +0.579 [+0.539, +0.619] | +0.545 [+0.514, +0.578] |
+
+**Negative on both providers (C37).** Every rule moves defenders in ways that make forecasts
+of real play worse. Real defenders do not shift by these amounts in response to real
+attacker movement, at least beyond what their current velocity already implies. The test
+may double-count reactions already under way at `t`, so it constrains the *size* of the
+simulated moves rather than proving their direction wrong. The served assumptions for these
+four policies now state this finding, and they stay labelled experimental.
+
 ## Prior art and references
 * Spearman, W., Basye, A., Dick, G., Hotovy, R., Pop, P. (2017). *Physics-Based Modeling of Pass Probabilities in Soccer.* MIT Sloan Sports Analytics Conference.
 * Spearman, W. (2018). *Beyond Expected Goals.* MIT Sloan SAC. (Pitch control; off-ball scoring opportunity.)

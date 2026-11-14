@@ -1,0 +1,58 @@
+{
+  "name": "rule_response_check_v1_skillcorner",
+  "provider": "skillcorner",
+  "code_revision": "57e4661bddb737c2a6a187c9a5d015f86f2696e9",
+  "horizon_s": 1.0,
+  "n_per_match": 60,
+  "policies": {
+    "press_carrier": {
+      "n_moved_defenders": 980,
+      "mean_move_m": 0.4183109230335209,
+      "fde_cv_m": 1.5411316423013515,
+      "fde_policy_m": 1.5776541946888585,
+      "delta_m": 0.03652255238750672,
+      "ci95": [
+        0.011207263370562954,
+        0.0636717581230143
+      ],
+      "observationally_supported": false
+    },
+    "zonal_shift": {
+      "n_moved_defenders": 8870,
+      "mean_move_m": 0.686736692995884,
+      "fde_cv_m": 0.9599765928477291,
+      "fde_policy_m": 1.1219516780935668,
+      "delta_m": 0.1619750852458378,
+      "ci95": [
+        0.1455599982353816,
+        0.17866133364551912
+      ],
+      "observationally_supported": false
+    },
+    "lane_cover": {
+      "n_moved_defenders": 4960,
+      "mean_move_m": 0.3037139152096851,
+      "fde_cv_m": 0.9472265118283547,
+      "fde_policy_m": 1.0207212583552647,
+      "delta_m": 0.07349474652691017,
+      "ci95": [
+        0.0640619536873316,
+        0.0830814441727976
+      ],
+      "observationally_supported": false
+    },
+    "marker_follows": {
+      "n_moved_defenders": 5465,
+      "mean_move_m": 1.1608717482694273,
+      "fde_cv_m": 0.9437776862312007,
+      "fde_policy_m": 1.4889214433612452,
+      "delta_m": 0.5451437571300446,
+      "ci95": [
+        0.5139531287379623,
+        0.5779827077168546
+      ],
+      "observationally_supported": false
+    }
+  },
+  "runtime_s": 41.6
+}
