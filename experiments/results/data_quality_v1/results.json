@@ -1,6 +1,6 @@
 {
   "name": "data_quality_v1",
-  "code_revision": "a82cabb8cd7c2e92f466b8df86f52f2e72a853f1",
+  "code_revision": "379b98eea585e3a4754166ac9bbc27bdc9e35a95",
   "providers": {
     "metrica": {
       "n_matches": 3,
@@ -11,6 +11,9 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 46,
+      "pass_kick_checked": 2490,
+      "share_kick_underway_at_start": 0.018473895582329317,
       "frames_over_11": 10,
       "detected_share_at_pass_start": null,
       "detected_share_near_ball_at_pass_start": null
@@ -24,6 +27,9 @@
       "pass_ball_unobserved_at_start": 4,
       "pass_passer_unobserved_at_start": 4,
       "pass_ends_in_other_period": 3,
+      "pass_kick_underway_at_start": 8422,
+      "pass_kick_checked": 13439,
+      "share_kick_underway_at_start": 0.6266835330009674,
       "frames_over_11": 0,
       "detected_share_at_pass_start": 0.6657052625319935,
       "detected_share_near_ball_at_pass_start": 0.8736914834551903
@@ -43,6 +49,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 9,
+      "pass_kick_checked": 683,
       "detected_share_at_pass_start": null,
       "detected_share_near_ball_at_pass_start": null
     },
@@ -59,6 +67,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 11,
+      "pass_kick_checked": 839,
       "detected_share_at_pass_start": null,
       "detected_share_near_ball_at_pass_start": null
     },
@@ -75,6 +85,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 26,
+      "pass_kick_checked": 968,
       "detected_share_at_pass_start": null,
       "detected_share_near_ball_at_pass_start": null
     },
@@ -91,6 +103,8 @@
       "pass_ball_unobserved_at_start": 1,
       "pass_passer_unobserved_at_start": 1,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 439,
+      "pass_kick_checked": 699,
       "detected_share_at_pass_start": 0.6862400832357914,
       "detected_share_near_ball_at_pass_start": 0.9037355380777762
     },
@@ -107,6 +121,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 460,
+      "pass_kick_checked": 735,
       "detected_share_at_pass_start": 0.6855287569573284,
       "detected_share_near_ball_at_pass_start": 0.8828120886552678
     },
@@ -123,6 +139,8 @@
       "pass_ball_unobserved_at_start": 1,
       "pass_passer_unobserved_at_start": 1,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 329,
+      "pass_kick_checked": 603,
       "detected_share_at_pass_start": 0.660480841472577,
       "detected_share_near_ball_at_pass_start": 0.8739772361430755
     },
@@ -139,6 +157,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 502,
+      "pass_kick_checked": 780,
       "detected_share_at_pass_start": 0.6360139860139861,
       "detected_share_near_ball_at_pass_start": 0.8632655178619993
     },
@@ -155,6 +175,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 1,
+      "pass_kick_underway_at_start": 578,
+      "pass_kick_checked": 902,
       "detected_share_at_pass_start": 0.701975408183834,
       "detected_share_near_ball_at_pass_start": 0.8999398982438049
     },
@@ -171,6 +193,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 505,
+      "pass_kick_checked": 758,
       "detected_share_at_pass_start": 0.7352976404359802,
       "detected_share_near_ball_at_pass_start": 0.9135548634415177
     },
@@ -187,6 +211,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 442,
+      "pass_kick_checked": 680,
       "detected_share_at_pass_start": 0.6707219251336899,
       "detected_share_near_ball_at_pass_start": 0.8960344972693588
     },
@@ -203,6 +229,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 369,
+      "pass_kick_checked": 661,
       "detected_share_at_pass_start": 0.7055753913759956,
       "detected_share_near_ball_at_pass_start": 0.909867861064687
     },
@@ -219,6 +247,8 @@
       "pass_ball_unobserved_at_start": 1,
       "pass_passer_unobserved_at_start": 1,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 446,
+      "pass_kick_checked": 740,
       "detected_share_at_pass_start": 0.7622235872235872,
       "detected_share_near_ball_at_pass_start": 0.9307865812703275
     },
@@ -235,6 +265,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 317,
+      "pass_kick_checked": 528,
       "detected_share_at_pass_start": 0.6949035812672175,
       "detected_share_near_ball_at_pass_start": 0.8732597587731015
     },
@@ -251,6 +283,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 1,
+      "pass_kick_underway_at_start": 456,
+      "pass_kick_checked": 723,
       "detected_share_at_pass_start": 0.7508487363259146,
       "detected_share_near_ball_at_pass_start": 0.9164651930152681
     },
@@ -267,6 +301,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 439,
+      "pass_kick_checked": 723,
       "detected_share_at_pass_start": 0.6004652332453162,
       "detected_share_near_ball_at_pass_start": 0.8303296563327973
     },
@@ -283,6 +319,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 378,
+      "pass_kick_checked": 632,
       "detected_share_at_pass_start": 0.6363636363636362,
       "detected_share_near_ball_at_pass_start": 0.863228370313353
     },
@@ -299,6 +337,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 466,
+      "pass_kick_checked": 706,
       "detected_share_at_pass_start": 0.7077002317795519,
       "detected_share_near_ball_at_pass_start": 0.8986730152985886
     },
@@ -315,6 +355,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 1,
+      "pass_kick_underway_at_start": 458,
+      "pass_kick_checked": 710,
       "detected_share_at_pass_start": 0.6071702944942382,
       "detected_share_near_ball_at_pass_start": 0.8401537183219692
     },
@@ -331,6 +373,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 323,
+      "pass_kick_checked": 497,
       "detected_share_at_pass_start": 0.6123585250091274,
       "detected_share_near_ball_at_pass_start": 0.8206917500018697
     },
@@ -347,6 +391,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 380,
+      "pass_kick_checked": 603,
       "detected_share_at_pass_start": 0.6521673690547862,
       "detected_share_near_ball_at_pass_start": 0.8675682906104322
     },
@@ -363,6 +409,8 @@
       "pass_ball_unobserved_at_start": 1,
       "pass_passer_unobserved_at_start": 1,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 375,
+      "pass_kick_checked": 600,
       "detected_share_at_pass_start": 0.6501515151515153,
       "detected_share_near_ball_at_pass_start": 0.864766511817789
     },
@@ -379,6 +427,8 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 428,
+      "pass_kick_checked": 642,
       "detected_share_at_pass_start": 0.5610308694420844,
       "detected_share_near_ball_at_pass_start": 0.8083138252776718
     },
@@ -395,9 +445,11 @@
       "pass_ball_unobserved_at_start": 0,
       "pass_passer_unobserved_at_start": 0,
       "pass_ends_in_other_period": 0,
+      "pass_kick_underway_at_start": 332,
+      "pass_kick_checked": 517,
       "detected_share_at_pass_start": 0.5968876384737121,
       "detected_share_near_ball_at_pass_start": 0.816405497313151
     }
   },
-  "runtime_s": 4.2
+  "runtime_s": 7.2
 }

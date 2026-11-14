@@ -659,9 +659,10 @@ sensitivity runs show.
 the first Metrica run is discarded).** The review found:
 
 1. **The kick is already underway on SkillCorner.** At 10 fps the event's start frame is often
-   after the ball has left the foot. In 31.9% of SkillCorner passes the ball is already moving
-   away from the passer at > 3 m/s, against 1.3% on Metrica (re-measured reproducibly in
-   `data_quality_v1`). Release-frame features, the static decision-time ones used for C28
+   after the ball has left the foot. The review measured the ball already moving away from the
+   passer at > 3 m/s in 31.9% of SkillCorner dataset rows, against 1.3% on Metrica. The
+   reproducible audit over all PASS events (one-frame velocity; `data_quality_v1`,
+   `guard_calibration_v1`, C38) gives 62.7% against 1.8%. Release-frame features, the static decision-time ones used for C28
    included, can therefore carry the start of the kick. **For SkillCorner the primary analysis is
    the guarded run** (`temporal_guard_skillcorner_v1_02s`), in which *every* decision-time
    feature is computed 0.2 s before the start frame. The guard runs also re-test C20/C28

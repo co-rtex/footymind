@@ -7,8 +7,10 @@
 ADR-0005 defines decision-time features at the event's start frame (the release frame). An
 independent review of the temporal features (RQ2, session 3) found that on SkillCorner
 (10 fps broadcast tracking) the ball is already moving away from the passer at more than
-3 m/s at that frame in 31.9% of passes, against 1.3% on Metrica (25 Hz). The audit
-re-measures this reproducibly in `experiments/results/data_quality_v1`.
+3 m/s at that frame in 31.9% of the dataset's passes, against 1.3% on Metrica (25 Hz). The
+reproducible audit over all PASS events, using a one-frame velocity
+(`experiments/results/data_quality_v1`, `guard_calibration_v1`; C38), gives 62.7% against
+1.8%.
 Release-frame positions, pressure and recent-movement features can therefore carry the
 start of the kick. Recomputing the temporal features 1–2 frames earlier removed about half
 of SkillCorner's time-on-ball gain and about a fifth of its movement-history gain, while
