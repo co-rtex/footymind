@@ -12,6 +12,7 @@ import type {
   MatchSummary,
   Pitch,
   PlayerOut,
+  PolicyInfo,
   PossessionSummary,
   ProvenanceLabel,
   Replay,
@@ -75,6 +76,39 @@ export function parseAnalysis(raw: unknown): FrameAnalysisOut {
   return raw as unknown as FrameAnalysisOut;
 }
 
+/**
+ * One response-policy description. `validation_ref` may be absent (treated as null);
+ * every other field is required when a policy object is present.
+ */
+export function parsePolicyInfo(raw: unknown, what = "policy"): PolicyInfo {
+  needKeys(raw, ["name", "description", "assumptions", "validated"], what);
+  need(typeof raw.name === "string" && raw.name.length > 0, `${what}.name is not a non-empty string`);
+  need(typeof raw.description === "string", `${what}.description is not a string`);
+  need(
+    Array.isArray(raw.assumptions) && raw.assumptions.every((a) => typeof a === "string"),
+    `${what}.assumptions is not an array of strings`,
+  );
+  need(typeof raw.validated === "boolean", `${what}.validated is not a boolean`);
+  const ref = raw.validation_ref;
+  need(ref === undefined || ref === null || typeof ref === "string", `${what}.validation_ref is not a string or null`);
+  return {
+    name: raw.name,
+    description: raw.description,
+    assumptions: raw.assumptions as string[],
+    validated: raw.validated,
+    validation_ref: typeof ref === "string" ? ref : null,
+  };
+}
+
+export function parseResponsePolicies(raw: unknown): PolicyInfo[] {
+  need(Array.isArray(raw), "response policies is not an array");
+  const out = raw.map((p, i) => parsePolicyInfo(p, `response policy ${i}`));
+  need(new Set(out.map((p) => p.name)).size === out.length, "response policies contain duplicate names");
+  return out;
+}
+
+const MOVEMENT_KEYS = ["player_id", "from_x", "from_y", "to_x", "to_y", "provenance"];
+
 export function parseScenario(raw: unknown): ScenarioResponse {
   needKeys(
     raw,
@@ -83,6 +117,19 @@ export function parseScenario(raw: unknown): ScenarioResponse {
   );
   parseAnalysis(raw.observed);
   parseAnalysis(raw.hypothetical);
+  need(Array.isArray(raw.movements), "scenario.movements is not an array");
+  for (const m of raw.movements as unknown[]) {
+    needKeys(m, MOVEMENT_KEYS, "scenario movement");
+    for (const k of ["from_x", "from_y", "to_x", "to_y"]) {
+      need(typeof m[k] === "number" && Number.isFinite(m[k]), `scenario movement ${k} is not a number`);
+    }
+  }
+  need(Array.isArray(raw.option_deltas), "scenario.option_deltas is not an array");
+  // `policy` is optional (older backends do not send it); when present it must be well formed.
+  if (raw.policy !== undefined && raw.policy !== null) {
+    const policy = parsePolicyInfo(raw.policy, "scenario.policy");
+    return { ...(raw as unknown as ScenarioResponse), policy };
+  }
   return raw as unknown as ScenarioResponse;
 }
 

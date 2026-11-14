@@ -679,11 +679,14 @@ export class PitchRenderer {
         const sy = fy + uy * (R + 2);
         const ex = tx - ux * (R + 4);
         const ey = ty - uy * (R + 4);
-        const colour = m.prov === "simulated" ? this.theme.text : this.theme.accent;
+        // user moves: violet (hypothetical) long dashes; simulated defender responses: white
+        // (simulated) short dashes plus a "sim" tag, so the two can never be confused
+        const sim = m.prov === "simulated";
+        const colour = sim ? this.theme.text : this.theme.accent;
         ctx.strokeStyle = rgba(colour, 0.9);
         ctx.fillStyle = rgba(colour, 0.9);
         ctx.lineWidth = 1.75;
-        ctx.setLineDash(m.prov === "simulated" ? [1.5, 3.5] : [6, 4]);
+        ctx.setLineDash(sim ? [2, 3] : [6, 4]);
         ctx.lineCap = "round";
         ctx.beginPath();
         ctx.moveTo(sx, sy);
@@ -697,6 +700,26 @@ export class PitchRenderer {
         ctx.lineTo(ex - ux * ah + uy * ah * 0.55, ey - uy * ah - ux * ah * 0.55);
         ctx.closePath();
         ctx.fill();
+      }
+      if (m.prov === "simulated") {
+        // tag beside the ghost, on the side away from the arrow
+        const off = R + 12;
+        const lx = len > 0 ? fx - ((tx - fx) / len) * off : fx;
+        const ly = len > 0 ? fy - ((ty - fy) / len) * off : fy - off;
+        ctx.font = `600 10px ${fontStack()}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const w = ctx.measureText("sim").width + 8;
+        ctx.fillStyle = "rgba(12, 15, 20, 0.85)";
+        roundRect(ctx, lx - w / 2, ly - 7, w, 14, 4);
+        ctx.fill();
+        ctx.setLineDash([2, 2]);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = rgba(this.theme.text, 0.8);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = this.theme.text;
+        ctx.fillText("sim", lx, ly + 0.5);
       }
     }
     ctx.restore();

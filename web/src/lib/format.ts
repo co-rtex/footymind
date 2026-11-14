@@ -56,7 +56,7 @@ export const PROVENANCE_TEXT: Record<ProvenanceLabel, string> = {
   derived: "Derived: computed deterministically from observed data",
   estimated: "Estimated: model output with uncalibrated literature parameters",
   hypothetical: "Hypothetical: position set by you in this scenario",
-  simulated: "Simulated: moved by a rule-based response policy",
+  simulated: "Simulated: moved by a defender response model (a rule or a learned model), not observed",
 };
 
 /** "#10 Home" style label for a player id, falling back to the raw id. */
@@ -69,4 +69,9 @@ export function playerLabel(id: string | null | undefined, players: Map<string, 
 export function speedOf(vx: number | null, vy: number | null): number | null {
   if (vx === null || vy === null || !Number.isFinite(vx) || !Number.isFinite(vy)) return null;
   return Math.hypot(vx, vy);
+}
+
+/** Replace raw player ids (e.g. "away_18") inside backend text with "#18 Away" labels. */
+export function humaniseIds(text: string, players: Map<string, PlayerOut>): string {
+  return text.replace(/\b(?:home|away)_[A-Za-z0-9]+\b/g, (id) => (players.has(id) ? playerLabel(id, players) : id));
 }

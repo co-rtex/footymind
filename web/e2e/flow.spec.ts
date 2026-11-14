@@ -80,7 +80,7 @@ test("replay, analyse and edit a scenario on real tracking data", async ({ page 
   await page.getByRole("radio", { name: "Physics heuristic" }).click();
   await expect(panel).toHaveAttribute("data-status", "success");
   await expect(page.getByTestId("delta-model")).toContainText("Physics heuristic (uncalibrated)");
-  await page.getByRole("radio", { name: "Marker follows" }).click();
+  await page.getByTestId("policy-select").selectOption("marker_follows");
   await expect(panel).toHaveAttribute("data-status", "success");
 
   // Reset returns to the observed state.
@@ -198,4 +198,79 @@ test("featured broadcast scenario opens with detected key players and a robust c
   await expect(deltas.locator("tbody tr").first()).toContainText("#14");
   await expect(deltas.locator("tbody tr").first()).toContainText("robust");
   await expect(page.getByText("Physically plausible edit")).toBeVisible();
+});
+
+test("keyboard edit with a defender response: selector, simulated moves and static comparison", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/#/lab/metrica-sample-1%3Ap0163?f=53708");
+  await expect(page.getByTestId("analysis-panel")).toHaveAttribute("data-frame", "53708");
+  const a = await fetchAnalysis(page, "metrica-sample-1", 53708);
+
+  // An attacker (not the carrier) with a defender within 8 m, so a marking response has someone to move.
+  const defenders = a.players.filter((p) => p.team !== a.attacking_team && p.x !== null && p.y !== null);
+  const attacker = a.players
+    .filter((p) => p.team === a.attacking_team && p.x !== null && p.y !== null && !p.is_gk && p.player_id !== a.carrier_id)
+    .map((p) => ({ p, d: Math.min(...defenders.map((q) => Math.hypot(q.x! - p.x!, q.y! - p.y!))) }))
+    .filter((s) => s.d < 8)
+    .sort((s, t) => s.d - t.d)[0]?.p;
+  expect(attacker).toBeTruthy();
+
+  // Keyboard-only path: mode switch, Player menu, move form (no canvas interaction).
+  const analyseRadio = page.getByRole("radio", { name: "Replay & analyse" });
+  await analyseRadio.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByTestId("scenario-panel")).toBeVisible();
+  await page.getByTestId("player-menu").selectOption(attacker!.player_id);
+  await expect(page.getByTestId("move-x")).toBeFocused();
+  await page.getByTestId("move-x").fill((attacker!.x! - 2.5).toFixed(1));
+  await page.getByTestId("move-y").fill(attacker!.y!.toFixed(1));
+  await page.keyboard.press("Enter");
+  const panel = page.getByTestId("scenario-panel");
+  await expect(panel).toHaveAttribute("data-status", "success", { timeout: 30_000 });
+  await expect(page.getByTestId("option-deltas")).toBeVisible();
+  await expect(page.getByTestId("policy-static-hint")).toBeVisible();
+
+  // The selector lists at least the two policies every backend accepts, static first.
+  const select = page.getByTestId("policy-select");
+  const values = await select.locator("option").evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value));
+  expect(values[0]).toBe("none");
+  expect(values).toContain("marker_follows");
+  await expect(page.getByTestId("policy-experimental")).toHaveCount(0);
+
+  // A response policy: provenance-labelled simulated moves (or an explicit "moved nobody"),
+  // the experimental badge unless the backend reports it validated, and the static comparison.
+  await select.selectOption("marker_follows");
+  await expect(panel).toHaveAttribute("data-status", "success", { timeout: 30_000 });
+  const comparison = page.getByTestId("policy-comparison");
+  await expect(comparison).toBeVisible({ timeout: 30_000 });
+  const description = page.getByTestId("policy-description");
+  if (!/Validated:/.test((await description.textContent()) ?? "")) {
+    await expect(page.getByTestId("policy-experimental")).toBeVisible();
+  }
+  await expect(page.getByTestId("policy-verdict")).not.toBeEmpty();
+  const sims = page.getByTestId("simulated-move");
+  if ((await sims.count()) > 0) {
+    await expect(sims.first()).toContainText("simulated");
+    await expect(sims.first()).toContainText("Marker follows response");
+    await expect(comparison.getByRole("table")).toBeVisible();
+  } else {
+    await expect(page.getByTestId("no-simulated-moves")).toBeVisible();
+  }
+  await expect(page.getByTestId("evidence")).toContainText("not what would have happened in the match");
+
+  // Back to static: the comparison goes away and the hint returns.
+  await select.selectOption("none");
+  await expect(page.getByTestId("policy-static-hint")).toBeVisible();
+  await expect(comparison).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("broken links explain themselves and lead back to the possession list", async ({ page }) => {
+  await page.goto("/#/lab/metrica-sample-1%3Ap9999");
+  const alert = page.getByRole("alert");
+  await expect(alert).toContainText("We could not find this possession");
+  await expect(alert.getByRole("button", { name: "Retry" })).toHaveCount(0);
+  await alert.getByRole("button", { name: "Browse possessions" }).click();
+  await expect(page.getByTestId("possession-table")).toBeVisible();
 });

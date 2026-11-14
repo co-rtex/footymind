@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../api/client";
 import type { ReplayData } from "../api/parse";
 import type {
@@ -7,14 +7,18 @@ import type {
   InterventionIn,
   MatchSummary,
   PlayerOut,
+  PolicyInfo,
   ResponsePolicy,
+  ScenarioRequest,
   ScenarioResponse,
   ValueModel,
 } from "../api/types";
 import { MAX_INTERVENTIONS } from "../api/types";
-import { playerLabel, speedOf, teamLabel, titleCase } from "../lib/format";
+import { fmtSigned, playerLabel, speedOf, teamLabel, titleCase } from "../lib/format";
 import { matchOfPossession, useAsync } from "../lib/hooks";
 import { finiteDiffSpeed, valueAt } from "../lib/interp";
+import { isNegligible } from "../lib/agreement";
+import { FALLBACK_POLICIES, orderPolicies, STATIC_POLICY } from "../lib/policies";
 import { Playback } from "../lib/playback";
 import { clockAt, eventLabel, indexOfFrame, periodAt } from "../lib/replayIndex";
 import type { DrawnPlayer, Layers, PitchRenderer, ScenarioView } from "../render/renderer";
@@ -49,7 +53,18 @@ export function Lab({ possessionId, match, onBack, initialFrame, initialMoves }:
     return (
       <div className="lab lab--status">
         <BackButton onBack={onBack} />
-        <StatusBlock kind="error" title="Could not load this possession" detail={replay.error.message} onRetry={replay.reload} />
+        <StatusBlock
+          kind="error"
+          title="Could not load this possession"
+          error={replay.error}
+          subject="this possession"
+          onRetry={replay.reload}
+          action={
+            <button type="button" className="btn btn--sm" onClick={onBack}>
+              Browse possessions
+            </button>
+          }
+        />
       </div>
     );
   }
@@ -83,11 +98,98 @@ function BackButton({ onBack }: { onBack: () => void }) {
 type Mode = "analyse" | "edit";
 type Loadable<T> = { status: "idle" | "loading" | "success" | "error"; data: T | null; error: Error | null };
 const IDLE: Loadable<never> = { status: "idle", data: null, error: null };
+/** A loadable that also records which request (serialised) its data or error belongs to. */
+type KeyedLoadable<T> = Loadable<T> & { key: string | null };
+const KEYED_IDLE: KeyedLoadable<never> = { ...IDLE, key: null };
+
+/**
+ * Run (or read from cache) the scenario request serialised in `key`. `keepStale` keeps the
+ * previous result visible (marked loading) while a new one is computed.
+ */
+function useScenarioRequest(
+  key: string | null,
+  cache: Map<string, ScenarioResponse>,
+  set: (f: (s: KeyedLoadable<ScenarioResponse>) => KeyedLoadable<ScenarioResponse>) => void,
+  nonce: number,
+  keepStale: boolean,
+): void {
+  useEffect(() => {
+    if (key === null) {
+      set(() => KEYED_IDLE);
+      return;
+    }
+    const hit = cache.get(key);
+    if (hit) {
+      set(() => ({ status: "success", data: hit, error: null, key }));
+      return;
+    }
+    const ac = new AbortController();
+    set((s) => ({ status: "loading", data: keepStale ? s.data : null, error: null, key: keepStale ? s.key : null }));
+    api.scenario(JSON.parse(key) as ScenarioRequest, ac.signal).then(
+      (d) => {
+        cachePut(cache, key, d);
+        if (!ac.signal.aborted) set(() => ({ status: "success", data: d, error: null, key }));
+      },
+      (e: unknown) => {
+        if (ac.signal.aborted) return;
+        const error = e instanceof Error ? e : new Error(String(e));
+        set((s) => ({ status: "error", data: keepStale ? s.data : null, error, key }));
+      },
+    );
+    return () => ac.abort();
+  }, [key, cache, set, nonce, keepStale]);
+}
 const ANALYSIS_DEBOUNCE_MS = 160;
 const SHADOW_DEBOUNCE_MS = 250;
 const HORIZON_S = 1.5;
 const ENSEMBLE = 24;
 const NO_PENDING: ReadonlyMap<string, { x: number; y: number }> = new Map();
+const SCENARIO_CACHE_MAX = 24;
+
+/**
+ * Response policies per match, fetched once per session. A backend without the endpoint (404)
+ * is remembered, so older backends cost one failed request, not one per edit-mode entry.
+ */
+const policyRequests = new Map<string, Promise<PolicyInfo[]>>();
+function loadPolicies(matchId: string): Promise<PolicyInfo[]> {
+  let p = policyRequests.get(matchId);
+  if (!p) {
+    p = api.responsePolicies(matchId).catch((e: unknown) => {
+      if (!(e instanceof ApiError && e.status === 404)) policyRequests.delete(matchId);
+      return FALLBACK_POLICIES;
+    });
+    policyRequests.set(matchId, p);
+  }
+  return p;
+}
+
+function scenarioRequest(
+  matchId: string,
+  frame: number,
+  interventions: InterventionIn[],
+  policy: ResponsePolicy,
+  valueModel: ValueModel,
+): ScenarioRequest {
+  return {
+    match_id: matchId,
+    frame,
+    interventions,
+    response_policy: policy,
+    horizon_s: HORIZON_S,
+    ensemble: ENSEMBLE,
+    value_model: valueModel,
+  };
+}
+
+/** Scenario results keyed by request, so switching policy or view never recomputes a known edit. */
+function cachePut(cache: Map<string, ScenarioResponse>, key: string, v: ScenarioResponse): void {
+  cache.set(key, v);
+  while (cache.size > SCENARIO_CACHE_MAX) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+}
 
 function LabView({
   replay,
@@ -132,6 +234,8 @@ function LabView({
   const [layers, setLayers] = useState<Layers>({ control: true, passes: true, pressure: true, trails: true, shadow: false });
   const [view, setView] = useState<ScenarioView>(linkedMoves.length ? "difference" : "observed");
   const [selected, setSelected] = useState<string | null>(null);
+  /** bumped when a player is chosen from the Player menu in edit mode, to focus the move form */
+  const [focusMove, setFocusMove] = useState(0);
   const [highlight, setHighlight] = useState<string | null>(null);
   const [interventions, setInterventions] = useState<InterventionIn[]>(linkedMoves);
   const [policy, setPolicy] = useState<ResponsePolicy>("none");
@@ -240,44 +344,48 @@ function LabView({
   const shadow = sh.data && sh.data.frame === frame ? sh.data : null;
 
   // ---- scenario ----
-  const [sc, setSc] = useState<Loadable<ScenarioResponse>>(IDLE);
+  // Defender response policies: read from the backend when it offers the list (lazily, in edit mode),
+  // otherwise the two policies every backend version accepts.
+  const pol = useAsync<PolicyInfo[]>(mode === "edit" ? `policies:${replay.matchId}` : null, () =>
+    loadPolicies(replay.matchId),
+  );
+  const policies = useMemo(
+    () => orderPolicies(pol.data && pol.data.length > 0 ? pol.data : FALLBACK_POLICIES),
+    [pol.data],
+  );
+  const scCache = useRef(new Map<string, ScenarioResponse>());
+  // Each result remembers the request it answers, so a result for the previous policy or value
+  // model is never presented under the new choice while the new request is in flight.
+  const scKey = useMemo(
+    () =>
+      mode === "edit" && interventions.length > 0
+        ? JSON.stringify(scenarioRequest(replay.matchId, frame, interventions, policy, valueModel))
+        : null,
+    [mode, interventions, policy, valueModel, frame, replay.matchId],
+  );
+  // The same edit with static defenders, so the panel can show how much the result depends on the
+  // response policy. Only needed when a non-static policy is chosen; usually already cached.
+  const stKey = useMemo(
+    () =>
+      mode === "edit" && interventions.length > 0 && policy !== STATIC_POLICY
+        ? JSON.stringify(scenarioRequest(replay.matchId, frame, interventions, STATIC_POLICY, valueModel))
+        : null,
+    [mode, interventions, policy, valueModel, frame, replay.matchId],
+  );
+  const [sc, setSc] = useState<KeyedLoadable<ScenarioResponse>>(KEYED_IDLE);
+  const [st, setSt] = useState<KeyedLoadable<ScenarioResponse>>(KEYED_IDLE);
   const [scNonce, setScNonce] = useState(0);
-  useEffect(() => {
-    if (mode !== "edit" || interventions.length === 0) {
-      setSc(IDLE);
-      return;
-    }
-    const ac = new AbortController();
-    setSc((s) => ({ status: "loading", data: s.data, error: null }));
-    api
-      .scenario(
-        {
-          match_id: replay.matchId,
-          frame,
-          interventions,
-          response_policy: policy,
-          horizon_s: HORIZON_S,
-          ensemble: ENSEMBLE,
-          value_model: valueModel,
-        },
-        ac.signal,
-      )
-      .then(
-        (d) => {
-          if (!ac.signal.aborted) setSc({ status: "success", data: d, error: null });
-        },
-        (e: unknown) => {
-          if (!ac.signal.aborted) setSc((s) => ({ status: "error", data: s.data, error: e instanceof Error ? e : new Error(String(e)) }));
-        },
-      );
-    return () => ac.abort();
-  }, [mode, interventions, policy, valueModel, frame, replay.matchId, scNonce]);
-  const scenario = mode === "edit" && interventions.length > 0 ? sc.data : null;
+  useScenarioRequest(scKey, scCache.current, setSc, scNonce, true);
+  useScenarioRequest(stKey, scCache.current, setSt, scNonce, false);
+  const scStatus = sc.status === "success" && sc.key !== scKey ? "loading" : sc.status;
+  const scenario = scKey !== null ? sc.data : null;
+  const staticScenario = stKey !== null && st.key === stKey ? st.data : null;
+  const stStatus = st.key === stKey ? st.status : "loading";
 
   const pending = useMemo(() => {
-    if (mode !== "edit" || interventions.length === 0 || sc.status === "success") return NO_PENDING;
+    if (mode !== "edit" || interventions.length === 0 || scStatus === "success") return NO_PENDING;
     return new Map(interventions.map((i) => [i.player_id, { x: i.x, y: i.y }]));
-  }, [mode, interventions, sc.status]);
+  }, [mode, interventions, scStatus]);
 
   // ---- push React-owned scene state to the renderer ----
   useEffect(() => {
@@ -316,14 +424,14 @@ function LabView({
   }, [playback]);
   const resetScenario = useCallback(() => {
     setInterventions([]);
-    setSc(IDLE);
+    setSc(KEYED_IDLE);
     setView("hypothetical");
     setNotice(null);
   }, []);
   const exitEdit = useCallback(() => {
     setMode("analyse");
     setInterventions([]);
-    setSc(IDLE);
+    setSc(KEYED_IDLE);
     setView("observed");
     setNotice(null);
   }, []);
@@ -401,6 +509,29 @@ function LabView({
   const onDragOutsideChange = useCallback((outside: boolean | null, id: string | null) => {
     setDragWarn(id ? { outside, id } : null);
   }, []);
+
+  const retryAnalysis = useCallback(() => setAnNonce((n) => n + 1), []);
+  const retryShadow = useCallback(() => setShNonce((n) => n + 1), []);
+  const retryScenario = useCallback(() => setScNonce((n) => n + 1), []);
+  const jumpTo = useCallback((i: number) => playback.step(i - Math.round(playback.t)), [playback]);
+  const closeInspector = useCallback(() => setSelected(null), []);
+  const removeMove = useCallback((id: string) => setInterventions((l) => l.filter((i) => i.player_id !== id)), []);
+
+  // Player menu: keyboard and touch users choose a player here instead of on the canvas.
+  const present = useMemo(() => {
+    const out: PlayerOut[] = [];
+    replay.players.forEach((pl, k) => {
+      if (Number.isFinite(replay.xy[(index * replay.nPlayers + k) * 2] as number)) out.push(pl);
+    });
+    return out.sort((a, b) => (a.team === b.team ? a.jersey - b.jersey : a.team === "home" ? -1 : 1));
+  }, [replay, index]);
+  const pickFromMenu = useCallback(
+    (id: string) => {
+      setSelected(id || null);
+      if (id && mode === "edit") setFocusMove((n) => n + 1);
+    },
+    [mode],
+  );
 
   // ---- keyboard shortcuts ----
   useEffect(() => {
@@ -498,7 +629,7 @@ function LabView({
 
   const pitchStatus =
     mode === "edit"
-      ? sc.status === "loading"
+      ? scStatus === "loading"
         ? "Re-running model..."
         : scenario
           ? view === "observed"
@@ -595,6 +726,29 @@ function LabView({
                 <span>Defensive shadow (experimental)</span>
               </label>
             </fieldset>
+            <label className="player-menu">
+              <span className="segmented-label">Player</span>
+              <select
+                className="select select--sm"
+                value={selected ?? ""}
+                onChange={(e) => pickFromMenu(e.target.value)}
+                data-testid="player-menu"
+                title={mode === "edit" ? "Choose a player to move" : "Choose a player to inspect"}
+              >
+                <option value="">{mode === "edit" ? "Choose a player to move" : "Choose a player"}</option>
+                {(["home", "away"] as const).map((team) => (
+                  <optgroup key={team} label={teamLabel(team)}>
+                    {present
+                      .filter((pl) => pl.team === team)
+                      .map((pl) => (
+                        <option key={pl.player_id} value={pl.player_id}>
+                          #{pl.jersey} {teamLabel(pl.team)}
+                        </option>
+                      ))}
+                  </optgroup>
+                ))}
+              </select>
+            </label>
             {mode === "edit" ? (
               <Segmented<ScenarioView>
                 label="Scenario view"
@@ -664,6 +818,8 @@ function LabView({
             </p>
           )}
 
+          {scenario && mode === "edit" ? <ScenarioJump scenario={scenario} players={players} /> : null}
+
           <Legend
             attackingTeam={shownAnalysis?.attacking_team ?? poss?.team ?? null}
             showHeat={layers.control && !playing}
@@ -681,7 +837,8 @@ function LabView({
               playing={playing}
               editable={mode === "edit"}
               onMove={(x, y) => selected && applyMove(selected, x, y)}
-              onClose={() => setSelected(null)}
+              onClose={closeInspector}
+              focusMove={focusMove}
             />
           ) : null}
 
@@ -692,13 +849,16 @@ function LabView({
               interventions={interventions}
               policy={policy}
               onPolicy={setPolicy}
+              policies={policies}
+              staticStatus={stStatus}
+              staticScenario={staticScenario}
               valueModel={valueModel}
               onValueModel={setValueModel}
-              status={sc.status}
+              status={scStatus}
               scenario={scenario}
               error={sc.error}
-              onRetry={() => setScNonce((n) => n + 1)}
-              onRemove={(id) => setInterventions((l) => l.filter((i) => i.player_id !== id))}
+              onRetry={retryScenario}
+              onRemove={removeMove}
               onReset={resetScenario}
               players={players}
               highlight={highlight}
@@ -714,7 +874,7 @@ function LabView({
                   shadow={shadow}
                   unavailable={sh.unavailable}
                   error={sh.error}
-                  onRetry={() => setShNonce((n) => n + 1)}
+                  onRetry={retryShadow}
                   players={players}
                 />
               ) : null}
@@ -723,13 +883,13 @@ function LabView({
                 status={an.status}
                 analysis={an.data}
                 error={an.error}
-                onRetry={() => setAnNonce((n) => n + 1)}
+                onRetry={retryAnalysis}
                 players={players}
                 highlight={highlight}
                 onHighlight={setHighlight}
                 clock={`P${period} ${clock}`}
               />
-              <EventsCard replay={replay} match={match} players={players} onJump={(i) => playback.step(i - Math.round(playback.t))} />
+              <EventsCard replay={replay} match={match} players={players} onJump={jumpTo} />
             </>
           )}
         </aside>
@@ -738,7 +898,39 @@ function LabView({
   );
 }
 
-function EventsCard({
+/**
+ * Stacked layouts (tablet, phone) put the scenario panel below the pitch, out of sight after a
+ * drag. This one-line result links down to it. Hidden on wide screens, where the panel is beside
+ * the pitch.
+ */
+function ScenarioJump({ scenario, players }: { scenario: ScenarioResponse; players: Map<string, PlayerOut> }) {
+  const top = [...scenario.option_deltas].sort((a, b) => Math.abs(b.delta ?? 0) - Math.abs(a.delta ?? 0))[0];
+  const go = () => {
+    const el = document.getElementById("sc-title");
+    el?.scrollIntoView({ block: "start" });
+    el?.focus({ preventScroll: true });
+  };
+  return (
+    <button type="button" className="scenario-jump" onClick={go} data-testid="scenario-jump">
+      <span>
+        {top && !isNegligible(top.delta) ? (
+          <>
+            Largest change: pass to <strong>{playerLabel(top.receiver_id, players)}</strong>{" "}
+            <span className={(top.delta ?? 0) > 0 ? "pos" : "neg"}>{fmtSigned(top.delta)}</span>
+          </>
+        ) : (
+          "No pass option changes noticeably"
+        )}
+        {scenario.supported ? "" : " · edit not supported"}
+      </span>
+      <span className="scenario-jump-cta">
+        Full comparison <span aria-hidden="true">↓</span>
+      </span>
+    </button>
+  );
+}
+
+const EventsCard = memo(function EventsCard({
   replay,
   match,
   players,
@@ -774,4 +966,4 @@ function EventsCard({
       </ol>
     </section>
   );
-}
+});

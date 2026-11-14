@@ -9,7 +9,7 @@
 import type { DefenderShadowOut } from "../api/types";
 
 export const SHADOW_CAVEAT =
-  "Experimental model-based sensitivity: how much passing value (option model) this position removes compared with nearby positions on a 3.5 m ring around the defender (not checked for reachability). Validated only partly: it ranks the eventual interceptor first 2× more often than chance, but not better than simply 'nearest defender to the ball'. Not a defender rating.";
+  "Experimental model-based sensitivity: how much passing value (option model) this position removes compared with nearby positions on a 3.5 m ring around the defender (not checked for reachability). Validated only partly: on Metrica data it ranks the eventual interceptor first about 2× more often than chance, but not better than simply 'nearest defender to the ball'; on SkillCorner broadcast data it does no better than chance. Not a defender rating.";
 
 /** shadow_sum at which the halo reaches full size and opacity (summed option value). */
 export const SHADOW_FULL_SCALE = 0.3;
