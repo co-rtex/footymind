@@ -4,22 +4,53 @@
 miss: space, passing options, defensive influence, and "what if?" scenarios grounded in
 real player positions.**
 
-FootyMind reconstructs real possessions from synchronised player-tracking and event data
-and quantifies passing options and defensive pressure with a physics-based model. It also
-lets you *move a player* to see how the model's picture of the play changes. The
-hypothetical is checked against physical reachability, shown side by side with the
-observed state, and reported with its sensitivity to the model's assumptions.
+Event data records what happened to the ball. FootyMind reconstructs what the event log cannot
+see: the space, the pressure and the passing options behind each decision. It works from real
+player-tracking data from two providers, 3 Metrica matches (optical, 25 Hz) and 20 SkillCorner
+A-League matches (broadcast, 10 fps). In the web lab you can:
+* replay a possession;
+* pause on a decision and read why it was interesting, from computed evidence;
+* find similar moments from other matches;
+* move a player and see how the model's picture changes under explicit, partly validated
+  assumptions about how the defence would respond.
 
-> Status (2026-11-13): end-to-end flagship flow working on real data from two providers (23
-> matches). That covers the replay, pause-and-analyse, dragging a player, comparing with
-> uncertainty, and resetting. The main research result is replicated across providers. See
-> [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md).
+Behind the lab is a research pipeline with pre-registered, leakage-audited, leave-one-match-out
+experiments. Every number quoted here is traced in a [claims ledger](docs/CLAIMS_LEDGER.md) to a
+committed result.
 
-![Frame analysis: pitch control, ranked pass options with calibrated and physics estimates](web/screenshots/lab-analysis-desktop.png)
+> **Status: 1.0 release candidate (2026-11-14).** All five pillars run end to end on real data:
+> data engineering, analysis engine, Possession Multiverse, web lab, and a reproducible research
+> release. The container is verified at runtime. Read the
+> [technical research report](docs/RESEARCH_REPORT.md), the [model cards](docs/MODEL_CARDS.md)
+> and [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md).
 
-![Possession Multiverse: a moved player (hypothetical), the marker's rule-based response (simulated), and the pitch-control difference](web/screenshots/scenario-difference-desktop.png)
+![Guided tour: watch a real possession, understand the decision, then ask "what if?"](web/screenshots/guided-tour-desktop.png)
 
-![Broadcast tracking (SkillCorner): off-camera players are provider extrapolations, drawn hollow and labelled as estimates](web/screenshots/broadcast-estimated-desktop.png)
+![Frame analysis: pitch control, ranked pass options with calibrated and physics estimates, and metric-grounded "Why this moment" statements](web/screenshots/lab-analysis-desktop.png)
+
+![One run, two assumptions about the defence: the modelled gain of a run disappears if the marker follows (simulated), a model-based illustration](web/screenshots/guided-tour-response-desktop.png)
+
+![Broadcast tracking (SkillCorner): off-camera players and ball are provider extrapolations, drawn hollow and labelled as estimates](web/screenshots/broadcast-estimated-desktop.png)
+
+## What is distinctive
+
+* **Honesty is part of the product.**
+  * Every value carries a provenance label (observed, derived, estimated, hypothetical,
+    simulated) in the API and the UI.
+  * Unobserved data stays empty instead of being filled in.
+  * Experimental models are labelled as such, and negative results are reported next to
+    positive ones.
+* **Leakage control beyond "no future frames".**
+  * On broadcast tracking the event frame often already contains the kick, in 62.7% of passes.
+    Decision-time features are therefore read 0.2 s earlier, at an empirically calibrated
+    guard frame (C38, ADR-0007).
+  * Frame-rate unit bugs between 25 Hz and 10 fps were found and fixed.
+* **Two providers, never pooled.** Every experiment is replicated separately on optical and
+  broadcast tracking.
+* **Counterfactuals with stated, tested assumptions.**
+  * Opponent-response rules are checked against how real defenders react to unexpected
+    attacker movement, with a placebo design.
+  * The UI says which rules pass that check, and that no rule is a causal model.
 
 ## What is in here
 
@@ -29,10 +60,10 @@ observed state, and reported with its sensitivity to the model's assumptions.
 | Spatial analytics | Pitch control (Spearman 2018 time-to-intercept model), passing-lane geometry and interception heuristic, pressure on the ball carrier | ✅ (uncalibrated estimates, labelled as such) |
 | Possession Multiverse | Relocate players at a real frame → reachability check → recompute options → compare with observed → parameter-sensitivity ensemble → explicit assumptions | ✅ |
 | Calibrated option model | Logistic model over per-option features incl. lead-pass targets, evaluated leave-one-match-out (v2: log loss 0.414, AUC 0.796, ECE 0.019), served as plain-JSON coefficients with bootstrap uncertainty | ✅ |
-| Interactive lab (web) | Canvas replay at 60 fps, overlays, drag-to-edit scenarios, observed/hypothetical/difference views, evidence panel | ✅ |
+| Interactive lab (web) | Guided first-visit tour over three featured real situations, Canvas replay at 60 fps, overlays, keyboard- and drag-based scenario editing, observed/hypothetical/difference views, evidence panel; responsive and axe-checked | ✅ |
 | Research: does spatial context matter? | Leakage-audited attempted-pass outcome study with event-only, spatial and interaction model families, ablations and sensitivity analyses | ✅ v1 |
 | Ghost Value: Defensive Shadow | Per-defender suppression of passing value against nearby alternative positions | 🧪 experimental (API + UI layer; not better than nearest-defender, at chance on SkillCorner) |
-| Opponent response policies | Defender reactions to a scenario edit (`press_carrier`, `zonal_shift`, `lane_cover`, `marker_follows`, `learned`) limited by a kinematic envelope (reaction delay, acceleration, top speed), with a static-vs-response comparison in the lab | ✅ `learned` validated as a short-horizon forecast of real play; rule policies 🧪 experimental |
+| Opponent response policies | Defender reactions to a scenario edit (`marker_follows`, `lane_cover`, `press_carrier`, `zonal_shift`, `learned`, `learned_innovation`) limited by a pre-registered kinematic envelope v2, with a static-vs-response comparison in the lab | ✅ learned models validated as forecasts of real play (observational); rules 🧪 experimental, with their observational-check result shown |
 | Temporal context | Causal time-on-ball and last-second movement history at a guard frame before the release (ADR-0007), served with the frame analysis | ✅ research study RQ2 (see findings) |
 | Why this moment | Deterministic, evidence-grounded statements: each sentence is tied to one computed metric, its provenance and the players it mentions | ✅ |
 | Similar moments | The most similar pass decisions from *other* matches of the same provider, with observed outcomes and deep links | ✅ validated held-out (beats the base rate on both providers) |
@@ -154,10 +185,59 @@ curl -s -X POST http://127.0.0.1:8000/api/scenarios -H 'content-type: applicatio
 
 ## Architecture
 
-A modular monolith: a Python package (`footymind`) with provider adapters → canonical
-tracking model → spatial models → counterfactual engine and research pipeline, served by
-FastAPI. The frontend is Vite + React + TypeScript with a Canvas pitch renderer. See
+```mermaid
+flowchart LR
+  SRC["Pinned sources<br/>Metrica 25 Hz · SkillCorner 10 fps"] --> ING["Provider adapters<br/>+ quality gates"]
+  ING --> BUN[("Versioned bundles<br/>positions · events · provenance masks")]
+  BUN --> ENG["Analysis engine<br/>pitch control · lanes · per-provider option models<br/>temporal context · explanations"]
+  ENG --> MV["Possession Multiverse<br/>feasibility · response policies · envelope v2 · ensemble"]
+  BUN --> RES["Research pipeline<br/>leakage-audited datasets · LOMO · bootstrap"]
+  RES --> RJ[("experiments/results<br/>committed JSON + claims ledger")]
+  RES -. builds .-> SIM[("Similar-moment index")]
+  ENG --> API["FastAPI<br/>typed schemas"]
+  MV --> API
+  SIM --> API
+  API --> WEB["React + Canvas lab<br/>guided tour"]
+```
+
+A modular monolith: one Python package and one FastAPI process, which can also serve the
+built frontend. There is no database or queue (ADR-0001). See
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and the [ADRs](docs/adr/).
+
+**Technology.**
+* Backend: Python 3.13, uv, NumPy, Polars, SciPy, scikit-learn, FastAPI and pydantic.
+* Frontend: TypeScript, React, Vite, Canvas 2D, Vitest and Playwright.
+* Quality and delivery: ruff, mypy, Docker, and GitHub Actions (lint, types, unit, real-data,
+  web and container-runtime jobs).
+
+## Testing and verification
+
+```bash
+scripts/check.sh                                   # every CI gate: ruff, format, mypy, pytest; web typecheck, lint, vitest, build
+cd web && npx playwright test --trace off          # end-to-end journeys against the real API (needs processed data)
+scripts/container_smoke.sh                         # build the image, run it, check the API and the lab end to end
+scripts/reproduce.sh --dry-run                     # every committed research artefact, in dependency order
+```
+
+The latest verified counts and CI status are in [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md).
+[`docs/release/VERIFICATION.md`](docs/release/VERIFICATION.md) records the clean-setup and
+container checks.
+
+## Limitations
+
+* **Small, specific samples.** 3 anonymised Metrica matches and 20 matches from one A-League
+  season. Results are not claims about football in general.
+* **Observational data.** Pass-outcome results are associations between pre-decision context
+  and outcomes of passes players chose to make. Estimates for options nobody chose are
+  extrapolations.
+* **Broadcast tracking.** About a third of SkillCorner positions are provider extrapolations,
+  labelled *estimated*, and the event frames lag the kick (C30, C38).
+* **Counterfactuals are model-based.** No response policy is validated as a response to an
+  intervention that never happened. The best of them are consistent with how real defenders
+  react to real movement (C62, C64).
+* **Negative results.** Physics pass probabilities, the Defensive Shadow metric and simple
+  off-ball run value did not survive evaluation. They are kept, and labelled, as experimental
+  or explanatory tools. See the [research report](docs/RESEARCH_REPORT.md).
 
 ## Data and attribution
 
