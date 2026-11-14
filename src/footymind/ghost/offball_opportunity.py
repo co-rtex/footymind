@@ -60,6 +60,7 @@ outputs are ``Provenance.ESTIMATED``; moved defenders are ``SIMULATED`` and move
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -78,6 +79,12 @@ HORIZON_S = 1.0
 MEASURES = ("forward", "sum", "own")
 ASSUMPTIONS = ("static", "constant_velocity", "marker_follows", "lane_cover")
 POLICY_ASSUMPTIONS = ("marker_follows", "lane_cover")
+# Positive control added after the session-4 methodology review: the single-defender rules move
+# one defender by a fraction of a small innovation, so a near-zero adjustment was close to
+# guaranteed. ``learned_innovation`` moves every outfield defender (about 1.3 m each under a
+# 5 m edit, C63). If even it changes credit little, the null is not a design artefact. It is
+# reported separately and is not part of the pre-registered H-R1..H-R3 statistics.
+CONTROL_ASSUMPTIONS = ("learned_innovation",)
 ATTRIBUTIONS = ("innovation", "full")
 
 ASSUMPTION_TEXT = {
@@ -182,6 +189,7 @@ def offball_opportunity(
     attackers: list[int] | None = None,
     assumptions: tuple[str, ...] = ASSUMPTIONS,
     params: PitchControlParams = DEFAULT_PARAMS,
+    innovation_model: Any = None,
 ) -> OffballOpportunity:
     """Per-attacker modelled opportunity change under each defender assumption.
 
@@ -193,10 +201,14 @@ def offball_opportunity(
         raise ValueError("needs a possession, a carrier and an observed ball")
     if attribution not in ATTRIBUTIONS:
         raise ValueError(f"unknown attribution {attribution!r}")
-    unknown = [k for k in assumptions if k not in ASSUMPTIONS]
+    unknown = [k for k in assumptions if k not in (*ASSUMPTIONS, *CONTROL_ASSUMPTIONS)]
     if unknown:
         raise ValueError(f"unknown assumptions {unknown}")
-    ctx = ResponseContext(pitch=pitch or PitchSpec(), horizon_s=horizon_s)
+    if "learned_innovation" in assumptions and innovation_model is None:
+        raise ValueError("the learned_innovation control needs the provider's innovation model")
+    ctx = ResponseContext(
+        pitch=pitch or PitchSpec(), horizon_s=horizon_s, innovation_model=innovation_model
+    )
     v_obs = opportunity(st, params)
     cv_state, n_unres = (None, 0)
     v_cv: dict[str, float] | None = None

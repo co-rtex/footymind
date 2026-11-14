@@ -164,3 +164,26 @@ def test_rejects_bad_inputs() -> None:
     st.carrier = None
     with pytest.raises(ValueError):
         offball_opportunity(st, st.xy.copy(), np.zeros_like(st.xy))
+
+
+def test_learned_innovation_control_needs_a_model_and_moves_several_defenders() -> None:
+    """Positive control (SYNTHETIC geometry and a hand-made model with known gains)."""
+    from footymind.ghost.offball_opportunity import offball_opportunity
+    from tests.test_learned_innovation_policy import hand_model
+
+    st = _state((25.0, 8.0), (23.0, 6.0))
+    earlier = st.xy.copy()
+    earlier[1] = (25.0, 0.5)
+    vel0 = np.zeros_like(earlier)
+    with pytest.raises(ValueError, match="innovation model"):
+        offball_opportunity(st, earlier, vel0, assumptions=("learned_innovation",))
+    r = offball_opportunity(
+        st,
+        earlier,
+        vel0,
+        assumptions=("static", "learned_innovation"),
+        innovation_model=hand_model(),
+    )
+    a = _runner(r)
+    assert a.defenders_moved["learned_innovation"] >= 1  # type: ignore[attr-defined]
+    assert set(a.change) == {"static", "learned_innovation"}  # type: ignore[attr-defined]

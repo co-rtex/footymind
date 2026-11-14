@@ -73,9 +73,11 @@ import numpy as np
 import polars as pl
 from scipy.stats import spearmanr
 
+from footymind.counterfactual.response_innovation import load_innovation_model
 from footymind.data.store import available_matches, git_revision, load_match
 from footymind.ghost.offball_opportunity import (
     ASSUMPTIONS,
+    CONTROL_ASSUMPTIONS,
     MEASURES,
     POLICY_ASSUMPTIONS,
     eligible_attackers,
@@ -126,6 +128,9 @@ def _rows(
     rows: list[dict[str, Any]] = []
     counts = {"passes_sampled": 0, "frames_used": 0, "skipped_history": 0, "skipped_state": 0}
     rng = np.random.default_rng(seed)
+    innovation_model = load_innovation_model(provider)
+    if innovation_model is None:
+        raise ValueError(f"no innovation response model for {provider} (positive control)")
     mids = matches or [m for m in available_matches() if m.startswith(provider + "-")]
     for mid in mids:
         if not mid.startswith(provider + "-"):
@@ -158,6 +163,17 @@ def _rows(
             full = offball_opportunity(
                 st, exy, evel, HORIZON_S, "full", td.pitch, att, POLICY_ASSUMPTIONS
             )
+            ctrl = offball_opportunity(
+                st,
+                exy,
+                evel,
+                HORIZON_S,
+                "innovation",
+                td.pitch,
+                att,
+                CONTROL_ASSUMPTIONS,
+                innovation_model=innovation_model,
+            )
             pxy, pvel = rotate_history(st, exy, evel, att, rng)
             plc = offball_opportunity(st, pxy, pvel, HORIZON_S, "innovation", td.pitch, att)
             progress = _progress(b, i, r["team"], r["possession_id"])
@@ -185,6 +201,11 @@ def _rows(
                     for m in MEASURES:
                         row[f"{kk}__{m}"] = ra.change[kk][m]
                         row[f"placebo_{kk}__{m}"] = pa.change[kk][m]
+                ca = ctrl.attackers[n]
+                for kk in CONTROL_ASSUMPTIONS:
+                    row[f"{kk}__moved"] = ca.defenders_moved[kk]
+                    for m in MEASURES:
+                        row[f"control_{kk}__{m}"] = ca.change[kk][m]
                 for kk in POLICY_ASSUMPTIONS:
                     row[f"{kk}__moved"] = ra.defenders_moved[kk]
                     for m in MEASURES:
@@ -307,6 +328,19 @@ def analyse(df: pl.DataFrame, n_boot: int, seed: int, two_stage: bool) -> dict[s
                     "mean": _mean(sub, fx[ok], c2, d2),
                     "minus_static": _mean(sub, fx[ok] - st[ok], c2, d2),
                     "minus_innovation": _mean(sub, fx[ok] - _col(sub, f"{k}__{m}"), c2, d2),
+                }
+        for k in CONTROL_ASSUMPTIONS:  # positive control (post-review), not pre-registered
+            cx = _col(df, f"control_{k}__{m}")
+            ok = np.isfinite(cx)
+            sub = df.filter(pl.Series(ok))
+            if sub.height > 30:
+                c3 = Clusters(sub)
+                d3 = c3.draws(n_boot, seed, two_stage)
+                res[f"control_{k}"] = {
+                    "n": int(sub.height),
+                    "mean": _mean(sub, cx[ok], c3, d3),
+                    "minus_static": _mean(sub, cx[ok] - st[ok], c3, d3),
+                    "mean_defenders_moved": float(_col(sub, f"{k}__moved").mean()),
                 }
         allv = np.column_stack([_col(df, f"{k}__{m}") for k in ASSUMPTIONS])
         rng_all = allv.max(axis=1) - allv.min(axis=1)
