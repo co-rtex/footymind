@@ -1,0 +1,434 @@
+{
+  "name": "response_diagnostics_v1",
+  "provider": "metrica",
+  "question": "why does the learned response model barely respond to interventions, and does an innovation model of defender movement on attacker movement respond?",
+  "matches": [
+    "metrica-sample-1",
+    "metrica-sample-2",
+    "metrica-sample-3"
+  ],
+  "code_revision": "7343b23af0cd42bf170e9a6eb5499f44d07041c0",
+  "runtime_s": 14.3,
+  "fps": 25.0,
+  "n": 36465,
+  "n_decision_frames": 3653,
+  "n_possessions": 1001,
+  "excluded_defender_rows": {
+    "velocity_unavailable": 28,
+    "tracking_artefact": 57,
+    "frames_ball_missing": 1
+  },
+  "ridge_alpha": 1.0,
+  "n_boot": 1000,
+  "d1_d3_probe_learned_v1": {
+    "available": true,
+    "offset_s": 1.0,
+    "n_probes": 14612,
+    "mean_defender_move_m": 0.01913879114600454,
+    "mean_largest_move_m": 0.03628939118063668,
+    "p95_largest_move_m": 0.056823253937999814,
+    "gain_m_per_m_largest": 0.007257878236127337,
+    "mean_abs_feature_shift_sd": {
+      "vx(x)": 0.0,
+      "ball_dx(x)": 0.16413735642285704,
+      "ball_vx(x)": 0.0,
+      "att_dx(x)": 0.11216974199891162,
+      "goal_dx(x)": 0.0,
+      "ball_dist(x)": 0.24748282005038785,
+      "vy(y)": 0.0,
+      "ball_dy(y)": 0.13671052638401748,
+      "ball_vy(y)": 0.0,
+      "att_dy(y)": 0.10375920044387639,
+      "goal_dy(y)": 0.0
+    },
+    "mahalanobis_sq_observed_p99": 33.85990275236068,
+    "share_intervened_rows_beyond_observed_p99": 0.010873440285204991,
+    "share_observed_rows_beyond_observed_p99": 0.010009598244892363,
+    "coef_m_per_m_at_1s": {
+      "x": {
+        "vx": 0.914296331579748,
+        "ball_dx": -0.0017479464371166946,
+        "ball_vx": 0.004724420391311659,
+        "att_dx": -0.005612320021536338,
+        "goal_dx": 0.007787496476540013,
+        "ball_dist": -0.00450916687512953
+      },
+      "y": {
+        "vy": 0.9215106446581796,
+        "ball_dy": -0.003325927651963987,
+        "ball_vy": 0.0049582888103579725,
+        "att_dy": -0.00469693991863737,
+        "goal_dy": 0.009652933714731651
+      }
+    }
+  },
+  "d2_variance": {
+    "0.5s": {
+      "n": 23180,
+      "r2_displacement_const_velocity": 0.946075482533774,
+      "r2_displacement_learned_v1": 0.9507580532800803,
+      "r2_innovation_v1_features": 0.08114579689702306,
+      "r2_innovation_innovation_model": 0.2236509602974971,
+      "r2_innovation_placebo_model": 0.17401432459734678,
+      "rms_innovation_m": 0.3293754159395554,
+      "rms_velocity_part_m": 1.4452129316094542
+    },
+    "1.0s": {
+      "n": 22952,
+      "r2_displacement_const_velocity": 0.8707807545622229,
+      "r2_displacement_learned_v1": 0.8878130801917834,
+      "r2_innovation_v1_features": 0.12460003682427145,
+      "r2_innovation_innovation_model": 0.3057449984468874,
+      "r2_innovation_placebo_model": 0.23402591314838606,
+      "rms_innovation_m": 0.9659859581000586,
+      "rms_velocity_part_m": 2.7784875730645147
+    }
+  },
+  "d2_v1_features_on_innovation_coef_m_per_m_at_1s": {
+    "x": {
+      "vx": -0.08567124070527499,
+      "ball_dx": -0.0017493060556410742,
+      "ball_vx": 0.004722631097223573,
+      "att_dx": -0.00561256692472785,
+      "goal_dx": 0.00778778545762304,
+      "ball_dist": -0.0045097342863417746
+    },
+    "y": {
+      "vy": -0.07845698696638169,
+      "ball_dy": -0.00332702540284209,
+      "ball_vy": 0.004957027004984758,
+      "att_dy": -0.004697488067483168,
+      "goal_dy": 0.009653248956132137
+    }
+  },
+  "d3_innovation_scale": {
+    "0.5s": {
+      "attacker_innovation_m": {
+        "p50": 0.1747446487217779,
+        "p90": 0.4436362738235679,
+        "p99": 0.7740122832151817
+      },
+      "share_attacker_innovation_above_probe": 0.0001916495550992471,
+      "carrier_innovation_m": {
+        "p50": 0.28051299763738663,
+        "p90": 0.58721698029294,
+        "p99": 0.9590748610536117
+      },
+      "share_carrier_innovation_above_probe": 0.0005474952094169176
+    },
+    "1.0s": {
+      "attacker_innovation_m": {
+        "p50": 0.5396570979672437,
+        "p90": 1.3710627137388538,
+        "p99": 2.2943341996658044
+      },
+      "share_attacker_innovation_above_probe": 0.0008213552361396304,
+      "carrier_innovation_m": {
+        "p50": 0.8870655062386072,
+        "p90": 1.8355842982639676,
+        "p99": 2.7869069570968823
+      },
+      "share_carrier_innovation_above_probe": 0.0016424856282507528
+    }
+  },
+  "d4_innovation_model": {
+    "features": [
+      "near",
+      "local",
+      "zone",
+      "team",
+      "ball"
+    ],
+    "evaluation": {
+      "0.5s": {
+        "horizon_frames": 13,
+        "fde_const_velocity": {
+          "mean": 0.25039342949817406,
+          "ci95": [
+            0.24607873552437673,
+            0.25480118164311105
+          ],
+          "n": 23180,
+          "better_in_matches": 0,
+          "per_match": {
+            "metrica-sample-1": 0.2477505105793029,
+            "metrica-sample-2": 0.2416474263332921,
+            "metrica-sample-3": 0.2642932103696028
+          }
+        },
+        "fde_innovation_model": {
+          "mean": 0.21205260014619784,
+          "ci95": [
+            0.20867106778875372,
+            0.215993629960596
+          ],
+          "n": 23180,
+          "better_in_matches": 0,
+          "per_match": {
+            "metrica-sample-1": 0.20914863089001767,
+            "metrica-sample-2": 0.2048201456171283,
+            "metrica-sample-3": 0.2242957903117674
+          }
+        },
+        "fde_placebo_model": {
+          "mean": 0.2225827925846582,
+          "ci95": [
+            0.21910541101169076,
+            0.2265396376465223
+          ],
+          "n": 23180,
+          "better_in_matches": 0,
+          "per_match": {
+            "metrica-sample-1": 0.21931669457760178,
+            "metrica-sample-2": 0.2141780631420671,
+            "metrica-sample-3": 0.23669726452586898
+          }
+        },
+        "fde_learned_v1": {
+          "mean": 0.2397150914397174,
+          "ci95": [
+            0.23555279136711477,
+            0.24380589179902284
+          ],
+          "n": 23180,
+          "better_in_matches": 0,
+          "per_match": {
+            "metrica-sample-1": 0.23718666788944673,
+            "metrica-sample-2": 0.23119486939358855,
+            "metrica-sample-3": 0.25320781759604094
+          }
+        },
+        "innovation_minus_cv": {
+          "mean": -0.03834082935197624,
+          "ci95": [
+            -0.040564176697311737,
+            -0.035798055257154224
+          ],
+          "n": 23180,
+          "better_in_matches": 3,
+          "per_match": {
+            "metrica-sample-1": -0.038601879689285204,
+            "metrica-sample-2": -0.03682728071616379,
+            "metrica-sample-3": -0.03999742005783541
+          }
+        },
+        "placebo_minus_cv": {
+          "mean": -0.027810636913515863,
+          "ci95": [
+            -0.029909303660594775,
+            -0.025485358335945577
+          ],
+          "n": 23180,
+          "better_in_matches": 3,
+          "per_match": {
+            "metrica-sample-1": -0.028433816001701105,
+            "metrica-sample-2": -0.027469363191224973,
+            "metrica-sample-3": -0.0275959458437338
+          }
+        },
+        "innovation_minus_placebo": {
+          "mean": -0.010530192438460373,
+          "ci95": [
+            -0.011514860308657221,
+            -0.009368272439113631
+          ],
+          "n": 23180,
+          "better_in_matches": 3,
+          "per_match": {
+            "metrica-sample-1": -0.010168063687584097,
+            "metrica-sample-2": -0.009357917524938818,
+            "metrica-sample-3": -0.012401474214101614
+          }
+        },
+        "learned_v1_minus_cv": {
+          "mean": -0.010678338058456662,
+          "ci95": [
+            -0.011811238206945329,
+            -0.009539360586382916
+          ],
+          "n": 23180,
+          "better_in_matches": 3,
+          "per_match": {
+            "metrica-sample-1": -0.010563842689856167,
+            "metrica-sample-2": -0.01045255693970353,
+            "metrica-sample-3": -0.01108539277356182
+          }
+        }
+      },
+      "1.0s": {
+        "horizon_frames": 25,
+        "fde_const_velocity": {
+          "mean": 0.7675553151944285,
+          "ci95": [
+            0.7544723490061266,
+            0.7802188236490227
+          ],
+          "n": 22952,
+          "better_in_matches": 0,
+          "per_match": {
+            "metrica-sample-1": 0.7627018129449348,
+            "metrica-sample-2": 0.743867728531297,
+            "metrica-sample-3": 0.8028034470645965
+          }
+        },
+        "fde_innovation_model": {
+          "mean": 0.6244563704122886,
+          "ci95": [
+            0.6155030282032636,
+            0.6349868536016009
+          ],
+          "n": 22952,
+          "better_in_matches": 0,
+          "per_match": {
+            "metrica-sample-1": 0.6207354200905485,
+            "metrica-sample-2": 0.6022811947983404,
+            "metrica-sample-3": 0.6565910601911188
+          }
+        },
+        "fde_placebo_model": {
+          "mean": 0.6646943096610956,
+          "ci95": [
+            0.6545381943483466,
+            0.6754043881472341
+          ],
+          "n": 22952,
+          "better_in_matches": 0,
+          "per_match": {
+            "metrica-sample-1": 0.6604127133688111,
+            "metrica-sample-2": 0.6369890503190937,
+            "metrica-sample-3": 0.7044575445000641
+          }
+        },
+        "fde_learned_v1": {
+          "mean": 0.7216795210206292,
+          "ci95": [
+            0.7100321051878846,
+            0.7339702866803778
+          ],
+          "n": 22952,
+          "better_in_matches": 0,
+          "per_match": {
+            "metrica-sample-1": 0.7171780293005693,
+            "metrica-sample-2": 0.6983662135918295,
+            "metrica-sample-3": 0.756081918276237
+          }
+        },
+        "innovation_minus_cv": {
+          "mean": -0.14309894478214008,
+          "ci95": [
+            -0.15039268315536025,
+            -0.13502608391761756
+          ],
+          "n": 22952,
+          "better_in_matches": 3,
+          "per_match": {
+            "metrica-sample-1": -0.14196639285438617,
+            "metrica-sample-2": -0.14158653373295657,
+            "metrica-sample-3": -0.14621238687347762
+          }
+        },
+        "placebo_minus_cv": {
+          "mean": -0.10286100553333313,
+          "ci95": [
+            -0.10946154047729592,
+            -0.09578494665975376
+          ],
+          "n": 22952,
+          "better_in_matches": 3,
+          "per_match": {
+            "metrica-sample-1": -0.10228909957612356,
+            "metrica-sample-2": -0.10687867821220337,
+            "metrica-sample-3": -0.09834590256453224
+          }
+        },
+        "innovation_minus_placebo": {
+          "mean": -0.040237939248806975,
+          "ci95": [
+            -0.043584539592772385,
+            -0.036710451563710424
+          ],
+          "n": 22952,
+          "better_in_matches": 3,
+          "per_match": {
+            "metrica-sample-1": -0.03967729327826259,
+            "metrica-sample-2": -0.0347078555207532,
+            "metrica-sample-3": -0.047866484308945384
+          }
+        },
+        "learned_v1_minus_cv": {
+          "mean": -0.045875794173799535,
+          "ci95": [
+            -0.0499002949661707,
+            -0.04193014726019957
+          ],
+          "n": 22952,
+          "better_in_matches": 3,
+          "per_match": {
+            "metrica-sample-1": -0.04552378364436533,
+            "metrica-sample-2": -0.04550151493946758,
+            "metrica-sample-3": -0.04672152878835932
+          }
+        }
+      }
+    },
+    "rule": "supported iff, at 0.5 s and 1.0 s, the 95% CIs of FDE(cv + model) - FDE(cv) and of FDE(model) - FDE(placebo model) are below 0 (LOMO, paired rows)",
+    "supported": true,
+    "gains_m_per_m_all_data": {
+      "0.48s": {
+        "x": {
+          "near": 0.10003517532719021,
+          "local": 0.1339185542737754,
+          "zone": 0.5697489208969713,
+          "team": 0.15419710909768142,
+          "ball": 0.002897018029940605
+        },
+        "y": {
+          "near": 0.04763896892606257,
+          "local": 0.012066772702075877,
+          "zone": 0.18372989279371355,
+          "team": 0.3775995704598165,
+          "ball": 0.0067062823481144245
+        }
+      },
+      "1.00s": {
+        "x": {
+          "near": 0.13452635429198223,
+          "local": 0.11714015352814855,
+          "zone": 0.649275633575364,
+          "team": 0.07412520703315022,
+          "ball": 0.0051709682883190125
+        },
+        "y": {
+          "near": 0.0773498168908772,
+          "local": 0.08003748104207072,
+          "zone": 0.2682779344246479,
+          "team": 0.4075622337100965,
+          "ball": 0.010886697432319037
+        }
+      }
+    },
+    "placebo_gains_m_per_m_all_data_1s": {
+      "x": {
+        "near": 0.0019776126837880844,
+        "local": -0.020602614257155302,
+        "zone": 0.02424533894363119,
+        "team": 0.9052587616365508,
+        "ball": 0.0058763148972964755
+      },
+      "y": {
+        "near": 0.030420783551907107,
+        "local": -0.04466443271261818,
+        "zone": 0.03227959090997296,
+        "team": 0.7337231129421137,
+        "ball": 0.011466271707385288
+      }
+    },
+    "probe_5m_carrier_unclipped": {
+      "offset_s": 1.0,
+      "n_probes": 14612,
+      "mean_defender_move_m": 0.5161431784954007,
+      "mean_largest_move_m": 1.3755948262119195,
+      "p95_largest_move_m": 2.1979021385071387
+    }
+  }
+}

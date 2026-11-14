@@ -29,7 +29,7 @@ from typing import Literal
 import numpy as np
 import numpy.typing as npt
 
-from footymind.counterfactual.kinematics import DEFAULT_LIMITS, reachability_envelope
+from footymind.counterfactual.kinematics import default_limits, reachability_envelope
 from footymind.counterfactual.response import (
     MIN_SEPARATION_M,
     PITCH_MARGIN_M,
@@ -41,6 +41,7 @@ from footymind.counterfactual.response import (
     apply_response,
     policy_info,
 )
+from footymind.counterfactual.response_innovation import load_innovation_model
 from footymind.counterfactual.response_model import load_response_model
 from footymind.data.store import load_match
 from footymind.spatial.analysis import FrameAnalysis, PassOption, analyze, summary
@@ -58,6 +59,12 @@ from footymind.tracking.model import Provenance
 F = npt.NDArray[np.float64]
 
 REACH_SPEED_MPS = 7.0  # sustained high-intensity running speed for reachability
+# What decides ``supported``: "disc" (constant speed REACH_SPEED_MPS from the position
+# horizon_s earlier, the served contract, drawn by the web lab) or "envelope" (the kinematic
+# envelope in force). Envelope v2 contains as many real positions as the disc and rejects far
+# more implausible ones (docs/research/simulation_session4.md), but switching changes the API
+# contract (the drawn reach disc, the schema text), so it is left to the API owner.
+SUPPORTED_REACHABILITY: Literal["disc", "envelope"] = "disc"
 # Below this absolute change in probability, a delta is reported but no sign-robustness score.
 NEGLIGIBLE_DELTA = 0.005
 
@@ -181,9 +188,14 @@ def check_feasibility(
             origin = (float(o[0]), float(o[1]))
             reachable = float(np.linalg.norm(new - o)) <= radius
             env = reachability_envelope(
-                o, causal_velocities(match_id)[row - k, i], horizon_s, DEFAULT_LIMITS
+                o,
+                causal_velocities(match_id)[row - k, i],
+                horizon_s,
+                default_limits(provider_of(match_id)),
             )
             kinematic = env.contains(new)
+            if SUPPORTED_REACHABILITY == "envelope":
+                reachable = kinematic
             notes.extend(f"kinematic check: {n}" for n in env.notes)
     if origin is None:
         notes.append("no observed position at t - horizon; reachability cannot be verified")
@@ -276,9 +288,13 @@ def run_scenario(
     ctx = ResponseContext(
         pitch=td.pitch,
         horizon_s=horizon_s,
+        limits=default_limits(provider_of(match_id)),
         follow_fraction=follow_fraction,
         ball_velocity=ball_velocity(match_id, frame) if policy == "learned" else None,
         model=load_response_model(provider_of(match_id)) if policy == "learned" else None,
+        innovation_model=(
+            load_innovation_model(provider_of(match_id)) if policy == "learned_innovation" else None
+        ),
     )
     hyp_state, moves, policy_notes = _apply(
         observed_state, interventions, policy, follow_fraction, velocity_mode, ctx
@@ -366,13 +382,19 @@ def run_scenario(
     deltas.sort(key=lambda d: -abs(d.delta or 0.0))
 
     warnings = list(dict.fromkeys(obs_a.warnings + hyp_a.warnings))
+    env_text = default_limits(provider_of(match_id)).describe()
     warnings.extend(f"response policy {n}" for n in policy_notes)
     for f in feas:
         who = f"{f.player_id} (simulated response)" if f.kind == "simulated" else f.player_id
         if not f.reachable:
+            region = (
+                f"at {REACH_SPEED_MPS:.0f} m/s"
+                if SUPPORTED_REACHABILITY == "disc"
+                else f"within the kinematic envelope ({env_text})"
+            )
             warnings.append(
                 f"{who}: target is outside the region reachable in {horizon_s:.1f}s "
-                f"at {REACH_SPEED_MPS:.0f} m/s; scenario is physically unsupported"
+                f"{region}; scenario is physically unsupported"
             )
         if not f.inside_pitch:
             warnings.append(f"{who}: target is outside the pitch")

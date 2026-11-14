@@ -11,8 +11,14 @@ Policies
 * ``marker_follows``: the legacy rule (nearest defender within 10 m of a relocated attacker
   shifts by ``follow_fraction`` of the displacement). Kept bit-for-bit; no kinematic limit.
 * ``press_carrier``, ``zonal_shift``, ``lane_cover``: interpretable rules.
-* ``learned``: a ridge model of short-horizon defender displacement fit on real tracking
-  (``response_model.py``).
+* ``learned``: a ridge *forecaster* of short-horizon defender displacement fit on real
+  tracking (``response_model.py``). It is nearly inert under interventions (C44; session-4
+  diagnostics: its inputs change little under a relocation and carry almost no information
+  about how defenders deviate from their own motion).
+* ``learned_innovation`` (session 4): a ridge model of how defenders deviate from their own
+  constant velocity when attackers deviate from theirs (``response_innovation.py``). A
+  relocation is treated as the relocated attacker's innovation. Not served by the API until
+  its schema lists the name (``ALL_POLICY_NAMES`` vs the served ``POLICY_NAMES``).
 
 Differential responses (all policies except ``none`` and ``marker_follows``)
 ----------------------------------------------------------------------------
@@ -43,10 +49,16 @@ import numpy as np
 import numpy.typing as npt
 
 from footymind.counterfactual.kinematics import (
-    DEFAULT_LIMITS,
     Envelope,
-    KinematicLimits,
+    Limits,
+    default_limits,
     reachability_envelope,
+)
+from footymind.counterfactual.response_innovation import (
+    INNOVATION_RESOURCES,
+    InnovationResponseModel,
+    innovation_features,
+    load_innovation_model,
 )
 from footymind.counterfactual.response_model import (
     PROVIDER_RESOURCES,
@@ -60,8 +72,15 @@ from footymind.tracking.model import PitchSpec, Provenance
 F = npt.NDArray[np.float64]
 
 ResponsePolicy = Literal[
-    "none", "marker_follows", "press_carrier", "zonal_shift", "lane_cover", "learned"
+    "none",
+    "marker_follows",
+    "press_carrier",
+    "zonal_shift",
+    "lane_cover",
+    "learned",
+    "learned_innovation",
 ]
+# Policies served by the API (its schema enumerates these names).
 POLICY_NAMES: tuple[str, ...] = (
     "none",
     "marker_follows",
@@ -70,6 +89,9 @@ POLICY_NAMES: tuple[str, ...] = (
     "lane_cover",
     "learned",
 )
+# Every policy apply_response accepts. learned_innovation joins POLICY_NAMES once the API
+# schema (api/schemas.py ResponsePolicyName) lists it.
+ALL_POLICY_NAMES: tuple[str, ...] = (*POLICY_NAMES, "learned_innovation")
 
 MIN_SEPARATION_M = 0.5
 PITCH_MARGIN_M = 2.0
@@ -100,10 +122,13 @@ class Intervention:
 class ResponseContext:
     pitch: PitchSpec = field(default_factory=PitchSpec)
     horizon_s: float = 1.5
-    limits: KinematicLimits = DEFAULT_LIMITS
+    # The envelope in force (kinematics.ENVELOPE_VERSION). Without a provider it has no
+    # measurement margin; the scenario engine passes the provider's limits.
+    limits: Limits = field(default_factory=default_limits)
     follow_fraction: float = 0.5
     ball_velocity: F | None = None  # canonical frame, causal; None if unavailable
     model: ResponseModel | None = None
+    innovation_model: InnovationResponseModel | None = None
 
 
 # ----------------------------------------------------------------------------------------
@@ -126,17 +151,22 @@ _WHO = (
 _NOT_WHAT = "This is not what the defender would have done; no ground truth exists for it."
 # Observational check (claim C37, v2 design; research/rule_response_check.py): attackers'
 # real movement *beyond their own constant velocity* is treated as the intervention, and the
-# rule's simulated moves are compared with where defenders really went.
+# rule's simulated moves are compared with where defenders really went. The clipped rules
+# (lane_cover, press_carrier, zonal_shift) were re-checked with envelope v2 (v3 results,
+# session 4); marker_follows applies no envelope and is unchanged.
 _OBS_HEAD = "Observational check (C37): "
 _OBS_CHECK = {
     "marker_follows": _OBS_HEAD + "with attackers' unexpected real movement as the intervention, "
     "this rule's moves match how real markers moved (about the right direction and size) on "
     "both providers, beyond a permuted placebo. Still a rule, not a prediction.",
     "lane_cover": _OBS_HEAD + "with attackers' unexpected real movement as the intervention, "
-    "this rule's moves match real defender movement in direction and size on both providers, "
-    "beyond a permuted placebo. Still a rule, not a prediction.",
-    "press_carrier": _OBS_HEAD + "consistent with real pressing on Metrica, but not supported "
-    "on SkillCorner broadcast data. Treat its moves as an illustration of the assumption.",
+    "this rule's moves match real defender movement in direction on both providers, beyond a "
+    "permuted placebo; with the current envelope (v2) real defenders move about 0.8 of its "
+    "simulated moves. Still a rule, not a prediction.",
+    "press_carrier": _OBS_HEAD + "not supported with the current envelope (v2): its moves are "
+    "larger than real pressing reactions (real movement is 0.3-0.6 of them) and worse than "
+    "constant velocity on SkillCorner. Under the tighter session-3 envelope it was consistent "
+    "with real pressing on Metrica only. Treat its moves as an illustration of the assumption.",
     "zonal_shift": _OBS_HEAD + "real defensive blocks shift much less than this rule assumes "
     "(real movement is 0.13-0.22 of its simulated moves), on both providers. Treat its moves as an "
     "illustration of the assumption, not as a plausible response.",
@@ -150,7 +180,8 @@ class PolicySpec:
     assumptions: tuple[str, ...]
 
 
-def _specs(limits: KinematicLimits = DEFAULT_LIMITS) -> dict[str, PolicySpec]:
+def _specs(limits: Limits | None = None) -> dict[str, PolicySpec]:
+    limits = limits or default_limits()
     kin = _KINEMATIC.format(limits=limits.describe())
     common = (_DIFFERENTIAL, kin, _WHO, _NOT_WHAT)
     return {
@@ -209,13 +240,18 @@ def _specs(limits: KinematicLimits = DEFAULT_LIMITS) -> dict[str, PolicySpec]:
         ),
         "learned": PolicySpec(
             "learned",
-            "Ridge model of short-horizon defender displacement fit on real tracking "
-            "(per provider, leave-one-match-out evaluated), applied to every outfield "
-            "defender as the difference between its forecast for the hypothetical and the "
-            "observed state, clipped to the kinematic envelope.",
+            "Forecaster, not an intervention model: a ridge model of short-horizon defender "
+            "displacement fit on real tracking (per provider, leave-one-match-out evaluated), "
+            "applied to every outfield defender as the difference between its forecast for "
+            "the hypothetical and the observed state, clipped to the kinematic envelope.",
             (
                 "The model forecasts how defenders moved in real play (observational). Its "
                 "validation does not cover responses to hypothetical interventions.",
+                "Why it barely reacts: an intervention changes only its position-offset "
+                "inputs, and in real play those offsets explain almost none of how defenders "
+                "deviate from their own motion (about 1 cm per metre; session-4 diagnostics). "
+                "The intervened inputs are not out of distribution: the model is accurate "
+                "about the evolution of play and uninformative about reactions.",
                 "Forecast horizon is capped at the longest trained horizon (1.0 s).",
                 "The fitted model is dominated by the defender's own velocity (close to damped "
                 "constant velocity), so its responses to interventions are very small "
@@ -223,6 +259,27 @@ def _specs(limits: KinematicLimits = DEFAULT_LIMITS) -> dict[str, PolicySpec]:
                 "strong response model.",
                 "Linear in causal features: own velocity, ball offset and velocity, "
                 "nearest-attacker offset, own-goal offset.",
+                *common,
+            ),
+        ),
+        "learned_innovation": PolicySpec(
+            "learned_innovation",
+            "Ridge model of how defenders deviate from their own constant velocity when "
+            "attackers (and the ball) deviate from theirs, fit on real tracking per provider "
+            "and leave-one-match-out evaluated. A relocation is treated as the relocated "
+            "attacker's unexpected movement over the horizon (and the ball's, when the "
+            "carrier moves); each outfield defender moves by the predicted change, clipped to "
+            "its kinematic envelope.",
+            (
+                "Observational association, not a causal effect: attackers and defenders "
+                "share drivers in real play. A permuted-innovation placebo isolates the part "
+                "specific to the attacker-defender geometry; the served status says whether "
+                "the pre-registered rule was met for this provider.",
+                "Response weights depend on distance at the analysed frame: nearest attacker, "
+                "attackers within about 5 m and 15 m, and the attacking team as a whole.",
+                "Linear: a relocation larger than real unexpected movement (99% of attacker "
+                "innovations are below about 2.5 m in 1 s) is an extrapolation.",
+                "Forecast horizon is capped at the longest trained horizon (1.0 s).",
                 *common,
             ),
         ),
@@ -251,6 +308,17 @@ def policy_info(name: str, provider: str | None = None) -> PolicyInfo:
     """
     spec = POLICIES[name]
     validated, ref = False, None
+    if name == "learned_innovation":
+        providers = [provider] if provider else list(INNOVATION_RESOURCES)
+        vals, refs = [], []
+        for p in providers:
+            im = load_innovation_model(p)
+            v = (im.meta.get("validation") or {}) if im else {}
+            vals.append(bool(v.get("validated", False)))
+            if v.get("ref"):
+                refs.append(str(v["ref"]))
+        validated = bool(vals) and all(vals)
+        ref = "; ".join(refs) or None
     if name == "learned":
         providers = [provider] if provider else list(PROVIDER_RESOURCES)
         vals = []
@@ -265,6 +333,11 @@ def policy_info(name: str, provider: str | None = None) -> PolicyInfo:
         ref = "; ".join(refs) or None
     if name == "none":
         status = "no response simulated"
+    elif validated and name == "learned_innovation":
+        status = (
+            "validated (observational): given attackers' real unexpected movement, its "
+            "defender forecasts beat constant velocity and a permuted placebo"
+        )
     elif validated:
         status = "validated: short-horizon forecasts of real play beat constant velocity"
     else:
@@ -602,6 +675,63 @@ def _learned(
     return cands, []
 
 
+def _learned_innovation(
+    obs: FrameState,
+    hyp: FrameState,
+    interventions: list[Intervention],
+    moved: set[str],
+    ctx: ResponseContext,
+) -> tuple[list[_Candidate], list[str]]:
+    model = ctx.innovation_model
+    if model is None:
+        raise ValueError("the innovation response model is not available for this provider")
+    resp = _outfield_defenders(obs, moved)
+    if not resp:
+        return [], ["learned_innovation: no outfield defender available"]
+    att = [
+        i
+        for i, t in enumerate(obs.teams)
+        if t == obs.attacking_team and not bool(obs.is_gk[i]) and not np.isnan(obs.xy[i]).any()
+    ]
+    pos_att = {i: n for n, i in enumerate(att)}
+    sign = obs.attack_sign
+    innov = np.zeros((len(att), 1, 2))
+    for iv in interventions:
+        i = obs.index(iv.player_id)
+        if i in pos_att:
+            innov[pos_att[i], 0] = (np.array([iv.x, iv.y]) - obs.xy[i]) * sign
+    if not innov.any():
+        return [], ["learned_innovation: no outfield attacker was relocated; no response"]
+    db = hyp.ball - obs.ball
+    ball = (np.zeros(2) if np.isnan(db).any() else db * sign)[None, :]
+    k = model.offset_index(ctx.horizon_s)
+    h = model.offsets_s[k]
+    idx = np.array(resp)
+    d_xy, a_xy = obs.xy[idx] * sign, obs.xy[att] * sign
+    zero = innovation_features(d_xy, a_xy, np.zeros_like(innov), np.zeros((1, 2)))[:, 0]
+    feat = innovation_features(d_xy, a_xy, innov, ball)[:, 0]
+    dev = (model.predict(feat, k) - model.predict(zero, k)) * sign  # canonical frame
+    pos = {j: r for r, j in enumerate(resp)}
+
+    def target(s: FrameState, j: int, env: Envelope) -> F:
+        base = np.array(env.coast_point)
+        return base + dev[pos[j]] if s is hyp else base
+
+    cands = _differential(
+        obs,
+        hyp,
+        resp,
+        target,
+        h,
+        ctx,
+        lambda _j: (
+            f"innovation model ({h:.2f} s): defenders deviate from their own motion as real "
+            "defenders did when attackers moved unexpectedly"
+        ),
+    )
+    return cands, []
+
+
 def apply_response(
     observed: FrameState,
     hypothetical: FrameState,
@@ -610,7 +740,7 @@ def apply_response(
     ctx: ResponseContext,
 ) -> tuple[list[Movement], list[str]]:
     """Move defenders in ``hypothetical`` (in place). Returns the moves and policy notes."""
-    if policy not in POLICY_NAMES:
+    if policy not in ALL_POLICY_NAMES:
         raise ValueError(f"unknown response policy {policy!r}")
     moved = {iv.player_id for iv in interventions}
     if policy == "none":
@@ -625,6 +755,8 @@ def apply_response(
         cands, notes = _zonal_shift(observed, hypothetical, moved, ctx)
     elif policy == "lane_cover":
         cands, notes = _lane_cover(observed, hypothetical, interventions, moved, ctx)
+    elif policy == "learned_innovation":
+        cands, notes = _learned_innovation(observed, hypothetical, interventions, moved, ctx)
     else:
         cands, notes = _learned(observed, hypothetical, moved, ctx)
     moves, more = _commit(observed, hypothetical, cands, ctx, policy)

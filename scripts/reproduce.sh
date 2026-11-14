@@ -45,6 +45,12 @@ run uv run footymind train-option-model --provider metrica
 run uv run python -m footymind.research.response_validation metrica
 run uv run footymind train-response-model --provider metrica
 run uv run python -m footymind.research.response_sensitivity metrica
+# Session 4: envelope v2 (pre-registered) and the innovation response model.
+run uv run python -m footymind.research.envelope_validation metrica
+run uv run python -m footymind.research.response_diagnostics metrica
+run uv run python -m footymind.research.train_response_model innovation metrica
+run uv run python -m footymind.research.response_sensitivity metrica 300 2
+run uv run python -m footymind.research.rule_response_check metrica 150 3
 
 if [[ " $PROVIDERS " == *" skillcorner "* ]]; then
   for c in pass_outcome_skillcorner_v2 pass_outcome_skillcorner_v2_importance \
@@ -63,7 +69,13 @@ if [[ " $PROVIDERS " == *" skillcorner "* ]]; then
   run uv run python -m footymind.research.response_validation skillcorner
   run uv run footymind train-response-model --provider skillcorner
   run uv run python -m footymind.research.response_sensitivity skillcorner
+  # Session 4: envelope v2 (pre-registered) and the innovation response model.
+  run uv run python -m footymind.research.envelope_validation skillcorner
+  run uv run python -m footymind.research.response_diagnostics skillcorner
+  run uv run python -m footymind.research.train_response_model innovation skillcorner
+  run uv run python -m footymind.research.response_sensitivity skillcorner 300 2
+  run uv run python -m footymind.research.rule_response_check skillcorner 60 3
 fi
 
 run uv run --group research python -m footymind.research.figures
-echo "done. Compare with committed results: git diff --stat experiments/ src/footymind/spatial/*.json docs/figures"
+echo "done. Compare with committed results: git diff --stat experiments/ src/footymind/spatial/*.json src/footymind/counterfactual/*.json docs/figures"

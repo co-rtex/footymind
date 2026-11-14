@@ -24,7 +24,9 @@ from typing import Any
 import numpy as np
 import polars as pl
 
+from footymind.counterfactual.kinematics import DEFAULT_LIMITS, default_limits
 from footymind.counterfactual.response import Intervention, ResponseContext, apply_response
+from footymind.counterfactual.response_innovation import load_innovation_model
 from footymind.counterfactual.response_model import load_response_model
 from footymind.counterfactual.scenario import ball_velocity
 from footymind.data.store import available_matches, git_revision, load_match
@@ -37,11 +39,17 @@ DIRECTIONS = ((1.0, 0.0), (-1.0, 0.0), (0.0, 1.0), (0.0, -1.0))
 HORIZON_S = 1.5  # scenario default
 
 
-def main(provider: str = "metrica", max_frames: int = 300, seed: int = 0) -> dict[str, Any]:
+def main(
+    provider: str = "metrica", max_frames: int = 300, seed: int = 0, version: int = 1
+) -> dict[str, Any]:
+    """v1: the session-3 envelope (reproduces C44). v2: the envelope in force (v2)."""
     t0 = time.time()
+    limits = DEFAULT_LIMITS if version == 1 else default_limits(provider)
     rng = np.random.default_rng(seed)
     mids = [m for m in available_matches() if m.startswith(provider + "-")]
     model = load_response_model(provider)
+    innovation = load_innovation_model(provider) if version >= 2 else None
+    policies = POLICIES if version == 1 else (*POLICIES, "learned_innovation")
     cands = []
     for mid in mids:
         ev = load_match(mid).events.filter(
@@ -51,7 +59,7 @@ def main(provider: str = "metrica", max_frames: int = 300, seed: int = 0) -> dic
         cands += [(mid, int(f), str(t)) for f, t in pairs]
     order = rng.permutation(len(cands))
     acc: dict[str, dict[str, list[tuple[int, float, float]]]] = {
-        p: {f"{d:g}m": [] for d in DISPLACEMENTS_M} for p in POLICIES
+        p: {f"{d:g}m": [] for d in DISPLACEMENTS_M} for p in policies
     }
     used = 0
     for k in order:
@@ -70,9 +78,13 @@ def main(provider: str = "metrica", max_frames: int = 300, seed: int = 0) -> dic
             horizon_s=HORIZON_S,
             ball_velocity=ball_velocity(mid, f),
             model=model,
+            innovation_model=innovation,
+            limits=limits,
         )
-        for pol in POLICIES:
+        for pol in policies:
             if pol == "learned" and model is None:
+                continue
+            if pol == "learned_innovation" and innovation is None:
                 continue
             who = r if pol in ("marker_follows", "lane_cover") else s.carrier
             for d in DISPLACEMENTS_M:
@@ -104,16 +116,20 @@ def main(provider: str = "metrica", max_frames: int = 300, seed: int = 0) -> dic
                 "p95_max_move_m": float(np.percentile(a[:, 1], 95)),
                 "mean_total_move_m": float(a[:, 2].mean()),
             }
-    name = "response_sensitivity_v1" + ("" if provider == "metrica" else f"_{provider}")
+    name = f"response_sensitivity_v{version}" + ("" if provider == "metrica" else f"_{provider}")
     result = {
         "name": name,
         "provider": provider,
         "matches": mids,
         "code_revision": git_revision(),
         "response_model_code_revision": model.meta.get("code_revision") if model else None,
+        "innovation_model_code_revision": (
+            innovation.meta.get("code_revision") if innovation else None
+        ),
         "runtime_s": round(time.time() - t0, 1),
         "n_frames": used,
         "horizon_s": HORIZON_S,
+        "envelope": limits.describe(),
         "displacements_m": list(DISPLACEMENTS_M),
         "note": "descriptive: size of simulated responses, not their correctness",
         "summary": summary,
@@ -131,4 +147,5 @@ if __name__ == "__main__":
     main(
         sys.argv[1] if len(sys.argv) > 1 else "metrica",
         max_frames=int(sys.argv[2]) if len(sys.argv) > 2 else 300,
+        version=int(sys.argv[3]) if len(sys.argv) > 3 else 1,
     )

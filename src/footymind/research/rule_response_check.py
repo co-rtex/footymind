@@ -31,6 +31,7 @@ from typing import Any
 import numpy as np
 import polars as pl
 
+from footymind.counterfactual.kinematics import DEFAULT_LIMITS, Limits, default_limits
 from footymind.counterfactual.response import Intervention, ResponseContext, apply_response
 from footymind.data.store import available_matches, git_revision, load_match
 from footymind.paths import EXPERIMENTS_DIR
@@ -59,6 +60,7 @@ def _rows(
     seed: int,
     guard_s: float = 0.0,
     designs: tuple[str, ...] = ("full",),
+    limits: Limits = DEFAULT_LIMITS,
 ) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     rng = np.random.default_rng(seed)
@@ -81,7 +83,9 @@ def _rows(
             det = td.detected[i + k] if td.detected is not None else None
             det_now = td.detected[i] if td.detected is not None else None
             att = np.flatnonzero(obs.team_mask(obs.attacking_team) & obs.on_pitch())
-            ctx = ResponseContext(pitch=td.pitch, horizon_s=HORIZON_S, ball_velocity=bv[i])
+            ctx = ResponseContext(
+                pitch=td.pitch, horizon_s=HORIZON_S, ball_velocity=bv[i], limits=limits
+            )
             for design in designs:
                 for policy in (*CARRIER_POLICIES, *ATTACKER_POLICIES):
                     movers = (
@@ -191,10 +195,15 @@ def main(
     n_boot: int = 1000,
     version: int = 2,
 ) -> dict[str, Any]:
-    """v1: full design at the release frame (the original check). v2: all designs at the guard."""
+    """v1: full design at the release frame (the original check). v2: all designs at the guard.
+
+    v1 and v2 clip with the session-3 envelope (``DEFAULT_LIMITS``) so they reproduce; v3 is
+    v2 with the envelope in force for the provider (envelope v2, session 4).
+    """
     t0 = time.time()
     guard, designs = (0.0, ("full",)) if version == 1 else (GUARD_S, DESIGNS)
-    df = pl.DataFrame(_rows(provider, n_per_match, seed, guard, designs))
+    limits = default_limits(provider) if version >= 3 else DEFAULT_LIMITS
+    df = pl.DataFrame(_rows(provider, n_per_match, seed, guard, designs, limits))
     by_design: dict[str, Any] = {}
     for d in designs:
         sub = df.filter(pl.col("design") == d)
@@ -210,6 +219,7 @@ def main(
         "code_revision": git_revision(),
         "horizon_s": HORIZON_S,
         "guard_s": guard,
+        "envelope": limits.describe(),
         "n_per_match": n_per_match,
         "policies": by_design["full"],
         "designs": by_design,
@@ -225,5 +235,6 @@ if __name__ == "__main__":
     r = main(
         sys.argv[1] if len(sys.argv) > 1 else "metrica",
         int(sys.argv[2]) if len(sys.argv) > 2 else 150,
+        version=int(sys.argv[3]) if len(sys.argv) > 3 else 2,
     )
     print(json.dumps(r["policies"], indent=2))
