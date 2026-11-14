@@ -24,7 +24,15 @@ import urllib.request
 from typing import Any
 
 PROVENANCE = {"observed", "derived", "estimated", "hypothetical", "simulated"}
-POLICIES = {"none", "marker_follows", "press_carrier", "zonal_shift", "lane_cover", "learned"}
+POLICIES = {
+    "none",
+    "marker_follows",
+    "press_carrier",
+    "zonal_shift",
+    "lane_cover",
+    "learned",
+    "learned_innovation",
+}
 
 
 class SmokeError(AssertionError):
