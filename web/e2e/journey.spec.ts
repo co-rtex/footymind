@@ -101,6 +101,89 @@ test("guided tour: watch, understand, then the what-if, matching the landing's n
   await expect(guide).toBeHidden();
 });
 
+interface Row {
+  obs: string;
+  hyp: string;
+  delta: string;
+}
+
+/** The response card's two rows (static defenders, then the response), read from the live card. */
+async function responseFacts(page: Page): Promise<{ static: Row; response: Row }> {
+  const cmp = page.getByTestId("featured-card-response").getByTestId("featured-response");
+  await expect(cmp).toBeVisible({ timeout: 60_000 });
+  const read = async (key: string): Promise<Row> => {
+    const text = (await cmp.getByTestId(`featured-response-${key}`).textContent()) ?? "";
+    const m = text.match(/(\d\.\d\d)\s*→\s*to\s*(\d\.\d\d)\s*([+−]\d\.\d\d|0\.00)/);
+    expect(m, `${key} row in: ${text}`).not.toBeNull();
+    return { obs: m![1]!, hyp: m![2]!, delta: m![3]! };
+  };
+  return { static: await read("static"), response: await read("response") };
+}
+
+test("response situation: the conclusion depends on the defender response, and the tour shows why", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+  await page.goto("/");
+  const card = page.getByTestId("featured-card-response");
+  await expect(card).toContainText("model-based illustration, not what happened in the match");
+  const facts = await responseFacts(page);
+  // the live numbers differ between the two assumptions, and the simulated move is labelled
+  expect(facts.response.hyp).not.toBe(facts.static.hyp);
+  expect(facts.response.obs).toBe(facts.static.obs);
+  const sim = card.getByTestId("featured-simulated-move");
+  await expect(sim).toContainText(/#\d+ Away moved \d+\.\d m by the Marker follows response/);
+  await expect(sim.locator(".prov--simulated")).toBeVisible();
+  await expect(card.locator(".prov--hypothetical")).toBeVisible();
+  await expect(card.getByText("Defensive Shadow")).toHaveCount(0);
+
+  await page.getByTestId("tour-link-response").click();
+  await expect(page).toHaveURL(/#\/at\/metrica-sample-2\?f=31360&tour=response/);
+  const guide = page.getByTestId("guide");
+  await expect(guide).toContainText("One run, two assumptions about the defence");
+  await page.getByTestId("guide-next").click();
+  await expect(page.getByTestId("analysis-panel")).toHaveAttribute("data-frame", "31360");
+  await expect(page.getByTestId("guide-next")).toContainText("Next: move #5 Home");
+  await page.getByTestId("guide-next").click();
+  await expect(page.getByTestId("guide-step-3")).toHaveAttribute("aria-current", "step");
+
+  // step 3: the attacker's move, with the defender response preselected and compared with static defenders
+  const panel = page.getByTestId("scenario-panel");
+  await expect(panel).toHaveAttribute("data-status", "success", { timeout: 60_000 });
+  await expect(page.getByTestId("policy-select")).toHaveValue("marker_follows");
+  await expect(guide.getByTestId("guide-response")).toContainText("Marker follows");
+  await expect(page.getByTestId("simulated-move")).toContainText("by the Marker follows response");
+  const compare = page.getByTestId("policy-comparison");
+  await expect(compare).toBeVisible({ timeout: 60_000 });
+  await expect(compare).toHaveAttribute("data-verdict", "changes");
+  const row = compare.locator("tbody tr", { hasText: "#5 Home" });
+  // the landing showed exactly the lab's numbers, under both assumptions
+  await expect(row.locator("td").nth(0)).toHaveText(facts.static.delta);
+  await expect(row.locator("td").nth(1)).toHaveText(facts.response.delta);
+  const responseRow = page.getByTestId("option-deltas").locator("tbody tr", { hasText: "#5 Home" });
+  await expect(responseRow.locator("td").nth(0)).toHaveText(facts.response.obs);
+  await expect(responseRow.locator("td").nth(1)).toHaveText(facts.response.hyp);
+  await guide.getByTestId("guide-compare").click();
+  await expect(page.locator("#pc-title")).toBeFocused();
+
+  // static defenders: the landing's static row
+  await page.getByTestId("policy-select").selectOption("none");
+  await expect(panel).toHaveAttribute("data-status", "success", { timeout: 60_000 });
+  await expect(page.getByTestId("policy-static-hint")).toBeVisible();
+  await expect(responseRow.locator("td").nth(1)).toHaveText(facts.static.hyp);
+  await expect(page.getByTestId("simulated-move")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("the response what-if link opens with the defender response preselected", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("featured-response-link").click();
+  await expect(page).toHaveURL(/response=marker_follows/);
+  await expect(page.getByTestId("policy-select")).toHaveValue("marker_follows");
+  await expect(page.getByTestId("scenario-panel")).toHaveAttribute("data-status", "success", { timeout: 60_000 });
+  await expect(page.getByTestId("policy-comparison")).toHaveAttribute("data-verdict", "changes", { timeout: 60_000 });
+});
+
 test("the player card describes position in football terms, with provenance", async ({ page }) => {
   await page.goto("/#/lab/metrica-sample-1%3Ap0163?f=53708");
   await expect(page.getByTestId("analysis-panel")).toHaveAttribute("aria-busy", "false");
