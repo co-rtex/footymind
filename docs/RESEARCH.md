@@ -904,6 +904,33 @@ least-squares slope of the real residual on the simulated move (1 = right size).
   (C37). The rules stay `experimental`, because the pre-registered `validated` flag (ADR-0006)
   is reserved for forecasting against constant velocity.
 
+### Featured response example (session 4, verified 2026-11-14)
+
+The tour needs one situation where the *response assumption* changes the conclusion. Selection
+was by a script with the criteria fixed before searching:
+* the moved player is the actual receiver of a pass;
+* the move is 3 m and feasible;
+* a validated rule (`marker_follows` or `lane_cover`, C37) moves a defender at least 1 m;
+* the receiver's estimate changes by at least 0.05 between static and response;
+* sign agreement is full under both.
+
+Of the top three candidates, the clearest (not the largest) was chosen. The largest flipped
+sign under `lane_cover` in a way that is hard to explain to a visitor.
+
+**Metrica Game 2, frame 31360** (home #1 passes to home #5, completed). Moving home #5 3 m to
+(−29.04, 9.47), which is feasible:
+
+| response | home #5 estimate (observed → edited) | change | sign agreement | simulated move |
+|---|---|---|---|---|
+| none (static defenders) | 0.669 → 0.799 | **+0.130** | 24/24 | none |
+| `marker_follows` | 0.669 → 0.625 | **−0.044** | 24/24 | away #22, 1.5 m |
+| `lane_cover` | 0.669 → 0.715 | +0.046 | 24/24 | away #22, 0.43 m |
+
+The run into space looks valuable only if the defence stands still. If the marker follows, as
+real markers do in the observational check (C37), the modelled gain disappears. This is a
+model-based illustration of response-dependence, not evidence about this match (C39).
+`tests/test_featured_response_example.py` guards the direction of both changes.
+
 ## Prior art and references
 * Spearman, W., Basye, A., Dick, G., Hotovy, R., Pop, P. (2017). *Physics-Based Modeling of Pass Probabilities in Soccer.* MIT Sloan Sports Analytics Conference.
 * Spearman, W. (2018). *Beyond Expected Goals.* MIT Sloan SAC. (Pitch control; off-ball scoring opportunity.)
