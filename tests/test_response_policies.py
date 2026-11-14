@@ -156,7 +156,9 @@ def test_policies_move_only_eligible_defenders(policy: str) -> None:
             np.testing.assert_array_equal(hyp.xy[j], s.xy[j])
 
 
-@pytest.mark.parametrize("policy", POLICY_NAMES)
+@pytest.mark.parametrize(
+    "policy", [p for p in POLICY_NAMES if p != "learned_innovation"]
+)  # learned_innovation: own model-backed mirror test
 def test_mirror_invariance(policy: str) -> None:
     """Mirror x -> -x with the attack direction flipped: the moves are mirrored."""
     s = synthetic_state(seed=3)
@@ -170,7 +172,9 @@ def test_mirror_invariance(policy: str) -> None:
         np.testing.assert_allclose(b.to_xy, (-a.to_xy[0], a.to_xy[1]), atol=1e-6)
 
 
-@pytest.mark.parametrize("policy", [p for p in POLICY_NAMES if p != "none"])
+@pytest.mark.parametrize(
+    "policy", [p for p in POLICY_NAMES if p not in ("none", "learned_innovation")]
+)  # learned_innovation: own model-backed tests in test_learned_innovation_policy.py
 @pytest.mark.parametrize("seed", [0, 1, 2])
 def test_small_intervention_small_response(policy: str, seed: int) -> None:
     s = synthetic_state(seed=seed)
@@ -250,7 +254,7 @@ def test_policy_info_contract() -> None:
     for name in POLICY_NAMES:
         info = policy_info(name, "metrica")
         assert info.name == name and info.description and info.assumptions
-        if name != "learned":
+        if name not in ("learned", "learned_innovation"):
             assert info.validated is False and info.validation_ref is None
         if not info.validated and name != "none":
             assert info.status.startswith("experimental")

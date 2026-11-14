@@ -17,7 +17,13 @@ from pydantic import BaseModel, Field, model_validator
 
 ProvenanceLabel = Literal["observed", "derived", "estimated", "hypothetical", "simulated"]
 ResponsePolicyName = Literal[
-    "none", "marker_follows", "press_carrier", "zonal_shift", "lane_cover", "learned"
+    "none",
+    "marker_follows",
+    "press_carrier",
+    "zonal_shift",
+    "lane_cover",
+    "learned",
+    "learned_innovation",
 ]
 Team = Literal["home", "away"]
 
@@ -366,7 +372,8 @@ class ResponsePolicyOut(BaseModel):
     validated: bool = Field(
         description=(
             "true only if the policy's short-horizon forecasts of real defender movement beat "
-            "constant velocity on held-out matches of this provider. Never a validation of "
+            "constant velocity on held-out matches of this provider (learned_innovation: also "
+            "a permuted placebo, given the attackers' real movement). Never a validation of "
             "responses to hypothetical interventions (no ground truth exists)"
         )
     )

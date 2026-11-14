@@ -248,7 +248,15 @@ def test_frame_possession_resolves_deep_links(client: TestClient) -> None:
 
 # --- opponent response policies (counterfactual/response.py) ---
 
-POLICIES = ["none", "marker_follows", "press_carrier", "zonal_shift", "lane_cover", "learned"]
+POLICIES = [
+    "none",
+    "marker_follows",
+    "press_carrier",
+    "zonal_shift",
+    "lane_cover",
+    "learned",
+    "learned_innovation",
+]
 
 
 def test_response_policies_endpoint(client: TestClient) -> None:
@@ -259,14 +267,14 @@ def test_response_policies_endpoint(client: TestClient) -> None:
     for p in body:
         assert set(p) >= {"name", "description", "assumptions", "validated", "validation_ref"}
         assert p["description"] and p["assumptions"]
-        if p["name"] != "learned":
+        if p["name"] not in ("learned", "learned_innovation"):
             assert p["validated"] is False and p["validation_ref"] is None
-    learned = client.get("/api/response-policies", params={"match_id": MID}).json()[-1]
-    assert learned["name"] == "learned"
-    if learned["validated"]:
-        assert learned["validation_ref"] and learned["status"].startswith("validated")
-    else:
-        assert learned["status"].startswith("experimental")
+    served = client.get("/api/response-policies", params={"match_id": MID}).json()
+    for learned in [p for p in served if p["name"] in ("learned", "learned_innovation")]:
+        if learned["validated"]:
+            assert learned["validation_ref"] and learned["status"].startswith("validated")
+        else:
+            assert learned["status"].startswith("experimental")
     assert client.get("/api/response-policies", params={"match_id": "nope"}).status_code == 404
 
 

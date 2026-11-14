@@ -88,10 +88,10 @@ POLICY_NAMES: tuple[str, ...] = (
     "zonal_shift",
     "lane_cover",
     "learned",
+    "learned_innovation",
 )
-# Every policy apply_response accepts. learned_innovation joins POLICY_NAMES once the API
-# schema (api/schemas.py ResponsePolicyName) lists it.
-ALL_POLICY_NAMES: tuple[str, ...] = (*POLICY_NAMES, "learned_innovation")
+# Every policy apply_response accepts (all are served; api/schemas.py lists the same names).
+ALL_POLICY_NAMES: tuple[str, ...] = POLICY_NAMES
 
 MIN_SEPARATION_M = 0.5
 PITCH_MARGIN_M = 2.0

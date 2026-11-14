@@ -48,9 +48,9 @@ def ictx(**kw: object) -> ResponseContext:
     return ResponseContext(**base)  # type: ignore[arg-type]
 
 
-def test_served_names_unchanged_and_new_policy_accepted() -> None:
-    assert "learned_innovation" not in POLICY_NAMES  # the API schema enumerates POLICY_NAMES
-    assert (*POLICY_NAMES, "learned_innovation") == ALL_POLICY_NAMES
+def test_new_policy_is_served() -> None:
+    assert "learned_innovation" in POLICY_NAMES  # the API schema enumerates the same names
+    assert ALL_POLICY_NAMES == POLICY_NAMES
 
 
 @pytest.mark.parametrize("who", [CARRIER, RECEIVER])
