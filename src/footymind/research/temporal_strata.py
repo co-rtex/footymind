@@ -52,6 +52,32 @@ def strata_masks(df: pl.DataFrame) -> dict[str, pl.Series]:
     return out
 
 
+def match_level_only(name: str, n_boot: int = 1000, seed: int = 0) -> dict[str, Any]:
+    """Two-stage (match, possession) bootstrap from the out-of-fold predictions only.
+
+    It needs no dataset rebuild. It writes ``<name>_match_level/results.json``.
+    """
+    res_dir = EXPERIMENTS_DIR / "results" / name
+    src = json.loads((res_dir / "results.json").read_text())
+    oof = pl.read_parquet(res_dir / "oof_predictions.parquet")
+    pairs = [*STRATIFIED_COMPARISONS, ("Adt_logreg", "Bdt_logreg")]
+    result = {
+        "name": f"{name}_match_level",
+        "source_experiment": name,
+        "source_code_revision": src.get("code_revision"),
+        "code_revision": git_revision(),
+        "match_level": [
+            match_level_bootstrap(oof, a, b, n_boot, seed)
+            for a, b in pairs
+            if f"p_{a}" in oof.columns and f"p_{b}" in oof.columns
+        ],
+    }
+    d = EXPERIMENTS_DIR / "results" / f"{name}_match_level"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "results.json").write_text(json.dumps(result, indent=2) + "\n")
+    return result
+
+
 def main(name: str, n_boot: int = 1000, seed: int = 0) -> dict[str, Any]:
     t0 = time.time()
     res_dir = EXPERIMENTS_DIR / "results" / name
@@ -103,6 +129,10 @@ def main(name: str, n_boot: int = 1000, seed: int = 0) -> dict[str, Any]:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 2 and sys.argv[2] == "--match-level-only":
+        for c in match_level_only(sys.argv[1])["match_level"]:
+            print(c["a"], c["b"], c["log_loss"], c["n_matches_b_better"], "/", c["n_matches"])
+        raise SystemExit(0)
     r = main(sys.argv[1])
     for k, v in r["strata"].items():
         print(k, v["n"], [(c["a"], c["b"], c["log_loss"]) for c in v["comparisons"]])
