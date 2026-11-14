@@ -48,7 +48,7 @@ def audit_match(mid: str) -> dict[str, Any]:
             passer_absent += 1
         if e is not None and e in frames and td.period[td.index_of_frame(int(e))] != td.period[i]:
             cross_period += 1
-        if td.detected is not None:
+        if td.detected is not None and on[i].any():
             det_all.append(float(td.detected[i][on[i]].mean()))
             if not np.isnan(ball).any():
                 near = on[i] & (np.linalg.norm(td.xy[i] - ball[None, :], axis=1) < NEAR_BALL_M)
