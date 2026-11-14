@@ -19,6 +19,7 @@ import { matchOfPossession, useAsync } from "../lib/hooks";
 import { finiteDiffSpeed, valueAt } from "../lib/interp";
 import { isNegligible } from "../lib/agreement";
 import { FALLBACK_POLICIES, orderPolicies, STATIC_POLICY } from "../lib/policies";
+import { providerInfo } from "../lib/providers";
 import { Playback } from "../lib/playback";
 import { clockAt, eventLabel, indexOfFrame, periodAt } from "../lib/replayIndex";
 import type { DrawnPlayer, Layers, PitchRenderer, ScenarioView } from "../render/renderer";
@@ -28,6 +29,8 @@ import { PitchCanvas, type DragInit } from "./PitchCanvas";
 import { PlayerInspector, type InspectedPlayer } from "./PlayerInspector";
 import { ScenarioPanel } from "./ScenarioPanel";
 import { ShadowPanel } from "./ShadowPanel";
+import { SimilarPanel } from "./SimilarPanel";
+import { WhyPanel } from "./WhyPanel";
 import { Segmented } from "./Segmented";
 import { StatusBlock } from "./StatusBlock";
 import { Transport } from "./Transport";
@@ -144,6 +147,7 @@ const SHADOW_DEBOUNCE_MS = 250;
 const HORIZON_S = 1.5;
 const ENSEMBLE = 24;
 const NO_PENDING: ReadonlyMap<string, { x: number; y: number }> = new Map();
+const NO_TRACE: readonly string[] = [];
 const SCENARIO_CACHE_MAX = 24;
 
 /**
@@ -237,6 +241,8 @@ function LabView({
   /** bumped when a player is chosen from the Player menu in edit mode, to focus the move form */
   const [focusMove, setFocusMove] = useState(0);
   const [highlight, setHighlight] = useState<string | null>(null);
+  /** players named by the focused "why this moment" statement */
+  const [trace, setTrace] = useState<readonly string[]>(NO_TRACE);
   const [interventions, setInterventions] = useState<InterventionIn[]>(linkedMoves);
   const [policy, setPolicy] = useState<ResponsePolicy>("none");
   const [valueModel, setValueModel] = useState<ValueModel>("option_model");
@@ -400,9 +406,14 @@ function LabView({
       pending,
       selectedId: selected,
       highlightReceiver: highlight,
+      tracePlayers: trace,
       shadow,
     });
-  }, [rendererReady, replay, playing, analysis, scenario, view, layers, mode, pending, selected, highlight, shadow]);
+  }, [rendererReady, replay, playing, analysis, scenario, view, layers, mode, pending, selected, highlight, trace, shadow]);
+
+  // A traced statement belongs to one frame and one mode; drop the rings when either changes.
+  useEffect(() => setTrace(NO_TRACE), [frame, mode, playing]);
+  const onTrace = useCallback((ids: string[]) => setTrace(ids.length ? ids : NO_TRACE), []);
 
   const onReady = useCallback(
     (r: PitchRenderer | null) => {
@@ -878,6 +889,14 @@ function LabView({
                   players={players}
                 />
               ) : null}
+              <WhyPanel
+                analysis={an.data}
+                frame={frame}
+                playing={playing}
+                loading={an.status === "loading"}
+                players={players}
+                onTrace={onTrace}
+              />
               <AnalysisPanel
                 playing={playing}
                 status={an.status}
@@ -888,6 +907,11 @@ function LabView({
                 highlight={highlight}
                 onHighlight={setHighlight}
                 clock={`P${period} ${clock}`}
+              />
+              <SimilarPanel
+                matchId={replay.matchId}
+                frame={playing ? null : frame}
+                provider={providerInfo(replay.source).label}
               />
               <EventsCard replay={replay} match={match} players={players} onJump={jumpTo} />
             </>

@@ -1932,3 +1932,112 @@ h3 {
     flex-basis: calc(100% - 40px);
   }
 }
+
+/* ---------- why this moment ---------- */
+.card--why.is-stale .why-group,
+.card--why[aria-busy="true"] .why-group {
+  opacity: 0.6;
+}
+.why-group {
+  display: grid;
+  gap: var(--sp-1);
+}
+.why-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.why-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.why-item .prov {
+  flex: none;
+  margin-top: 3px;
+}
+.why-text {
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+  padding: 3px 6px;
+  margin-left: -6px;
+  border-radius: var(--radius-sm);
+}
+.why-text--trace {
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: left;
+  color: var(--c-text);
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.why-text--trace:hover,
+.why-text--trace:focus-visible,
+.why-text--trace.is-pinned {
+  background: var(--c-accent-soft);
+  border-color: rgba(183, 163, 255, 0.45);
+}
+.why-group--caveat .why-text {
+  color: var(--c-text-muted);
+}
+.why-none {
+  padding: 3px 0;
+}
+
+/* ---------- similar moments ---------- */
+.similar-start {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.similar-start p {
+  flex: 1 1 220px;
+}
+.similar-body {
+  display: grid;
+  gap: var(--sp-2);
+}
+.similar-headline {
+  font-weight: 600;
+}
+.similar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.similar-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--c-border);
+  font-size: var(--fs-sm);
+}
+.similar-outcome,
+.similar-actions {
+  display: inline-flex;
+  gap: var(--sp-2);
+  align-items: center;
+  justify-self: end;
+}
+.similar-outcome .pill {
+  margin-left: 0;
+}
+.similar-who,
+.similar-context {
+  min-width: 0;
+}
+.similar-context {
+  font-size: var(--fs-xs);
+}
+.card--why {
+  align-content: start;
+}

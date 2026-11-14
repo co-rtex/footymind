@@ -209,6 +209,66 @@ export interface FrameAnalysisOut {
   /** calibrated option model behind PassOptionOut.p_success_model; status holds held-out metrics and caveats */
   option_model: ModelInfo | null;
   warnings: string[];
+  /**
+   * Causal last-second features for the carrier (derived from frames at or before this one).
+   * Null for hypothetical states; absent on older backends.
+   */
+  temporal?: Record<string, number | null> | null;
+  /** Evidence-grounded statements, each tied to one computed metric (absent on older backends). */
+  explanations?: StatementOut[];
+}
+
+export type StatementKind = "pressure" | "trend" | "option" | "caveat";
+
+/** One "why this moment" statement (mirrors StatementOut). The text is shown as given. */
+export interface StatementOut {
+  kind: StatementKind | (string & {});
+  text: string;
+  /** the computed metric the statement is generated from */
+  metric: string;
+  value: number | string | null;
+  provenance: ProvenanceLabel;
+  /** players the statement is about, highlighted on the pitch when the statement is focused */
+  players: string[];
+}
+
+/** One past pass decision from another match (mirrors SimilarMoment). */
+export interface SimilarMoment {
+  match_id: string;
+  frame: number;
+  possession_id: string | null;
+  team: Team;
+  passer_id: string;
+  /** OBSERVED outcome of that pass */
+  completed: boolean;
+  /** standardised feature distance (smaller = more similar) */
+  distance: number;
+  /** ball x in the attacking direction (m from halfway, negative = own half) */
+  ball_x_att: number | null;
+  press_nearest_def_m: number | null;
+  passer_control_s: number | null;
+}
+
+export interface SimilarValidation {
+  ref: string | null;
+  /** pre-registered criterion: does the neighbour outcome beat the base rate on held-out matches */
+  knn_beats_base_rate: boolean | null;
+  log_loss: unknown;
+}
+
+/** GET /api/matches/{mid}/frames/{frame}/similar (mirrors SimilarMomentsOut). 404: no pass decision near the frame; 503: no index. */
+export interface SimilarMomentsOut {
+  match_id: string;
+  frame: number;
+  decision_frame: number;
+  passer_id: string;
+  k: number;
+  neighbours: SimilarMoment[];
+  completed_share: number;
+  provider: string;
+  features: string[];
+  validation: SimilarValidation | null;
+  disclaimer: string;
 }
 
 export interface InterventionIn {

@@ -62,6 +62,8 @@ export interface Scene {
   pending: ReadonlyMap<string, { x: number; y: number }>;
   selectedId: string | null;
   highlightReceiver: string | null;
+  /** players named by the focused "why this moment" statement, ringed on the pitch */
+  tracePlayers: readonly string[];
   /** defensive shadow for the paused frame (experimental) */
   shadow: DefensiveShadowOut | null;
 }
@@ -91,6 +93,7 @@ export function defaultScene(): Scene {
     pending: EMPTY_PENDING,
     selectedId: null,
     highlightReceiver: null,
+    tracePlayers: [],
     shadow: null,
   };
 }
@@ -230,6 +233,7 @@ export class PitchRenderer {
     if (shadow) this.drawShadow(ctx, tf, shadow);
     if (showScenarioLayer || hypView) this.drawGhosts(ctx, tf);
     if (s.drag) this.drawReach(ctx, tf, s.drag);
+    if (s.tracePlayers.length > 0) this.drawTrace(ctx, tf);
     this.drawPlayers(ctx, tf, active);
     this.drawBall(ctx, tf);
   }
@@ -749,6 +753,26 @@ export class PitchRenderer {
     ctx.moveTo(ox + 4, oy - 4);
     ctx.lineTo(ox - 4, oy + 4);
     ctx.stroke();
+    ctx.restore();
+  }
+
+  /** Halo under the players a focused explanation statement refers to (traceability). */
+  private drawTrace(ctx: CanvasRenderingContext2D, tf: PitchTransform): void {
+    const ids = new Set(this.scene.tracePlayers);
+    const R = this.radiusPx();
+    ctx.save();
+    for (const p of this.drawn) {
+      if (!ids.has(p.id)) continue;
+      const x = toCanvasX(tf, p.x);
+      const y = toCanvasY(tf, p.y);
+      ctx.fillStyle = rgba(this.theme.accent, 0.22);
+      ctx.strokeStyle = rgba(this.theme.accent, 0.95);
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(x, y, R + 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
