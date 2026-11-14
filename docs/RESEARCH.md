@@ -713,16 +713,21 @@ calibration. Strata (`temporal_v1_strata`, descriptive): open play −0.016 [−
 
 ### RQ2 results: SkillCorner (20 matches; primary = 0.2 s guard, 15,893 passes; rev c90e67e)
 
-| comparison | 0.2 s guard (primary) | match-level CI, matches better |
-|---|---|---|
-| `Adt → Adt_tob` (H-T1, time-on-ball) | **−0.0022** [−0.0034, −0.0012] | [−0.0039, −0.0006], 15/20 |
-| `Bdt_tob → Bdt_tt` (H-T2, LR) | **−0.0091** [−0.0113, −0.0071] | [−0.0119, −0.0063], **20/20** |
-| `Bdt_tob → Bdt_tt` (GBM) | **−0.0089** [−0.0110, −0.0069] | |
-| `Adt_tob → Bdt_tob` (H-T3) | **−0.0196** [−0.0226, −0.0164] | [−0.0238, −0.0148], 20/20 |
-| `Adt → Bdt` (C28 re-test) | **−0.0214** [−0.0245, −0.0180] | [−0.0255, −0.0166], 20/20 |
+| comparison | 0.2 s guard (primary) | match-level CI, matches better | release frame (secondary) |
+|---|---|---|---|
+| `Adt → Adt_tob` (H-T1, time-on-ball) | **−0.0022** [−0.0034, −0.0012] | [−0.0039, −0.0006], 15/20 | −0.0043 [−0.0058, −0.0028] |
+| `Bdt_tob → Bdt_tt` (H-T2, LR) | **−0.0091** [−0.0113, −0.0071] | [−0.0119, −0.0063], **20/20** | −0.0112 [−0.0136, −0.0088] |
+| `Bdt_tob → Bdt_tt` (GBM) | **−0.0089** [−0.0110, −0.0069] | | −0.0105 [−0.0128, −0.0081] |
+| `Adt_tob → Bdt_tob` (H-T3) | **−0.0196** [−0.0226, −0.0164] | [−0.0238, −0.0148], 20/20 | −0.0185 [−0.0217, −0.0154] |
+| `Adt → Bdt` (C28 re-test) | **−0.0214** [−0.0245, −0.0180] | [−0.0255, −0.0166], 20/20 | −0.0214 [−0.0248, −0.0181] |
 
 AUC: Adt 0.661 → Bdt 0.725 → Bdt_tt 0.747; ECE stays small (0.006–0.017). The release-frame
-run (`temporal_skillcorner_v1`) is secondary by design (ADR-0007). Claim C35.
+run (`temporal_skillcorner_v1`, rev 379b98e) is secondary by design (ADR-0007). Against it,
+the guard removes about half of the time-on-ball gain and about a fifth of the movement-history
+gain, but none of the spatial gain. Kick information inflated only the temporal features. At
+the release frame, a 0.5 s lookback is slightly better than 1.0 s (−0.0032), 2.0 s is worse
+(+0.0042), event timing is null (+0.0001), and the header/cross control leaves H-T2 unchanged
+(−0.0112). Claim C35.
 
 **Reading (both providers).** H-T2 replicates: the last second of movement adds information
 beyond static positions and time-on-ball on optical and broadcast tracking (Metrica −0.014,

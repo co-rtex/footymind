@@ -1,0 +1,4512 @@
+{
+  "name": "temporal_skillcorner_v1",
+  "config": {
+    "name": "temporal_skillcorner_v1",
+    "description": "Temporal context (session 3, pre-registered in docs/RESEARCH.md before running). Primary hypotheses: H-T1 time-on-ball/event timing improves the decision-time event baseline (Adt -> Adt_tob); H-T2 1.0 s movement history improves decision-time spatial context beyond static positions + time-on-ball (Bdt_tob -> Bdt_tt); H-T3 the decision-time spatial gain survives the stronger temporal event baseline (Adt_tob -> Bdt_tob). 0.5 s / 2.0 s lookbacks and Bdt_ttonly are sensitivity analyses. Same rules v2, LOMO, a-priori hyperparameters and possession-clustered paired bootstrap as pass_outcome_v3. Revised before any valid run after the independent review (2026-11-14): time-on-ball is censored (NaN) when an unobserved ball ends the run; a header/cross control comparison is added; strata are restart vs open play.",
+    "matches": [
+      "skillcorner-1874553",
+      "skillcorner-1886347",
+      "skillcorner-1899585",
+      "skillcorner-1925299",
+      "skillcorner-1927964",
+      "skillcorner-1953632",
+      "skillcorner-1959846",
+      "skillcorner-1986691",
+      "skillcorner-1996435",
+      "skillcorner-1996436",
+      "skillcorner-2006229",
+      "skillcorner-2006363",
+      "skillcorner-2007448",
+      "skillcorner-2007721",
+      "skillcorner-2010085",
+      "skillcorner-2011166",
+      "skillcorner-2013725",
+      "skillcorner-2015213",
+      "skillcorner-2016236",
+      "skillcorner-2017461"
+    ],
+    "seed": 0,
+    "dataset": {
+      "rules": "v2",
+      "include_ball_out": true
+    },
+    "n_boot": 1000,
+    "models": [
+      "base_rate",
+      "Adt_logreg",
+      "Adt_te_logreg",
+      "Adt_tob_logreg",
+      "Bdt_logreg",
+      "Bdt_tob_logreg",
+      "Bdt_tt_logreg",
+      "Bdt_tt05_logreg",
+      "Bdt_tt20_logreg",
+      "Bdt_ttonly_logreg",
+      "Adt_gbm",
+      "Adt_tob_gbm",
+      "Bdt_gbm",
+      "Bdt_tob_gbm",
+      "Bdt_tt_gbm",
+      "Bdt_tob_hc_logreg",
+      "Bdt_tt_hc_logreg"
+    ],
+    "comparisons": [
+      [
+        "Adt_logreg",
+        "Adt_te_logreg"
+      ],
+      [
+        "Adt_logreg",
+        "Adt_tob_logreg"
+      ],
+      [
+        "Bdt_logreg",
+        "Bdt_tob_logreg"
+      ],
+      [
+        "Bdt_tob_logreg",
+        "Bdt_tt_logreg"
+      ],
+      [
+        "Bdt_logreg",
+        "Bdt_ttonly_logreg"
+      ],
+      [
+        "Adt_tob_logreg",
+        "Bdt_tob_logreg"
+      ],
+      [
+        "Adt_tob_logreg",
+        "Bdt_tt_logreg"
+      ],
+      [
+        "Bdt_tt_logreg",
+        "Bdt_tt05_logreg"
+      ],
+      [
+        "Bdt_tt_logreg",
+        "Bdt_tt20_logreg"
+      ],
+      [
+        "Adt_tob_gbm",
+        "Bdt_tob_gbm"
+      ],
+      [
+        "Bdt_tob_gbm",
+        "Bdt_tt_gbm"
+      ],
+      [
+        "Adt_logreg",
+        "Bdt_logreg"
+      ],
+      [
+        "Bdt_tob_hc_logreg",
+        "Bdt_tt_hc_logreg"
+      ]
+    ],
+    "calibration": [
+      "Adt_logreg",
+      "Adt_tob_logreg",
+      "Bdt_logreg",
+      "Bdt_tob_logreg",
+      "Bdt_tt_logreg"
+    ],
+    "importances": [
+      "Bdt_tt_logreg"
+    ]
+  },
+  "code_revision": "379b98eea585e3a4754166ac9bbc27bdc9e35a95",
+  "data_files_sha256": {
+    "skillcorner-1874553": {
+      "1874553_dynamic_events.csv": "92507490abbbeec7697227581c864cfb0a96c29b214dd63dcaa48929bb6c6408",
+      "1874553_match.json": "e6974e402779d8be44e75bf88ef2a3acfd4d025b87b3fc57f518fa826a645ad8",
+      "1874553_tracking_extrapolated.jsonl": "ea97f58f8eaad925feaeacc6395ec24860dd80027af8a89450276adebd29d265"
+    },
+    "skillcorner-1886347": {
+      "1886347_dynamic_events.csv": "b21368b9b94eb8f83032fe14a2a8da88ab7eda048b4f8078c06d0e6955d12bfb",
+      "1886347_match.json": "30c608e78663e9f490b3545479a3ce67b171f418c5133d5609cb249a2466abb2",
+      "1886347_tracking_extrapolated.jsonl": "3577e2803da95390f8b2f85d47829eb55fbbfee6211c94adc65db0dc78e46b41"
+    },
+    "skillcorner-1899585": {
+      "1899585_dynamic_events.csv": "14c62ffc99aa5fd62998c238036873509a9d82ced44354697a1db4251424d557",
+      "1899585_match.json": "41de8cb74a0512fcf0cbaaa5c615ae3e7dcaaf6745b9c78a050b59b906b1cb06",
+      "1899585_tracking_extrapolated.jsonl": "90b6289ec2181192d1793ec6240fbbe8225ff0219c7956710c6278c31a661100"
+    },
+    "skillcorner-1925299": {
+      "1925299_dynamic_events.csv": "2557acbdcba6547d764b9f7c277c3d7e81a4d58692d6c20c2bfa28625ae0cce3",
+      "1925299_match.json": "f4345b32c0fdd7c9990df70050b3a74f57b1992cf762e20f2a4d309bd2fba7d2",
+      "1925299_tracking_extrapolated.jsonl": "48528be40ad82fa3e2b232e1af8d311705f7d6d119925ef199d2b59ea36fd3c9"
+    },
+    "skillcorner-1927964": {
+      "1927964_dynamic_events.csv": "638747f76b43690974f95958952dfe62c9e50d64648f9456f43f66d5d91201f3",
+      "1927964_match.json": "f967f911c20f5c5f8c89bbe2020a30c92731173616d5a1e4bafeb65435278b76",
+      "1927964_tracking_extrapolated.jsonl": "858c7a756ca3d33017f864775af5999d2c0f364e58ab60ae040c8b9ebab17827"
+    },
+    "skillcorner-1953632": {
+      "1953632_dynamic_events.csv": "d1f676ebb182da585da128fc80d468e27fb676e254abc47531daf920d977e51f",
+      "1953632_match.json": "366c8dd6b504d4f4ace5685040648b0f30081043a44f01663b8b7e077e6bfde8",
+      "1953632_tracking_extrapolated.jsonl": "1c2014f97c3eff1ce2475203512c9d126930d7599c036105c9ac442d1de1667e"
+    },
+    "skillcorner-1959846": {
+      "1959846_dynamic_events.csv": "aa3d08a927a84f2b42d976cc10401e9efc52468744e0a7a86cb0d3dc2e288058",
+      "1959846_match.json": "4bbe2058af53edd42d5e3acd7fb28ecb8c79e4afb16cb9b77a6fe9b58f6e516b",
+      "1959846_tracking_extrapolated.jsonl": "5ba2d87f6fd1ba3138301b369bd9266be69416a2d799a3fba5b5ec8a52e1284b"
+    },
+    "skillcorner-1986691": {
+      "1986691_dynamic_events.csv": "c2f7102092970368cc487353d6e93e06522f8d3f184326cced63fa167ca0d9f5",
+      "1986691_match.json": "754f6a6fd0d996236cf553ef5c3c24513274b0db024cb6833a7419b08d55dd68",
+      "1986691_tracking_extrapolated.jsonl": "630e946950fe459f5e48872b01a36e6dfc319cf9027e7b98156150bb6e2c30f6"
+    },
+    "skillcorner-1996435": {
+      "1996435_dynamic_events.csv": "379e5bbd90df47d2358a2bfc5b741f7626b934db780ff33d3337a8b1d5efc87c",
+      "1996435_match.json": "f54179645d3c3f308a7094086283277f2a7c99da5f3919302e622cbd82f9d065",
+      "1996435_tracking_extrapolated.jsonl": "f42764d8bde290e8f738fa21141cadbed75408314b0b337bbf1d5a3444540a02"
+    },
+    "skillcorner-1996436": {
+      "1996436_dynamic_events.csv": "94e7d7cc23ace6fd3eda12fb869eb2a0fef49402d7d72b7fb8155b4b2588da2d",
+      "1996436_match.json": "4e8999668a79fccd43f01e5538d7595b4614ec6061d648b831a96951e495c78a",
+      "1996436_tracking_extrapolated.jsonl": "fab9d331e06f3042c83ac17798901b49bb259c99a8f3b319cd0146263cde65e7"
+    },
+    "skillcorner-2006229": {
+      "2006229_dynamic_events.csv": "6308c15890803ed5cd44e8bc2fbb1844cce20bd59d63b154aec82977af8c6588",
+      "2006229_match.json": "87386df74b45eb7ccac80742c603763146cb2b61f47561122355fe246d8795eb",
+      "2006229_tracking_extrapolated.jsonl": "3ee193ba01f1fe2cbce087eca8a881c21b8b0ea3485ae6c3d7e32e8b2f51e738"
+    },
+    "skillcorner-2006363": {
+      "2006363_dynamic_events.csv": "430d5f840723c4c667b907e161716265b5ae4b87b4466a4883d3b95b5b5e5a58",
+      "2006363_match.json": "26d4068baf7454d1e066b6e70715da6c7ac016b14963a3bfa3ed99ed7c3aba79",
+      "2006363_tracking_extrapolated.jsonl": "61dfdbd83f8e654127b249b8503f062338c14ec0c9e65404bcf70fb7c1346bd4"
+    },
+    "skillcorner-2007448": {
+      "2007448_dynamic_events.csv": "076e7a85949a1aca485bf202823a2b04b6d5eb20212faac1e51d346c6f4ac2a7",
+      "2007448_match.json": "434b31c032656be4a89e7042eadd442d4dfb468e4bfa87ce188102f314262873",
+      "2007448_tracking_extrapolated.jsonl": "12d00d6e4257218812df6e4c4263c49387ba0313a83ff8d826c4416828f9c798"
+    },
+    "skillcorner-2007721": {
+      "2007721_dynamic_events.csv": "c102f35837a9e50f642bd3378f9303ccd4d9a40d07717a12423966c3fb66fe36",
+      "2007721_match.json": "0ed112bc955eb341bc25005f9a7bb3fdf040223c8e1765646225c47e974b6139",
+      "2007721_tracking_extrapolated.jsonl": "fea913b8d4cbde8d85c6bdf5f1a4b3fd203b78227e976a171c8ab0946705d378"
+    },
+    "skillcorner-2010085": {
+      "2010085_dynamic_events.csv": "792b2ac103e314835b4e7d5a213b67093497c4a8a3756dfae3ec66b059de6ee3",
+      "2010085_match.json": "3222413d358251e1ac1cdde1f5ee2fd126b0d9cc3470c2aa1bb07177a09ef24d",
+      "2010085_tracking_extrapolated.jsonl": "04562d9754b2977c80430535e9b5733426bc4ce910db56fe7a3760876211ac5a"
+    },
+    "skillcorner-2011166": {
+      "2011166_dynamic_events.csv": "7c2827cea8135395b77f70592c59721189da3b6c9abc94688884c073c3233a18",
+      "2011166_match.json": "6b381b8bd338859c394c1992da137436e2e09cd609a81ac94d5f5f941d35d1bc",
+      "2011166_tracking_extrapolated.jsonl": "8ec2937050930d87e4f52b2d65515f70ef8edd0ae2814bf40155c4448133390e"
+    },
+    "skillcorner-2013725": {
+      "2013725_dynamic_events.csv": "20bd127c17768d70dade9a76b43c1201c2c5e10f6c89d420847250136270ad83",
+      "2013725_match.json": "c8b9372fbd2e79ddcbb859b51b5086111ed7f3cd84ca0b457091c7d0e5209df3",
+      "2013725_tracking_extrapolated.jsonl": "13eb83329814ed5f5d73da8f8ab5c5979d6c8a7858e89e28a7fa8072f91fb250"
+    },
+    "skillcorner-2015213": {
+      "2015213_dynamic_events.csv": "1452564da8278500f4672152a27e361d3f5f1b9d741493e598e5bf7729a88811",
+      "2015213_match.json": "300342194bf3dcd9fe356ed30df26fd0ee6e8caeb8ce5d8cfd27cf90cd995dff",
+      "2015213_tracking_extrapolated.jsonl": "413990d0024d84856ce1f2a16866b8887472c0cea22c61caef0d1f46505a609e"
+    },
+    "skillcorner-2016236": {
+      "2016236_dynamic_events.csv": "425274b44a124ec5e81ff8f2819cebd22702065d0f4e4f8070306db9ae97590a",
+      "2016236_match.json": "93ccf67cead82def1acda87d3cf550fd42f96cb0e1adbff9eeb8824077980495",
+      "2016236_tracking_extrapolated.jsonl": "d78555f9dfd7d1ce9de38066d3c98e6d54417c6d45d73b1f1ce7e26f07263d8f"
+    },
+    "skillcorner-2017461": {
+      "2017461_dynamic_events.csv": "d4ce943cd9b912cfcf1f6d2744c9f4ecd6db4d5f7bcd6152b946e2f5ba308878",
+      "2017461_match.json": "db27759bf734dc8e3d9e56f047965cc7c74833bc3d0345ee3821ab97681ce4b9",
+      "2017461_tracking_extrapolated.jsonl": "59cfa5588efee041da439f44df5b5b92f2b7305571dc831164e3d05f7415787a"
+    }
+  },
+  "runtime_s": 4126.9,
+  "dataset": {
+    "n": 15914,
+    "success_rate": 0.840454945331155,
+    "by_match": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "success_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "success_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "success_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "success_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "success_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "success_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "success_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "success_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "success_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "success_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "success_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "success_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "success_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "success_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "success_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "success_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "success_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "success_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "success_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "success_rate": 0.7919254658385093
+      }
+    },
+    "by_label_source": {
+      "BALL LOST": 2132,
+      "BALL OUT": 407,
+      "PASS": 13375
+    },
+    "n_truncated_release": 41,
+    "receiver_inference": {
+      "n_completed": 13375,
+      "accuracy": 0.7518881328049054
+    }
+  },
+  "models": {
+    "base_rate": {
+      "family": "baseline",
+      "description": "training-set completion rate",
+      "n_features": 0
+    },
+    "Adt_logreg": {
+      "family": "A-decision",
+      "description": "decision-time event context only (no release features), LR",
+      "n_features": 13
+    },
+    "Adt_gbm": {
+      "family": "A-decision",
+      "description": "decision-time event context only, GBM",
+      "n_features": 13
+    },
+    "Bdt_logreg": {
+      "family": "B-decision",
+      "description": "decision-time event + spatial context (no release features), LR",
+      "n_features": 25
+    },
+    "Bdt_gbm": {
+      "family": "B-decision",
+      "description": "decision-time event + spatial context, GBM",
+      "n_features": 25
+    },
+    "Adt_te_logreg": {
+      "family": "temporal",
+      "description": "decision-time events + time since previous event, LR",
+      "n_features": 14
+    },
+    "Adt_tob_logreg": {
+      "family": "temporal",
+      "description": "decision-time events + event timing + tracking time-on-ball, LR",
+      "n_features": 16
+    },
+    "Bdt_tob_logreg": {
+      "family": "temporal",
+      "description": "decision-time spatial + event timing + time-on-ball, LR",
+      "n_features": 28
+    },
+    "Bdt_tt_logreg": {
+      "family": "temporal",
+      "description": "decision-time spatial + timing + time-on-ball + 1.0 s movement history, LR",
+      "n_features": 37
+    },
+    "Bdt_tt05_logreg": {
+      "family": "temporal",
+      "description": "as Bdt_tt with a 0.5 s lookback (sensitivity), LR",
+      "n_features": 37
+    },
+    "Bdt_tt20_logreg": {
+      "family": "temporal",
+      "description": "as Bdt_tt with a 2.0 s lookback (sensitivity), LR",
+      "n_features": 37
+    },
+    "Bdt_ttonly_logreg": {
+      "family": "temporal",
+      "description": "decision-time spatial + 1.0 s movement history only (no timing/time-on-ball), LR",
+      "n_features": 34
+    },
+    "Bdt_tob_hc_logreg": {
+      "family": "temporal",
+      "description": "Bdt_tob + header/cross annotations (control), LR",
+      "n_features": 30
+    },
+    "Bdt_tt_hc_logreg": {
+      "family": "temporal",
+      "description": "Bdt_tt + header/cross annotations (control), LR",
+      "n_features": 39
+    },
+    "Adt_tob_gbm": {
+      "family": "temporal",
+      "description": "decision-time events + event timing + tracking time-on-ball, GBM",
+      "n_features": 16
+    },
+    "Bdt_tob_gbm": {
+      "family": "temporal",
+      "description": "decision-time spatial + event timing + time-on-ball, GBM",
+      "n_features": 28
+    },
+    "Bdt_tt_gbm": {
+      "family": "temporal",
+      "description": "decision-time spatial + timing + time-on-ball + 1.0 s movement history, GBM",
+      "n_features": 37
+    }
+  },
+  "pooled_oof_metrics": {
+    "base_rate": {
+      "n": 15914,
+      "log_loss": 0.43934259481555804,
+      "brier": 0.13420542618404885,
+      "auc": 0.43304824550102505,
+      "ece": 0.0001468305314599183,
+      "mean_pred": 0.840308114799695,
+      "base_rate": 0.840454945331155
+    },
+    "Adt_logreg": {
+      "n": 15914,
+      "log_loss": 0.41818101686147097,
+      "brier": 0.12856583809811434,
+      "auc": 0.6631992432078271,
+      "ece": 0.008914149373161633,
+      "mean_pred": 0.8404189615572049,
+      "base_rate": 0.840454945331155
+    },
+    "Adt_gbm": {
+      "n": 15914,
+      "log_loss": 0.40834708427646726,
+      "brier": 0.12515689710566993,
+      "auc": 0.686406893581622,
+      "ece": 0.007567404937496318,
+      "mean_pred": 0.8395352549282102,
+      "base_rate": 0.840454945331155
+    },
+    "Bdt_logreg": {
+      "n": 15914,
+      "log_loss": 0.39678161448219773,
+      "brier": 0.12270145319254469,
+      "auc": 0.7251309036967235,
+      "ece": 0.015369993386093964,
+      "mean_pred": 0.8403197028099644,
+      "base_rate": 0.840454945331155
+    },
+    "Bdt_gbm": {
+      "n": 15914,
+      "log_loss": 0.3874013150650266,
+      "brier": 0.1201555932801004,
+      "auc": 0.7438689748337155,
+      "ece": 0.011327432559035799,
+      "mean_pred": 0.8397488663896115,
+      "base_rate": 0.840454945331155
+    },
+    "Adt_te_logreg": {
+      "n": 15914,
+      "log_loss": 0.4183087617152462,
+      "brier": 0.12860190783349815,
+      "auc": 0.662747288100032,
+      "ece": 0.009395735039166483,
+      "mean_pred": 0.8404317885708756,
+      "base_rate": 0.840454945331155
+    },
+    "Adt_tob_logreg": {
+      "n": 15914,
+      "log_loss": 0.41384566710331055,
+      "brier": 0.1271414685652962,
+      "auc": 0.6726491627802542,
+      "ece": 0.007493730499709148,
+      "mean_pred": 0.8404453843983523,
+      "base_rate": 0.840454945331155
+    },
+    "Bdt_tob_logreg": {
+      "n": 15914,
+      "log_loss": 0.3953175588999253,
+      "brier": 0.12213832861375828,
+      "auc": 0.7276335594630309,
+      "ece": 0.01267969056799224,
+      "mean_pred": 0.8403316388133377,
+      "base_rate": 0.840454945331155
+    },
+    "Bdt_tt_logreg": {
+      "n": 15914,
+      "log_loss": 0.3841059276593624,
+      "brier": 0.11901630728742472,
+      "auc": 0.7543098946159539,
+      "ece": 0.018480741083280336,
+      "mean_pred": 0.8403580240236983,
+      "base_rate": 0.840454945331155
+    },
+    "Bdt_tt05_logreg": {
+      "n": 15914,
+      "log_loss": 0.3809152202134531,
+      "brier": 0.11828743377242112,
+      "auc": 0.7622235849716387,
+      "ece": 0.018466420537047085,
+      "mean_pred": 0.8403784855731177,
+      "base_rate": 0.840454945331155
+    },
+    "Bdt_tt20_logreg": {
+      "n": 15914,
+      "log_loss": 0.3882867249877184,
+      "brier": 0.11993572032932533,
+      "auc": 0.7432514824807765,
+      "ece": 0.015647476654825316,
+      "mean_pred": 0.8403393949395584,
+      "base_rate": 0.840454945331155
+    },
+    "Bdt_ttonly_logreg": {
+      "n": 15914,
+      "log_loss": 0.3846166062629054,
+      "brier": 0.11919881544526736,
+      "auc": 0.7541444604358917,
+      "ece": 0.018772608423653518,
+      "mean_pred": 0.8403259809207655,
+      "base_rate": 0.840454945331155
+    },
+    "Bdt_tob_hc_logreg": {
+      "n": 15914,
+      "log_loss": 0.3953175588999253,
+      "brier": 0.12213832861375828,
+      "auc": 0.7276335594630309,
+      "ece": 0.01267969056799224,
+      "mean_pred": 0.8403316388133377,
+      "base_rate": 0.840454945331155
+    },
+    "Bdt_tt_hc_logreg": {
+      "n": 15914,
+      "log_loss": 0.38410592765930834,
+      "brier": 0.11901630728741128,
+      "auc": 0.7543098946159539,
+      "ece": 0.018480741083250818,
+      "mean_pred": 0.8403580240238466,
+      "base_rate": 0.840454945331155
+    },
+    "Adt_tob_gbm": {
+      "n": 15914,
+      "log_loss": 0.3995343524872922,
+      "brier": 0.12288643952012837,
+      "auc": 0.7149176988511925,
+      "ece": 0.010321414013722842,
+      "mean_pred": 0.8401002945702811,
+      "base_rate": 0.840454945331155
+    },
+    "Bdt_tob_gbm": {
+      "n": 15914,
+      "log_loss": 0.38210949581678205,
+      "brier": 0.11859987071997992,
+      "auc": 0.7569557077810455,
+      "ece": 0.01427349056337789,
+      "mean_pred": 0.8398797867998009,
+      "base_rate": 0.840454945331155
+    },
+    "Bdt_tt_gbm": {
+      "n": 15914,
+      "log_loss": 0.37160727401426485,
+      "brier": 0.11591889307371146,
+      "auc": 0.7786595060974039,
+      "ece": 0.017279767646144,
+      "mean_pred": 0.8401477867392425,
+      "base_rate": 0.840454945331155
+    }
+  },
+  "fold_metrics": {
+    "base_rate": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.44039255428730284,
+        "brier": 0.13469598693174908,
+        "auc": 0.5,
+        "ece": 0.0009380698758502115,
+        "mean_pred": 0.8405038117335101,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.39604304709019844,
+        "brier": 0.11648147302471644,
+        "auc": 0.5,
+        "ece": 0.02743371106931458,
+        "mean_pred": 0.8389965489779667,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.4671440164673067,
+        "brier": 0.14564344256221007,
+        "auc": 0.5,
+        "ece": 0.017740429505135435,
+        "mean_pred": 0.8412698412698413,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.40635850138242685,
+        "brier": 0.12072418951532665,
+        "auc": 0.5,
+        "ece": 0.02088275252088234,
+        "mean_pred": 0.8392726303869978,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.32885751772718125,
+        "brier": 0.0886701800450158,
+        "auc": 0.5,
+        "ece": 0.07211189894116699,
+        "mean_pred": 0.8359689091396411,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.3703926914901807,
+        "brier": 0.10590538199220843,
+        "auc": 0.5,
+        "ece": 0.044065069267317014,
+        "mean_pred": 0.838081955236767,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.44287708768791717,
+        "brier": 0.13571383468292061,
+        "auc": 0.5,
+        "ece": 0.002510895098137067,
+        "mean_pred": 0.8405825885468392,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.3895466018955704,
+        "brier": 0.11381221644747723,
+        "auc": 0.5,
+        "ece": 0.031407446501786396,
+        "mean_pred": 0.838962923868584,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.42755841196072697,
+        "brier": 0.1294338218987155,
+        "auc": 0.5,
+        "ece": 0.007243452809943318,
+        "mean_pred": 0.8400584989696204,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.499450264360924,
+        "brier": 0.1588359551378838,
+        "auc": 0.5,
+        "ece": 0.03772389689820865,
+        "mean_pred": 0.8420052424639579,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.4351482904015325,
+        "brier": 0.13254668456949895,
+        "auc": 0.5,
+        "ece": 0.0023963548475376406,
+        "mean_pred": 0.840326649847298,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.41326626787069004,
+        "brier": 0.12356558584964639,
+        "auc": 0.5,
+        "ece": 0.01636103160914104,
+        "mean_pred": 0.8395913493432399,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.4306571611172349,
+        "brier": 0.13070528049597935,
+        "auc": 0.5,
+        "ece": 0.005219164876914539,
+        "mean_pred": 0.8402109426499672,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.4487850211664912,
+        "brier": 0.13813302910839184,
+        "auc": 0.5,
+        "ece": 0.006261648881391357,
+        "mean_pred": 0.8407854584052009,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.4212077389130285,
+        "brier": 0.1268275220226338,
+        "auc": 0.5,
+        "ece": 0.011275725726932917,
+        "mean_pred": 0.8398647304555401,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.5120865983647812,
+        "brier": 0.1639909183395077,
+        "auc": 0.5,
+        "ece": 0.04545151588014684,
+        "mean_pred": 0.8422257094285339,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.5139511669486185,
+        "brier": 0.16473009377222247,
+        "auc": 0.5,
+        "ece": 0.04692213209409102,
+        "mean_pred": 0.8426781002638523,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.4752681549900023,
+        "brier": 0.14896285224292996,
+        "auc": 0.5,
+        "ece": 0.02281743016630422,
+        "mean_pred": 0.8414987488476229,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.5360626849680156,
+        "brier": 0.17370146642274792,
+        "auc": 0.5,
+        "ece": 0.06074371316996985,
+        "mean_pred": 0.8435657990595404,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.520312457117302,
+        "brier": 0.16733747150426476,
+        "auc": 0.5,
+        "ece": 0.05057617135860937,
+        "mean_pred": 0.8425016371971187,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Adt_logreg": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.4160211912326095,
+        "brier": 0.12785677433775947,
+        "auc": 0.6768213637542132,
+        "ece": 0.012589841706205286,
+        "mean_pred": 0.8459553888027656,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.3634706394337825,
+        "brier": 0.10827103295681219,
+        "auc": 0.7137838196766833,
+        "ece": 0.02709061447834315,
+        "mean_pred": 0.8547323848012246,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.45582095762033664,
+        "brier": 0.14268419889601067,
+        "auc": 0.6191377578613922,
+        "ece": 0.02455583871846436,
+        "mean_pred": 0.8419131024060037,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.39588866149897406,
+        "brier": 0.11862605532837106,
+        "auc": 0.6187096774193548,
+        "ece": 0.020561429842638767,
+        "mean_pred": 0.8457699965498702,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.30027892215417473,
+        "brier": 0.08248420333766503,
+        "auc": 0.6893618061582467,
+        "ece": 0.04834871813521742,
+        "mean_pred": 0.8601794155913506,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.3420857004649112,
+        "brier": 0.09885100668091194,
+        "auc": 0.7052883859814552,
+        "ece": 0.03285838199941906,
+        "mean_pred": 0.8592301994654881,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.42966572531153285,
+        "brier": 0.13283799736405502,
+        "auc": 0.6363800130604158,
+        "ece": 0.018957959205156773,
+        "mean_pred": 0.8268399764147695,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.36358634593086453,
+        "brier": 0.10746380161826585,
+        "auc": 0.7120060790273557,
+        "ece": 0.04221541270136014,
+        "mean_pred": 0.838545018774084,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.40613317797032966,
+        "brier": 0.12366146364587026,
+        "auc": 0.6520671597693419,
+        "ece": 0.03025958627389826,
+        "mean_pred": 0.8451277197700316,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.47407204722150226,
+        "brier": 0.15065788109827136,
+        "auc": 0.6620425380228137,
+        "ece": 0.04222451701059359,
+        "mean_pred": 0.8428851647693898,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.4242467709365306,
+        "brier": 0.13004431127691257,
+        "auc": 0.6303683532199726,
+        "ece": 0.018381929521279067,
+        "mean_pred": 0.8490430576669423,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.40112674247638974,
+        "brier": 0.12096970508372668,
+        "auc": 0.6391912550718974,
+        "ece": 0.029071193906303958,
+        "mean_pred": 0.8305357823208868,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.4068222923972793,
+        "brier": 0.12472792880465335,
+        "auc": 0.6865417847515034,
+        "ece": 0.02295051579938782,
+        "mean_pred": 0.8385779165202226,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.4284686093302622,
+        "brier": 0.13185963763534617,
+        "auc": 0.652048974230031,
+        "ece": 0.02536518948998405,
+        "mean_pred": 0.8586791952686773,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.40252280872341123,
+        "brier": 0.12189047474730888,
+        "auc": 0.6735179034532963,
+        "ece": 0.0298716778668639,
+        "mean_pred": 0.8390398213334611,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.4903322574282531,
+        "brier": 0.15754160330689476,
+        "auc": 0.6349045691150954,
+        "ece": 0.02839471661718757,
+        "mean_pred": 0.8172376242279863,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.4870087645195131,
+        "brier": 0.1562827560771523,
+        "auc": 0.6358766233766233,
+        "ece": 0.027643551223993302,
+        "mean_pred": 0.8160307658643786,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.4486437000492406,
+        "brier": 0.14111159297190706,
+        "auc": 0.6703401464307505,
+        "ece": 0.020836600875394764,
+        "mean_pred": 0.8303330482416932,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.518036824397878,
+        "brier": 0.16832161199978662,
+        "auc": 0.6158723411791793,
+        "ece": 0.05124400075630115,
+        "mean_pred": 0.8260754082674956,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.4963288233598016,
+        "brier": 0.15988856252260045,
+        "auc": 0.6437225636523265,
+        "ece": 0.03759447968593152,
+        "mean_pred": 0.8222810974106686,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Adt_gbm": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.4085702980680081,
+        "brier": 0.1259582448058135,
+        "auc": 0.6990590700890157,
+        "ece": 0.03043485027816974,
+        "mean_pred": 0.8465740612157182,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.34873851144359874,
+        "brier": 0.10282959624631302,
+        "auc": 0.7424573518936605,
+        "ece": 0.03124364941279028,
+        "mean_pred": 0.8473579063619725,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.4545007538554667,
+        "brier": 0.14222113236459447,
+        "auc": 0.6285250714672024,
+        "ece": 0.03537572755300733,
+        "mean_pred": 0.8283108751857396,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.39267712750491623,
+        "brier": 0.11757827336219649,
+        "auc": 0.6339887352790579,
+        "ece": 0.016062028845389778,
+        "mean_pred": 0.8440933540624904,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.27999165098039835,
+        "brier": 0.0757107658097809,
+        "auc": 0.7708565072302558,
+        "ece": 0.05884115534254725,
+        "mean_pred": 0.8572855777350601,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.3252554371802468,
+        "brier": 0.09329798316553514,
+        "auc": 0.7364385248048614,
+        "ece": 0.039249531743554264,
+        "mean_pred": 0.8606658066867433,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.42252142101692214,
+        "brier": 0.1294616575299964,
+        "auc": 0.648702965615078,
+        "ece": 0.006770239559809815,
+        "mean_pred": 0.8313014538888923,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.3499239995025932,
+        "brier": 0.10327049209171447,
+        "auc": 0.7477979033558713,
+        "ece": 0.035470175984677735,
+        "mean_pred": 0.8391679092798675,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.397820975924142,
+        "brier": 0.12143562021775148,
+        "auc": 0.6916478187338265,
+        "ece": 0.015190563017526203,
+        "mean_pred": 0.838451721965115,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.45995424241882754,
+        "brier": 0.14549454660871358,
+        "auc": 0.6853983483840305,
+        "ece": 0.026868271472952183,
+        "mean_pred": 0.8310183848471451,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.41409217631925144,
+        "brier": 0.1271672912424671,
+        "auc": 0.6732060449839936,
+        "ece": 0.03163580653848722,
+        "mean_pred": 0.8468884096600061,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.3878079505838713,
+        "brier": 0.11681163373689131,
+        "auc": 0.6811859906435707,
+        "ece": 0.024903313729730002,
+        "mean_pred": 0.836881009777755,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.39377876641914566,
+        "brier": 0.11978005005761902,
+        "auc": 0.709345406787862,
+        "ece": 0.041268531760301985,
+        "mean_pred": 0.8377854492267935,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.4193734442414071,
+        "brier": 0.12870732249021785,
+        "auc": 0.6730723837477806,
+        "ece": 0.02048306528690318,
+        "mean_pred": 0.849796518094379,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.38926747905928866,
+        "brier": 0.11814084083195342,
+        "auc": 0.7038878019928113,
+        "ece": 0.026631881027575997,
+        "mean_pred": 0.8487680436859479,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.47978337872277443,
+        "brier": 0.15316472052575614,
+        "auc": 0.6545771479982005,
+        "ece": 0.016828647922937603,
+        "mean_pred": 0.813143082638143,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.47834116226273254,
+        "brier": 0.15278774099378772,
+        "auc": 0.6696158008658009,
+        "ece": 0.029761619531719397,
+        "mean_pred": 0.8241254778082728,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.45283587180326323,
+        "brier": 0.14255188745490802,
+        "auc": 0.6619635956884279,
+        "ece": 0.03145338499312225,
+        "mean_pred": 0.8436136969447107,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.5114223467138076,
+        "brier": 0.16500536138292332,
+        "auc": 0.6380417264403238,
+        "ece": 0.047160136763682414,
+        "mean_pred": 0.8282791546828129,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.4912528881443899,
+        "brier": 0.1572356268310305,
+        "auc": 0.650102429031314,
+        "ece": 0.025568931088831317,
+        "mean_pred": 0.8155583621140283,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Bdt_logreg": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.3943334524009609,
+        "brier": 0.12132374245149355,
+        "auc": 0.7255639097744362,
+        "ece": 0.03444947082522212,
+        "mean_pred": 0.8483218313185765,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.329816765230557,
+        "brier": 0.0988383946693727,
+        "auc": 0.80464571587246,
+        "ece": 0.043739068499545265,
+        "mean_pred": 0.847091531627643,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.4374783043090771,
+        "brier": 0.13673139856764688,
+        "auc": 0.677483324319452,
+        "ece": 0.02994955775107488,
+        "mean_pred": 0.8395989918165916,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.3670531394039986,
+        "brier": 0.1119090201476591,
+        "auc": 0.7342549923195085,
+        "ece": 0.025209186182335377,
+        "mean_pred": 0.8461115553562523,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.276212305102764,
+        "brier": 0.07767929897066668,
+        "auc": 0.7734601327482307,
+        "ece": 0.03692083440555189,
+        "mean_pred": 0.8716904107464393,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.31857949758478454,
+        "brier": 0.0928273087627042,
+        "auc": 0.7552255225522553,
+        "ece": 0.025095287656174338,
+        "mean_pred": 0.8767756763088949,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.409908349608705,
+        "brier": 0.12754700952969772,
+        "auc": 0.7032470895539192,
+        "ece": 0.03281968703630249,
+        "mean_pred": 0.8240290100856903,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.35290944901686694,
+        "brier": 0.10676054374915578,
+        "auc": 0.7428664474908505,
+        "ece": 0.03418096502368564,
+        "mean_pred": 0.8361894053466847,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.38794502953045706,
+        "brier": 0.11930837056120339,
+        "auc": 0.7238115614238848,
+        "ece": 0.024922934652308344,
+        "mean_pred": 0.8279429706748204,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.45794724308260043,
+        "brier": 0.14418895415023336,
+        "auc": 0.6921785884030418,
+        "ece": 0.04552672762184312,
+        "mean_pred": 0.8290218415720454,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.39656173679117573,
+        "brier": 0.12309864496610817,
+        "auc": 0.737517149627905,
+        "ece": 0.03787151252855731,
+        "mean_pred": 0.863969636806879,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.38258924863431004,
+        "brier": 0.11589312273260129,
+        "auc": 0.6992149335049829,
+        "ece": 0.025942916506857393,
+        "mean_pred": 0.831223209788429,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.3948319355600885,
+        "brier": 0.12120872995218208,
+        "auc": 0.708038985276837,
+        "ece": 0.01417451708467842,
+        "mean_pred": 0.8395594081452181,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.4064509096852194,
+        "brier": 0.12471315104984274,
+        "auc": 0.7187060622543334,
+        "ece": 0.033509810317927886,
+        "mean_pred": 0.8641041748109238,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.368367445518775,
+        "brier": 0.11312437578271656,
+        "auc": 0.772441876336503,
+        "ece": 0.03139295462605607,
+        "mean_pred": 0.8528649604223354,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.48670567180468916,
+        "brier": 0.15726393899735608,
+        "auc": 0.6541353383458646,
+        "ece": 0.03540070001673205,
+        "mean_pred": 0.7950734808155744,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.472751203102751,
+        "brier": 0.1537259045630425,
+        "auc": 0.7010822510822512,
+        "ece": 0.041113481191332756,
+        "mean_pred": 0.8121596816220482,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.4266331676174536,
+        "brier": 0.1342310089265139,
+        "auc": 0.7219849501728697,
+        "ece": 0.021492370599298857,
+        "mean_pred": 0.8304704188766558,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.4882895763771746,
+        "brier": 0.15847601217570953,
+        "auc": 0.7036023590669996,
+        "ece": 0.04776571349034894,
+        "mean_pred": 0.8233992563202195,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.47768882233315585,
+        "brier": 0.15129517054291722,
+        "auc": 0.6757974831723734,
+        "ece": 0.044908693586253434,
+        "mean_pred": 0.8139067504878016,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Bdt_gbm": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.38503631848676456,
+        "brier": 0.1207093403531939,
+        "auc": 0.7596901737101376,
+        "ece": 0.0321244859274113,
+        "mean_pred": 0.8493584739682499,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.32774640577637126,
+        "brier": 0.09831711702722862,
+        "auc": 0.8130727160777022,
+        "ece": 0.03886418315085885,
+        "mean_pred": 0.8425584334110128,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.4357398430055281,
+        "brier": 0.13705198339078792,
+        "auc": 0.685750341239795,
+        "ece": 0.023759651191812607,
+        "mean_pred": 0.8293757522009003,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.35739277776468203,
+        "brier": 0.10940350135155774,
+        "auc": 0.7518381976446492,
+        "ece": 0.027404599581267043,
+        "mean_pred": 0.8485505241156662,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.2613933017064731,
+        "brier": 0.07366751739664221,
+        "auc": 0.8165849723135596,
+        "ece": 0.044307503125991646,
+        "mean_pred": 0.8726017047268864,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.31449756898882913,
+        "brier": 0.0918147017030117,
+        "auc": 0.7751453716800251,
+        "ece": 0.03769248060666634,
+        "mean_pred": 0.871940532244228,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.3968978792500103,
+        "brier": 0.123057454121108,
+        "auc": 0.7255511270238015,
+        "ece": 0.02504148883932737,
+        "mean_pred": 0.8284949013402506,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.33536030049473425,
+        "brier": 0.10056005694449521,
+        "auc": 0.7811550151975684,
+        "ece": 0.0379716142201801,
+        "mean_pred": 0.8370442553861286,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.3831018232848758,
+        "brier": 0.118662142358412,
+        "auc": 0.7451250076410538,
+        "ece": 0.023420035215075626,
+        "mean_pred": 0.8247921605486965,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.4376983567485824,
+        "brier": 0.13868350332782375,
+        "auc": 0.7338105988593155,
+        "ece": 0.020211946641746473,
+        "mean_pred": 0.8229930712569112,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.39245145844279555,
+        "brier": 0.12177088703959563,
+        "auc": 0.732112418409346,
+        "ece": 0.02603304045033985,
+        "mean_pred": 0.8563548838641508,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.3702719278913767,
+        "brier": 0.11211821307664195,
+        "auc": 0.7287727445143047,
+        "ece": 0.032868650789890326,
+        "mean_pred": 0.8316879265243948,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.382254649950026,
+        "brier": 0.11670680060774662,
+        "auc": 0.7308909932950853,
+        "ece": 0.025466780029977397,
+        "mean_pred": 0.8357826459211072,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.3968196479849596,
+        "brier": 0.12238913812032402,
+        "auc": 0.7420283459395108,
+        "ece": 0.025338345363070454,
+        "mean_pred": 0.857176981724328,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.3596633647225478,
+        "brier": 0.11142517234797224,
+        "auc": 0.7780779380317575,
+        "ece": 0.02537427429049828,
+        "mean_pred": 0.8551977579835521,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.47139812422648864,
+        "brier": 0.15251943381292574,
+        "auc": 0.6772219009061115,
+        "ece": 0.025514103154422894,
+        "mean_pred": 0.8013779665366049,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.4554621905359622,
+        "brier": 0.1482358665199662,
+        "auc": 0.7259740259740259,
+        "ece": 0.041345974001597945,
+        "mean_pred": 0.8220154657936484,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.42684387892638526,
+        "brier": 0.13470594245261502,
+        "auc": 0.7241267541183649,
+        "ece": 0.02258109714829184,
+        "mean_pred": 0.8361354151700026,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.4802687458230026,
+        "brier": 0.1567914910690224,
+        "auc": 0.7091236739103484,
+        "ece": 0.046625061874099386,
+        "mean_pred": 0.8280855103925403,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.4730853468010628,
+        "brier": 0.14960044706596803,
+        "auc": 0.6874890254609307,
+        "ece": 0.047525969975726945,
+        "mean_pred": 0.8113229470826127,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Adt_te_logreg": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.41604235222004754,
+        "brier": 0.12786337996815725,
+        "auc": 0.676324431769078,
+        "ece": 0.014853200579822772,
+        "mean_pred": 0.8459503176266613,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.3634561944610902,
+        "brier": 0.10825550252883469,
+        "auc": 0.7132888239626218,
+        "ece": 0.027571263769450134,
+        "mean_pred": 0.8547715744389462,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.4558831944230736,
+        "brier": 0.14270365466236445,
+        "auc": 0.6191763887815808,
+        "ece": 0.024751908163793614,
+        "mean_pred": 0.8420709029719475,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.39590180035951456,
+        "brier": 0.11862522133371994,
+        "auc": 0.6182386072708652,
+        "ece": 0.020850119605274005,
+        "mean_pred": 0.8457423946746135,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.3002975695192389,
+        "brier": 0.08248110272103688,
+        "auc": 0.6896307252258309,
+        "ece": 0.048478137889828396,
+        "mean_pred": 0.8600587426796866,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.3420488215298473,
+        "brier": 0.09884884741938384,
+        "auc": 0.7055503169364554,
+        "ece": 0.03651090238835666,
+        "mean_pred": 0.8593255586941374,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.429734137551859,
+        "brier": 0.1328873813474243,
+        "auc": 0.6365826746830596,
+        "ece": 0.017627018166910233,
+        "mean_pred": 0.8267249426899281,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.3635268867799362,
+        "brier": 0.10744939695148958,
+        "auc": 0.7122697103157372,
+        "ece": 0.04085672024194928,
+        "mean_pred": 0.838518026005681,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.4060066240811853,
+        "brier": 0.12362690763998435,
+        "auc": 0.6531267192371172,
+        "ece": 0.028508732145539787,
+        "mean_pred": 0.8451395287118549,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.47410248001807426,
+        "brier": 0.1506777121525494,
+        "auc": 0.6621762119771863,
+        "ece": 0.04213385653270499,
+        "mean_pred": 0.8428276134550915,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.42631026358288154,
+        "brier": 0.1305292673965333,
+        "auc": 0.6263251985199352,
+        "ece": 0.018703178914735035,
+        "mean_pred": 0.8485861596673582,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.40176157616449304,
+        "brier": 0.12118962572609913,
+        "auc": 0.6367774342233818,
+        "ece": 0.028314151594668064,
+        "mean_pred": 0.8303858972334056,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.40686945630621324,
+        "brier": 0.12474443262466578,
+        "auc": 0.6865832584502662,
+        "ece": 0.023249323342299705,
+        "mean_pred": 0.838528826115606,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.4284258627448115,
+        "brier": 0.13183005457806962,
+        "auc": 0.6522644936832274,
+        "ece": 0.027742773748108,
+        "mean_pred": 0.8586679018078434,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.40199636760623336,
+        "brier": 0.12178855869428369,
+        "auc": 0.6732221666135857,
+        "ece": 0.03222109062311479,
+        "mean_pred": 0.8394370827046665,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.49051042490659535,
+        "brier": 0.1576043137525978,
+        "auc": 0.6340048840048841,
+        "ece": 0.029632989489997968,
+        "mean_pred": 0.8173033705989381,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.4870043357978977,
+        "brier": 0.15627971192063952,
+        "auc": 0.6359090909090909,
+        "ece": 0.027578746161559742,
+        "mean_pred": 0.8161970485513916,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.4485655809034889,
+        "brier": 0.14108832676706076,
+        "auc": 0.6711536505999594,
+        "ece": 0.021286927407267855,
+        "mean_pred": 0.8304078116022223,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.5180486325831446,
+        "brier": 0.16831236741412156,
+        "auc": 0.6157837876131271,
+        "ece": 0.0513695207234157,
+        "mean_pred": 0.8261703751314016,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.49656401097366537,
+        "brier": 0.15996407627866235,
+        "auc": 0.6434006438396254,
+        "ece": 0.03611820162323548,
+        "mean_pred": 0.8225847726475748,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Adt_tob_logreg": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.42246307123573856,
+        "brier": 0.12946851322051856,
+        "auc": 0.6449745052285887,
+        "ece": 0.014794059584846248,
+        "mean_pred": 0.8516014982498465,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.3631467929788397,
+        "brier": 0.10789880303969505,
+        "auc": 0.6983906602759904,
+        "ece": 0.021442724102486724,
+        "mean_pred": 0.8540528515200683,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.45695744497056434,
+        "brier": 0.14286485998667528,
+        "auc": 0.6200005150789358,
+        "ece": 0.02456275253855631,
+        "mean_pred": 0.8411267516242933,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.3899080997589085,
+        "brier": 0.11688866755878062,
+        "auc": 0.6472503840245776,
+        "ece": 0.01627901023166447,
+        "mean_pred": 0.8459549848019764,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.30156080630340154,
+        "brier": 0.08305614384094591,
+        "auc": 0.6616020242271633,
+        "ece": 0.044158076134725055,
+        "mean_pred": 0.864501143564707,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.3378265871140441,
+        "brier": 0.09757619013455193,
+        "auc": 0.700992718319451,
+        "ece": 0.04224611574691792,
+        "mean_pred": 0.8594342574738526,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.42012452257701005,
+        "brier": 0.1296104635938172,
+        "auc": 0.6635704474318269,
+        "ece": 0.023804094318259247,
+        "mean_pred": 0.8291266678174389,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.3627372715792311,
+        "brier": 0.1070623899871092,
+        "auc": 0.6927609949754978,
+        "ece": 0.03305993118569555,
+        "mean_pred": 0.841227490599389,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.399577458658323,
+        "brier": 0.12155192756294933,
+        "auc": 0.6803899993887157,
+        "ece": 0.014404650239439282,
+        "mean_pred": 0.8439561257152822,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.4662834227171173,
+        "brier": 0.14833818665520757,
+        "auc": 0.6805638070342206,
+        "ece": 0.03838970914298486,
+        "mean_pred": 0.8406242112376628,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.419345479359974,
+        "brier": 0.12892110624365088,
+        "auc": 0.6571113790379578,
+        "ece": 0.01698866522038456,
+        "mean_pred": 0.8467499554270452,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.3974032848987985,
+        "brier": 0.12026326763194305,
+        "auc": 0.656076506626513,
+        "ece": 0.029642078171610416,
+        "mean_pred": 0.8296187198921788,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.39818360607481246,
+        "brier": 0.12185137103021794,
+        "auc": 0.7077486693854982,
+        "ece": 0.025820127158679512,
+        "mean_pred": 0.8373564749162685,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.4263690270287806,
+        "brier": 0.13104755109526203,
+        "auc": 0.6594074241320211,
+        "ece": 0.03165167748189195,
+        "mean_pred": 0.8605293087793201,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.39332893368537175,
+        "brier": 0.11926670033940352,
+        "auc": 0.6997816097183676,
+        "ece": 0.02708484031671741,
+        "mean_pred": 0.8385964765596806,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.4854548093966315,
+        "brier": 0.15574863179723755,
+        "auc": 0.6482231219073324,
+        "ece": 0.031312219849686296,
+        "mean_pred": 0.8166717548972249,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.47436523415150655,
+        "brier": 0.15182772263603028,
+        "auc": 0.6751406926406927,
+        "ece": 0.032467966309565215,
+        "mean_pred": 0.8153997683511295,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.4385145039341093,
+        "brier": 0.13782100019708338,
+        "auc": 0.6954316656497865,
+        "ece": 0.014567672402977986,
+        "mean_pred": 0.8280200358261831,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.5162507360931934,
+        "brier": 0.16725876187817754,
+        "auc": 0.6176876892832475,
+        "ece": 0.047241761104296835,
+        "mean_pred": 0.8224110966114523,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.4910245132259795,
+        "brier": 0.15807305319096693,
+        "auc": 0.6537898741586187,
+        "ece": 0.04204004609175794,
+        "mean_pred": 0.8204731318861082,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Bdt_tob_logreg": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.40031369552333446,
+        "brier": 0.12276277989424393,
+        "auc": 0.709813326419497,
+        "ece": 0.03825310362986068,
+        "mean_pred": 0.8520457560850003,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.33126289507738155,
+        "brier": 0.09904377318542408,
+        "auc": 0.796508469255937,
+        "ece": 0.03853491549209434,
+        "mean_pred": 0.8472573578819376,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.4379546221070249,
+        "brier": 0.1370363501468953,
+        "auc": 0.6787066367920884,
+        "ece": 0.03078910110743448,
+        "mean_pred": 0.8394573662018546,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.3644164955993088,
+        "brier": 0.11097534269213372,
+        "auc": 0.7404608294930877,
+        "ece": 0.030515009290496976,
+        "mean_pred": 0.8468685773884618,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.2773408464108081,
+        "brier": 0.07807009192586639,
+        "auc": 0.7641090833526873,
+        "ece": 0.034868347067069275,
+        "mean_pred": 0.8738400787662054,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.3169987710344781,
+        "brier": 0.0922653021129489,
+        "auc": 0.7555791293415056,
+        "ece": 0.03002033559065921,
+        "mean_pred": 0.8759121715334447,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.4051575656988757,
+        "brier": 0.1257848637203994,
+        "auc": 0.7129973653989057,
+        "ece": 0.029855780113947666,
+        "mean_pred": 0.8249977807746581,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.35424779756605057,
+        "brier": 0.10690281702876656,
+        "auc": 0.7359655108243905,
+        "ece": 0.03266056154505474,
+        "mean_pred": 0.8377098088253156,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.3839282976211671,
+        "brier": 0.11785006717701858,
+        "auc": 0.7330623306233063,
+        "ece": 0.03378072399696906,
+        "mean_pred": 0.8280096011946124,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.45623660674003624,
+        "brier": 0.14374864231777926,
+        "auc": 0.6979117157794676,
+        "ece": 0.041829035514842274,
+        "mean_pred": 0.8280839369118743,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.3946137313203463,
+        "brier": 0.12257961308530183,
+        "auc": 0.7419344780276889,
+        "ece": 0.031703824563824055,
+        "mean_pred": 0.8617629072558022,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.3830513338635497,
+        "brier": 0.11655337202615705,
+        "auc": 0.7048816653064978,
+        "ece": 0.025902716596446773,
+        "mean_pred": 0.8303122321506349,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.39127359700436926,
+        "brier": 0.12035281944669335,
+        "auc": 0.7200940070505288,
+        "ece": 0.024268115443786993,
+        "mean_pred": 0.8390679574854399,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.4063557157788722,
+        "brier": 0.12436207864575083,
+        "auc": 0.7200504931290346,
+        "ece": 0.037100408282473976,
+        "mean_pred": 0.8648482240838657,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.36426904504059066,
+        "brier": 0.11183343427098462,
+        "auc": 0.7802675280949997,
+        "ece": 0.03661400261704348,
+        "mean_pred": 0.8519555403811709,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.4838433386868847,
+        "brier": 0.15581434382048637,
+        "auc": 0.6590675406464881,
+        "ece": 0.029842224148842682,
+        "mean_pred": 0.7949124351827316,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.46532656728585553,
+        "brier": 0.15068238303506584,
+        "auc": 0.7143181818181817,
+        "ece": 0.033930921829048354,
+        "mean_pred": 0.8120858503342401,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.4211170417156929,
+        "brier": 0.13214833746495738,
+        "auc": 0.7316071791742932,
+        "ece": 0.02755225965144407,
+        "mean_pred": 0.8287077781473314,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.4894879647378622,
+        "brier": 0.15903582344785022,
+        "auc": 0.6997148575173122,
+        "ece": 0.05031111019862057,
+        "mean_pred": 0.8210649915143501,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.47467408232900543,
+        "brier": 0.15037766486089338,
+        "auc": 0.68219198127012,
+        "ece": 0.042625220788276734,
+        "mean_pred": 0.8140662373349801,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Bdt_tt_logreg": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.38687593774834034,
+        "brier": 0.1195690078187413,
+        "auc": 0.7509614553625443,
+        "ece": 0.03488446311899652,
+        "mean_pred": 0.8539086668830929,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.32361151199551774,
+        "brier": 0.09685515220995546,
+        "auc": 0.8080382474737109,
+        "ece": 0.03550652197902831,
+        "mean_pred": 0.8470596871067027,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.4164470403045063,
+        "brier": 0.130340109484794,
+        "auc": 0.7277035205645266,
+        "ece": 0.021619363854674833,
+        "mean_pred": 0.8401137205195648,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.3644494465867298,
+        "brier": 0.11131534661325819,
+        "auc": 0.7418023553507425,
+        "ece": 0.0317500190228461,
+        "mean_pred": 0.8498931358395581,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.26589377894835176,
+        "brier": 0.07589680115999424,
+        "auc": 0.8109254483003093,
+        "ece": 0.03425686243194219,
+        "mean_pred": 0.8753210612242937,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.3041060989737168,
+        "brier": 0.08955783162946439,
+        "auc": 0.7952223793807951,
+        "ece": 0.023996459643133322,
+        "mean_pred": 0.8799842305354223,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.3931798778254594,
+        "brier": 0.12140069023954649,
+        "auc": 0.7361570852755073,
+        "ece": 0.02052867596633743,
+        "mean_pred": 0.8283564207197789,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.3433368752909417,
+        "brier": 0.10367729392587699,
+        "auc": 0.761646299857329,
+        "ece": 0.033700690939521195,
+        "mean_pred": 0.8417938595695044,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.37478914478239533,
+        "brier": 0.11480662328649391,
+        "auc": 0.7490677914297941,
+        "ece": 0.014677779968324561,
+        "mean_pred": 0.8340811149059759,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.4409687792281069,
+        "brier": 0.13934002031305098,
+        "auc": 0.7291320104562737,
+        "ece": 0.02671037704069456,
+        "mean_pred": 0.8244852674491656,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.3833147170558659,
+        "brier": 0.11929358213083974,
+        "auc": 0.7613083607034465,
+        "ece": 0.037751431995909926,
+        "mean_pred": 0.862169037607114,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.3734160020636967,
+        "brier": 0.11415722735671968,
+        "auc": 0.7372613478315843,
+        "ece": 0.027245924351453045,
+        "mean_pred": 0.8294219783732045,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.3789356959159012,
+        "brier": 0.11668514327111054,
+        "auc": 0.7488905785580977,
+        "ece": 0.02770024984587216,
+        "mean_pred": 0.8401414326105521,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.401484317787162,
+        "brier": 0.12389322939848968,
+        "auc": 0.7362965547675984,
+        "ece": 0.031733661515513364,
+        "mean_pred": 0.857085311697655,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.35541356259112844,
+        "brier": 0.1101554752746875,
+        "auc": 0.7974543882797215,
+        "ece": 0.038236211115501906,
+        "mean_pred": 0.8535036486620976,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.4705177836960384,
+        "brier": 0.15101983239925063,
+        "auc": 0.692098836835679,
+        "ece": 0.029849218414665767,
+        "mean_pred": 0.7902165152139501,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.45217133053155817,
+        "brier": 0.1452519973032519,
+        "auc": 0.736547619047619,
+        "ece": 0.036970928009117957,
+        "mean_pred": 0.8094497958084103,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.40667415786332034,
+        "brier": 0.12819609614483868,
+        "auc": 0.7618339434614602,
+        "ece": 0.025561049082163535,
+        "mean_pred": 0.8303465136304097,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.477181508845128,
+        "brier": 0.156232071667621,
+        "auc": 0.7320014876999097,
+        "ece": 0.04838305274532807,
+        "mean_pred": 0.8167394413108265,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.45952270350894353,
+        "brier": 0.14565310458199088,
+        "auc": 0.7156131109160082,
+        "ece": 0.023686736389174602,
+        "mean_pred": 0.8050728474361933,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Bdt_tt05_logreg": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.3840322889234429,
+        "brier": 0.11911063159126897,
+        "auc": 0.7598954282257367,
+        "ece": 0.034161679526475995,
+        "mean_pred": 0.8545215240163644,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.31701256989581994,
+        "brier": 0.0947485073316305,
+        "auc": 0.8230812879547018,
+        "ece": 0.03579003862729103,
+        "mean_pred": 0.8479795833596034,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.41547571947041817,
+        "brier": 0.13062194013304143,
+        "auc": 0.7334852816194082,
+        "ece": 0.02451401622473357,
+        "mean_pred": 0.8407186510857116,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.36167658526457713,
+        "brier": 0.11045432252636359,
+        "auc": 0.7463594470046082,
+        "ece": 0.02416589384850393,
+        "mean_pred": 0.8506719860576947,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.2640954113960833,
+        "brier": 0.07561678468695471,
+        "auc": 0.8140546883594713,
+        "ece": 0.038697076741587365,
+        "mean_pred": 0.8759640075536722,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.3011832154845157,
+        "brier": 0.08900854082385132,
+        "auc": 0.8032767562470533,
+        "ece": 0.027111558178045017,
+        "mean_pred": 0.8806444755086775,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.3908925610394167,
+        "brier": 0.12083107159131712,
+        "auc": 0.7418541286676124,
+        "ece": 0.026724731010758448,
+        "mean_pred": 0.8302419714156997,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.3396939872012031,
+        "brier": 0.10231286963209928,
+        "auc": 0.767089510576267,
+        "ece": 0.029703299043969025,
+        "mean_pred": 0.8429547152612067,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.3735058919832746,
+        "brier": 0.11470548033757397,
+        "auc": 0.7538256209629766,
+        "ece": 0.01617631632629327,
+        "mean_pred": 0.8354525573850651,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.437252271811188,
+        "brier": 0.13888355933711202,
+        "auc": 0.7391724096958174,
+        "ece": 0.029744152436925853,
+        "mean_pred": 0.8239026050216881,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.3788417192367817,
+        "brier": 0.11763125036348143,
+        "auc": 0.7674614393214982,
+        "ece": 0.039692069976012725,
+        "mean_pred": 0.8625564701341292,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.37178709641558216,
+        "brier": 0.11401966448766729,
+        "auc": 0.7437441809675973,
+        "ece": 0.03248982814063954,
+        "mean_pred": 0.8283274429882703,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.3747920924764025,
+        "brier": 0.11601379949382964,
+        "auc": 0.7632128291974838,
+        "ece": 0.02895716578361681,
+        "mean_pred": 0.8381577909396316,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.39917817294501706,
+        "brier": 0.1234231990513753,
+        "auc": 0.7424645162614558,
+        "ece": 0.036336426652698595,
+        "mean_pred": 0.8576985734020912,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.35071521533042677,
+        "brier": 0.10878741234243325,
+        "auc": 0.8021975522089267,
+        "ece": 0.03492804060470522,
+        "mean_pred": 0.8536192454392137,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.4673695290548646,
+        "brier": 0.15045450481201586,
+        "auc": 0.703875072296125,
+        "ece": 0.025893814783854174,
+        "mean_pred": 0.7881094775812441,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.44804463490210694,
+        "brier": 0.14407817142208565,
+        "auc": 0.7444047619047619,
+        "ece": 0.030248972160167586,
+        "mean_pred": 0.8078581341334516,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.40054559506743137,
+        "brier": 0.12695134065666114,
+        "auc": 0.7762100874516982,
+        "ece": 0.032025378781063624,
+        "mean_pred": 0.8305856767248154,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.4729844275822141,
+        "brier": 0.15542855133948513,
+        "auc": 0.7402281139861502,
+        "ece": 0.05194662952758764,
+        "mean_pred": 0.8155645327942177,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.4593181756021839,
+        "brier": 0.14584250310659105,
+        "auc": 0.717003219198127,
+        "ece": 0.034839823510224445,
+        "mean_pred": 0.8023091630072453,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Bdt_tt20_logreg": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.3940236792931314,
+        "brier": 0.1211252204860543,
+        "auc": 0.7311705989110708,
+        "ece": 0.02437376321745054,
+        "mean_pred": 0.8522752107418992,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.3266841494349153,
+        "brier": 0.09762830143664276,
+        "auc": 0.8016878146542877,
+        "ece": 0.03876216240030902,
+        "mean_pred": 0.8465095339792439,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.4231672001455593,
+        "brier": 0.1322559230352157,
+        "auc": 0.710474130160447,
+        "ece": 0.02390173900741661,
+        "mean_pred": 0.8393355772030725,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.36688720821951165,
+        "brier": 0.11190209100535804,
+        "auc": 0.7341628264208909,
+        "ece": 0.038283634745641525,
+        "mean_pred": 0.8480378563530119,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.2692723722268514,
+        "brier": 0.07650828456337083,
+        "auc": 0.7974917185150778,
+        "ece": 0.032179811136276396,
+        "mean_pred": 0.8759009969445317,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.30889828335027997,
+        "brier": 0.09057931272629925,
+        "auc": 0.7815364869820314,
+        "ece": 0.030170434064733884,
+        "mean_pred": 0.8784753912533051,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.3990188092781436,
+        "brier": 0.1229013022989546,
+        "auc": 0.7203494787092707,
+        "ece": 0.025407622100003434,
+        "mean_pred": 0.8263812708145546,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.34640933871889384,
+        "brier": 0.10489526458933866,
+        "auc": 0.7571025370634576,
+        "ece": 0.028996635444134073,
+        "mean_pred": 0.8415882037999616,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.37614243292934363,
+        "brier": 0.11524802637081884,
+        "auc": 0.7469996128532713,
+        "ece": 0.019844754968638478,
+        "mean_pred": 0.8327712269652788,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.44418242485718357,
+        "brier": 0.1394617128161472,
+        "auc": 0.7214977423954373,
+        "ece": 0.025756385747082305,
+        "mean_pred": 0.8268395221277554,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.3884074107050877,
+        "brier": 0.12088001433527033,
+        "auc": 0.7526296096121063,
+        "ece": 0.03578586144232295,
+        "mean_pred": 0.8620898337515891,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.37861088805820203,
+        "brier": 0.11545875940922794,
+        "auc": 0.7226060069655974,
+        "ece": 0.02568186785530869,
+        "mean_pred": 0.8303913709500557,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.38759765449813266,
+        "brier": 0.11851093520420887,
+        "auc": 0.7228865694338842,
+        "ece": 0.0265732799301767,
+        "mean_pred": 0.8413215011112861,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.4054766482375607,
+        "brier": 0.12452001044397913,
+        "auc": 0.7242377282197067,
+        "ece": 0.030259973699767427,
+        "mean_pred": 0.8579450408342701,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.3578331896468932,
+        "brier": 0.11034338798668407,
+        "auc": 0.794883752673006,
+        "ece": 0.02957995495173418,
+        "mean_pred": 0.8516082021968309,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.4744021457569828,
+        "brier": 0.15211220963213495,
+        "auc": 0.6815757342073132,
+        "ece": 0.02729516286622045,
+        "mean_pred": 0.7915594836512514,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.46047569639527075,
+        "brier": 0.14802534138335988,
+        "auc": 0.724025974025974,
+        "ece": 0.041336514281028,
+        "mean_pred": 0.8120386869405825,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.41040562713420203,
+        "brier": 0.1285503017005911,
+        "auc": 0.7495424039048201,
+        "ece": 0.02130392175379167,
+        "mean_pred": 0.8282694229824763,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.47510758231364736,
+        "brier": 0.15438053285897618,
+        "auc": 0.725448523812054,
+        "ece": 0.05488530582714352,
+        "mean_pred": 0.8186045709466371,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.46403893790800904,
+        "brier": 0.14670132477547265,
+        "auc": 0.7057067603160667,
+        "ece": 0.028320180743103114,
+        "mean_pred": 0.8086076365314485,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Bdt_ttonly_logreg": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.3829789549143415,
+        "brier": 0.11857828191750558,
+        "auc": 0.7597225823178635,
+        "ece": 0.02285453766306072,
+        "mean_pred": 0.8516719029636055,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.32254883275292523,
+        "brier": 0.09662726121792561,
+        "auc": 0.814038561373432,
+        "ece": 0.033739825605996324,
+        "mean_pred": 0.8468988625931347,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.4145393760709205,
+        "brier": 0.12935445437659088,
+        "auc": 0.7300728836694224,
+        "ece": 0.0187344766290701,
+        "mean_pred": 0.8409269719795892,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.365145949452833,
+        "brier": 0.1114672928509845,
+        "auc": 0.7395698924731183,
+        "ece": 0.025089022627449907,
+        "mean_pred": 0.8497726621212761,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.26462477313441674,
+        "brier": 0.07527804209427445,
+        "auc": 0.8158393330807123,
+        "ece": 0.034911878899669256,
+        "mean_pred": 0.8743272316768976,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.30521871100842807,
+        "brier": 0.08981991849131865,
+        "auc": 0.7937293729372936,
+        "ece": 0.0283922947172833,
+        "mean_pred": 0.8801617167638844,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.3945005036245659,
+        "brier": 0.12200223578437602,
+        "auc": 0.7342543178184602,
+        "ece": 0.031031826157810166,
+        "mean_pred": 0.8281742285090685,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.34220146068669965,
+        "brier": 0.10344406477995916,
+        "auc": 0.7671205260219589,
+        "ece": 0.031123730620878188,
+        "mean_pred": 0.8409943582277648,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.37676864699056606,
+        "brier": 0.11547484647369444,
+        "auc": 0.7447786131996659,
+        "ece": 0.018325288372323712,
+        "mean_pred": 0.8337722398560449,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.44084568679432234,
+        "brier": 0.139620464420818,
+        "auc": 0.7321322480988594,
+        "ece": 0.030870243353007504,
+        "mean_pred": 0.8251844803693281,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.38415628709984667,
+        "brier": 0.11942042504771982,
+        "auc": 0.7604872573067808,
+        "ece": 0.036248168182431095,
+        "mean_pred": 0.863189741792064,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.3713778689028065,
+        "brier": 0.11332323609607883,
+        "auc": 0.7376061793813722,
+        "ece": 0.026392193181171475,
+        "mean_pred": 0.8295888764872867,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.38110231047920157,
+        "brier": 0.11731459252240198,
+        "auc": 0.7431119098638281,
+        "ece": 0.027864095851538564,
+        "mean_pred": 0.8402971673055213,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.4009567453800065,
+        "brier": 0.12378115796254725,
+        "auc": 0.7364710228963762,
+        "ece": 0.031804756813637675,
+        "mean_pred": 0.857204854894987,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.3574680910691738,
+        "brier": 0.1107620332549251,
+        "auc": 0.7945425178579553,
+        "ece": 0.04241282139806525,
+        "mean_pred": 0.8537867210597825,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.47115215761954743,
+        "brier": 0.1515616488246309,
+        "auc": 0.6925808110018636,
+        "ece": 0.03286173023985356,
+        "mean_pred": 0.7894439966931767,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.45617919399535023,
+        "brier": 0.14678986374829076,
+        "auc": 0.7316774891774892,
+        "ece": 0.03477655811959418,
+        "mean_pred": 0.808704458943344,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.4109875796248401,
+        "brier": 0.1297277729415749,
+        "auc": 0.7553767541183649,
+        "ece": 0.028100413302506597,
+        "mean_pred": 0.8320281628355648,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.47894857306222133,
+        "brier": 0.15687336743323285,
+        "auc": 0.732098896622567,
+        "ece": 0.05298237436585328,
+        "mean_pred": 0.8180340722070714,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.46199458378275765,
+        "brier": 0.14626523035655614,
+        "auc": 0.711369622475856,
+        "ece": 0.02892096446482373,
+        "mean_pred": 0.8045906610480942,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Bdt_tob_hc_logreg": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.40031369552333446,
+        "brier": 0.12276277989424393,
+        "auc": 0.709813326419497,
+        "ece": 0.03825310362986068,
+        "mean_pred": 0.8520457560850003,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.33126289507738155,
+        "brier": 0.09904377318542408,
+        "auc": 0.796508469255937,
+        "ece": 0.03853491549209434,
+        "mean_pred": 0.8472573578819376,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.4379546221070249,
+        "brier": 0.1370363501468953,
+        "auc": 0.6787066367920884,
+        "ece": 0.03078910110743448,
+        "mean_pred": 0.8394573662018546,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.3644164955993088,
+        "brier": 0.11097534269213372,
+        "auc": 0.7404608294930877,
+        "ece": 0.030515009290496976,
+        "mean_pred": 0.8468685773884618,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.2773408464108081,
+        "brier": 0.07807009192586639,
+        "auc": 0.7641090833526873,
+        "ece": 0.034868347067069275,
+        "mean_pred": 0.8738400787662054,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.3169987710344781,
+        "brier": 0.0922653021129489,
+        "auc": 0.7555791293415056,
+        "ece": 0.03002033559065921,
+        "mean_pred": 0.8759121715334447,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.4051575656988757,
+        "brier": 0.1257848637203994,
+        "auc": 0.7129973653989057,
+        "ece": 0.029855780113947666,
+        "mean_pred": 0.8249977807746581,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.35424779756605057,
+        "brier": 0.10690281702876656,
+        "auc": 0.7359655108243905,
+        "ece": 0.03266056154505474,
+        "mean_pred": 0.8377098088253156,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.3839282976211671,
+        "brier": 0.11785006717701858,
+        "auc": 0.7330623306233063,
+        "ece": 0.03378072399696906,
+        "mean_pred": 0.8280096011946124,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.45623660674003624,
+        "brier": 0.14374864231777926,
+        "auc": 0.6979117157794676,
+        "ece": 0.041829035514842274,
+        "mean_pred": 0.8280839369118743,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.3946137313203463,
+        "brier": 0.12257961308530183,
+        "auc": 0.7419344780276889,
+        "ece": 0.031703824563824055,
+        "mean_pred": 0.8617629072558022,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.3830513338635497,
+        "brier": 0.11655337202615705,
+        "auc": 0.7048816653064978,
+        "ece": 0.025902716596446773,
+        "mean_pred": 0.8303122321506349,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.39127359700436926,
+        "brier": 0.12035281944669335,
+        "auc": 0.7200940070505288,
+        "ece": 0.024268115443786993,
+        "mean_pred": 0.8390679574854399,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.4063557157788722,
+        "brier": 0.12436207864575083,
+        "auc": 0.7200504931290346,
+        "ece": 0.037100408282473976,
+        "mean_pred": 0.8648482240838657,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.36426904504059066,
+        "brier": 0.11183343427098462,
+        "auc": 0.7802675280949997,
+        "ece": 0.03661400261704348,
+        "mean_pred": 0.8519555403811709,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.4838433386868847,
+        "brier": 0.15581434382048637,
+        "auc": 0.6590675406464881,
+        "ece": 0.029842224148842682,
+        "mean_pred": 0.7949124351827316,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.46532656728585553,
+        "brier": 0.15068238303506584,
+        "auc": 0.7143181818181817,
+        "ece": 0.033930921829048354,
+        "mean_pred": 0.8120858503342401,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.4211170417156929,
+        "brier": 0.13214833746495738,
+        "auc": 0.7316071791742932,
+        "ece": 0.02755225965144407,
+        "mean_pred": 0.8287077781473314,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.4894879647378622,
+        "brier": 0.15903582344785022,
+        "auc": 0.6997148575173122,
+        "ece": 0.05031111019862057,
+        "mean_pred": 0.8210649915143501,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.47467408232900543,
+        "brier": 0.15037766486089338,
+        "auc": 0.68219198127012,
+        "ece": 0.042625220788276734,
+        "mean_pred": 0.8140662373349801,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Bdt_tt_hc_logreg": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.3868759377483626,
+        "brier": 0.11956900781873825,
+        "auc": 0.7509614553625443,
+        "ece": 0.03488446311897229,
+        "mean_pred": 0.8539086668830943,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.32361151199538496,
+        "brier": 0.09685515220992694,
+        "auc": 0.8080382474737109,
+        "ece": 0.03550652197922893,
+        "mean_pred": 0.8470596871070092,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.4164470403045069,
+        "brier": 0.13034010948479424,
+        "auc": 0.7277035205645266,
+        "ece": 0.02161936385467671,
+        "mean_pred": 0.8401137205195692,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.36444944658674505,
+        "brier": 0.11131534661326312,
+        "auc": 0.7418023553507425,
+        "ece": 0.03175001902283766,
+        "mean_pred": 0.8498931358395453,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.26589377894871674,
+        "brier": 0.075896801160138,
+        "auc": 0.8109254483003093,
+        "ece": 0.03425686243232417,
+        "mean_pred": 0.8753210612238329,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.304106098973437,
+        "brier": 0.08955783162939314,
+        "auc": 0.7952223793807951,
+        "ece": 0.023996459643079702,
+        "mean_pred": 0.8799842305355263,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.3931798778254618,
+        "brier": 0.12140069023954658,
+        "auc": 0.7361570852755073,
+        "ece": 0.020528675966335036,
+        "mean_pred": 0.828356420719786,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.3433368752909122,
+        "brier": 0.10367729392586572,
+        "auc": 0.761646299857329,
+        "ece": 0.0337006909395074,
+        "mean_pred": 0.8417938595695337,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.37478914478239195,
+        "brier": 0.1148066232864928,
+        "auc": 0.7490677914297941,
+        "ece": 0.01467777996834407,
+        "mean_pred": 0.8340811149059522,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.4409687792281118,
+        "brier": 0.13934002031304565,
+        "auc": 0.7291320104562737,
+        "ece": 0.026710377040745487,
+        "mean_pred": 0.8244852674491724,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.3833147170558658,
+        "brier": 0.11929358213083971,
+        "auc": 0.7613083607034465,
+        "ece": 0.03775143199591039,
+        "mean_pred": 0.862169037607115,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.37341600206361264,
+        "brier": 0.11415722735668232,
+        "auc": 0.7372613478315843,
+        "ece": 0.027245924351501506,
+        "mean_pred": 0.8294219783732076,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.3789356959159014,
+        "brier": 0.1166851432711107,
+        "auc": 0.7488905785580977,
+        "ece": 0.02770024984587287,
+        "mean_pred": 0.8401414326105539,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.40148431778716054,
+        "brier": 0.12389322939848925,
+        "auc": 0.7362965547675984,
+        "ece": 0.03173366151551311,
+        "mean_pred": 0.8570853116976552,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.3554135625910285,
+        "brier": 0.1101554752746333,
+        "auc": 0.7974543882797215,
+        "ece": 0.03823621111562622,
+        "mean_pred": 0.8535036486623688,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.4705177836945343,
+        "brier": 0.15101983239887276,
+        "auc": 0.692098836835679,
+        "ece": 0.02984921841352458,
+        "mean_pred": 0.7902165152149524,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.45217133053157593,
+        "brier": 0.1452519973032615,
+        "auc": 0.736547619047619,
+        "ece": 0.036970928009058386,
+        "mean_pred": 0.809449795808311,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.4066741578633219,
+        "brier": 0.12819609614483926,
+        "auc": 0.7618339434614602,
+        "ece": 0.025561049082166304,
+        "mean_pred": 0.8303465136304162,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.47718150884535687,
+        "brier": 0.15623207166767727,
+        "auc": 0.7320014876999097,
+        "ece": 0.048383052746845887,
+        "mean_pred": 0.816739441312906,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.4595227035089491,
+        "brier": 0.14565310458198602,
+        "auc": 0.7156131109160082,
+        "ece": 0.023686736389223688,
+        "mean_pred": 0.8050728474361767,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Adt_tob_gbm": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.40743016896849765,
+        "brier": 0.1251833483182926,
+        "auc": 0.6972009765793794,
+        "ece": 0.025820257587313933,
+        "mean_pred": 0.8536509058019688,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.34890008800504785,
+        "brier": 0.10355104843831321,
+        "auc": 0.7425841190887249,
+        "ece": 0.03185688508654488,
+        "mean_pred": 0.8509614375103844,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.4440019469746656,
+        "brier": 0.13839684529007104,
+        "auc": 0.662533158206495,
+        "ece": 0.04050010005450153,
+        "mean_pred": 0.8314954863428599,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.38186560758033344,
+        "brier": 0.11483863758421177,
+        "auc": 0.6814644137224782,
+        "ece": 0.01833790010551802,
+        "mean_pred": 0.844713641170114,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.277098500039256,
+        "brier": 0.07616282414427646,
+        "auc": 0.7639318412399613,
+        "ece": 0.042526704690733635,
+        "mean_pred": 0.8655541033900747,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.3176204493748237,
+        "brier": 0.09185163757977403,
+        "auc": 0.7656045366441406,
+        "ece": 0.04046625120705474,
+        "mean_pred": 0.8595914936519717,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.4087127648545809,
+        "brier": 0.1259551799792628,
+        "auc": 0.7015244657614447,
+        "ece": 0.018431660262561364,
+        "mean_pred": 0.8344419930376252,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.34435896392282656,
+        "brier": 0.10264011074656396,
+        "auc": 0.7582888778611749,
+        "ece": 0.04405453700333992,
+        "mean_pred": 0.8407258060017488,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.38697414836090954,
+        "brier": 0.11814541555515361,
+        "auc": 0.7200063166045194,
+        "ece": 0.02214900032726777,
+        "mean_pred": 0.8396014807540128,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.4464002070366108,
+        "brier": 0.14140712806120276,
+        "auc": 0.7166632010456274,
+        "ece": 0.02482929503916979,
+        "mean_pred": 0.827419455824161,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.400930112549255,
+        "brier": 0.12411492027546411,
+        "auc": 0.7176755498274644,
+        "ece": 0.032642099003309895,
+        "mean_pred": 0.8449886853334589,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.37506827829157485,
+        "brier": 0.11331040005613009,
+        "auc": 0.7242841871745652,
+        "ece": 0.03152426686674897,
+        "mean_pred": 0.8359133315383985,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.3798618627676867,
+        "brier": 0.11675722300348343,
+        "auc": 0.7531969309462915,
+        "ece": 0.02728718028982171,
+        "mean_pred": 0.8337668503993769,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.4098459536067479,
+        "brier": 0.12579802299620674,
+        "auc": 0.7010385985077844,
+        "ece": 0.018526849177067577,
+        "mean_pred": 0.8522611423310872,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.37063551515841986,
+        "brier": 0.11297302889255754,
+        "auc": 0.7554825060284818,
+        "ece": 0.02189598967409261,
+        "mean_pred": 0.8464559840214895,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.4788360956253059,
+        "brier": 0.15349390659346787,
+        "auc": 0.6667630614999036,
+        "ece": 0.027280863405922135,
+        "mean_pred": 0.8133119157321819,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.4645677592671703,
+        "brier": 0.14944063847905978,
+        "auc": 0.7125270562770563,
+        "ece": 0.040878318072974124,
+        "mean_pred": 0.8240026984247105,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.43436223293606574,
+        "brier": 0.13635350882809974,
+        "auc": 0.705536912751678,
+        "ece": 0.02194409578806526,
+        "mean_pred": 0.838560780256166,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.5132896763297424,
+        "brier": 0.16557063666931862,
+        "auc": 0.6399721941802595,
+        "ece": 0.052545171540532114,
+        "mean_pred": 0.8247981906344504,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.49089366574976084,
+        "brier": 0.15679890659483592,
+        "auc": 0.6576236464735148,
+        "ece": 0.04403426354180519,
+        "mean_pred": 0.8145317802317522,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Bdt_tob_gbm": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.38745750515675015,
+        "brier": 0.12130944877533192,
+        "auc": 0.754115893181229,
+        "ece": 0.03266224539279326,
+        "mean_pred": 0.8531172950588342,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.32760010094019654,
+        "brier": 0.09884567230814899,
+        "auc": 0.8069275253836217,
+        "ece": 0.034789440407277064,
+        "mean_pred": 0.8479791442305955,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.42993037672878115,
+        "brier": 0.13531407862960265,
+        "auc": 0.6998763810553966,
+        "ece": 0.02662821803500085,
+        "mean_pred": 0.8306619668697263,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.35051564490391635,
+        "brier": 0.10787213171745727,
+        "auc": 0.772985151049667,
+        "ece": 0.032246055828250214,
+        "mean_pred": 0.8484332513884444,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.26232053098921815,
+        "brier": 0.07386871075927044,
+        "auc": 0.8150081286899975,
+        "ece": 0.03785222463313618,
+        "mean_pred": 0.8745606586430377,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.30658266020653896,
+        "brier": 0.08998974765358075,
+        "auc": 0.7937948556760437,
+        "ece": 0.0382782894989899,
+        "mean_pred": 0.87126343620526,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.3898223681700824,
+        "brier": 0.1211062106987317,
+        "auc": 0.7454570019590624,
+        "ece": 0.012924559977674816,
+        "mean_pred": 0.8312906534230156,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.33580713882333385,
+        "brier": 0.10008448799601204,
+        "auc": 0.7726800446622417,
+        "ece": 0.03571940095508266,
+        "mean_pred": 0.8409811409454074,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.37200629395548657,
+        "brier": 0.11473714949754989,
+        "auc": 0.767518389469609,
+        "ece": 0.041653486894241185,
+        "mean_pred": 0.8286856698522137,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.4298994742356725,
+        "brier": 0.13617057658067372,
+        "auc": 0.7505644011406845,
+        "ece": 0.01704390448902767,
+        "mean_pred": 0.821325250054777,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.3839921999401749,
+        "brier": 0.1196548017252622,
+        "auc": 0.7582733962499479,
+        "ece": 0.030621942742491318,
+        "mean_pred": 0.8544483538594028,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.3653781926260993,
+        "brier": 0.11119954055683962,
+        "auc": 0.743640731502661,
+        "ece": 0.032342280250980945,
+        "mean_pred": 0.8307958802393944,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.370578089832337,
+        "brier": 0.11360161035939388,
+        "auc": 0.7647611806179582,
+        "ece": 0.022384221787117166,
+        "mean_pred": 0.8331668556674864,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.38935627791249683,
+        "brier": 0.11927409769088078,
+        "auc": 0.7529736553125546,
+        "ece": 0.026272991846269383,
+        "mean_pred": 0.8607968013700789,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.34827237766756153,
+        "brier": 0.10801030574428744,
+        "auc": 0.8034146230492742,
+        "ece": 0.029928514270609188,
+        "mean_pred": 0.8509440656739223,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.4666364354944628,
+        "brier": 0.15137944870244496,
+        "auc": 0.6939624702782597,
+        "ece": 0.03992204399386036,
+        "mean_pred": 0.7963249464802771,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.44585235685578745,
+        "brier": 0.14449318546866713,
+        "auc": 0.7459848484848484,
+        "ece": 0.035847288890116465,
+        "mean_pred": 0.8220363214657557,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.417437681157785,
+        "brier": 0.13107864550241125,
+        "auc": 0.740301504982713,
+        "ece": 0.015313173778073496,
+        "mean_pred": 0.8310269891558486,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.4841925524652901,
+        "brier": 0.1586828847664559,
+        "auc": 0.7082602766413403,
+        "ece": 0.05828977023986984,
+        "mean_pred": 0.8242640067997887,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.47304321909522973,
+        "brier": 0.15004578349032452,
+        "auc": 0.6885864793678665,
+        "ece": 0.04747776139174924,
+        "mean_pred": 0.8104260589712073,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Bdt_tt_gbm": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.3699162964719883,
+        "brier": 0.1160634544077714,
+        "auc": 0.7903163080114078,
+        "ece": 0.031434141933265866,
+        "mean_pred": 0.8528558639153118,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.3184039180383279,
+        "brier": 0.09618844543820519,
+        "auc": 0.8237090873969262,
+        "ece": 0.03141486386820782,
+        "mean_pred": 0.8451181222018932,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.40851043353485933,
+        "brier": 0.12954376044429905,
+        "auc": 0.7495557444178319,
+        "ece": 0.024023825989681592,
+        "mean_pred": 0.8302348718994608,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.35348620731680364,
+        "brier": 0.10883952148824103,
+        "auc": 0.7672606246799796,
+        "ece": 0.025645224878244582,
+        "mean_pred": 0.8487829541816567,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.2544386836565816,
+        "brier": 0.07239482573749524,
+        "auc": 0.8377929078707722,
+        "ece": 0.037103613482195597,
+        "mean_pred": 0.8745116325775804,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.3007533690591799,
+        "brier": 0.08884453510856596,
+        "auc": 0.8044096076274294,
+        "ece": 0.02542728174860478,
+        "mean_pred": 0.8745413331246282,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.3817536114834064,
+        "brier": 0.11847941567111085,
+        "auc": 0.7599135310410052,
+        "ece": 0.023132743104942326,
+        "mean_pred": 0.8329795224860207,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.325773329695227,
+        "brier": 0.09846586340958499,
+        "auc": 0.796476645369394,
+        "ece": 0.03730185920149057,
+        "mean_pred": 0.8408812998881544,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.3624541111773503,
+        "brier": 0.11082241472589613,
+        "auc": 0.7745990993744524,
+        "ece": 0.0321274167364687,
+        "mean_pred": 0.8299038067963364,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.42476193087628195,
+        "brier": 0.13593635619558536,
+        "auc": 0.7566391397338403,
+        "ece": 0.032926179349966465,
+        "mean_pred": 0.8156735390168574,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.37587805009496633,
+        "brier": 0.11822982548662565,
+        "auc": 0.7779798777699248,
+        "ece": 0.04291761218733358,
+        "mean_pred": 0.858402099319136,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.35692105561185744,
+        "brier": 0.11036732440992734,
+        "auc": 0.7676410073679008,
+        "ece": 0.034388658706243004,
+        "mean_pred": 0.8332695687852383,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.36597260749342925,
+        "brier": 0.11306834668897307,
+        "auc": 0.7760696758139214,
+        "ece": 0.02348440119499804,
+        "mean_pred": 0.8390223774200195,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.3803857178061478,
+        "brier": 0.11724075245277098,
+        "auc": 0.7732632724063261,
+        "ece": 0.021967206218592106,
+        "mean_pred": 0.853195223090962,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.3369212198458663,
+        "brier": 0.10556455589672223,
+        "auc": 0.8248327949406251,
+        "ece": 0.04872800447204635,
+        "mean_pred": 0.8555543098748691,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.4517935021726701,
+        "brier": 0.14621288315220066,
+        "auc": 0.7229773150825782,
+        "ece": 0.023177803082487795,
+        "mean_pred": 0.788147757836749,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.43184201976373743,
+        "brier": 0.13953826551857568,
+        "auc": 0.772391774891775,
+        "ece": 0.03367646315445238,
+        "mean_pred": 0.8263515716475202,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.398466637649072,
+        "brier": 0.12641689852350738,
+        "auc": 0.7785107789302421,
+        "ece": 0.018774302873458056,
+        "mean_pred": 0.8356943486421792,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.4647804706086964,
+        "brier": 0.15331501774519452,
+        "auc": 0.7433097780847635,
+        "ece": 0.049057617610754674,
+        "mean_pred": 0.8222518158327642,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.45843963258795806,
+        "brier": 0.14599868261185278,
+        "auc": 0.7236025753585016,
+        "ece": 0.04116871225210723,
+        "mean_pred": 0.8077603164941856,
+        "base_rate": 0.7919254658385093
+      }
+    }
+  },
+  "comparisons": [
+    {
+      "a": "Adt_logreg",
+      "b": "Adt_te_logreg",
+      "n_boot": 1000,
+      "n_groups": 4062,
+      "log_loss": {
+        "delta": 0.0001277448537752579,
+        "ci95": [
+          -2.4204729045766703e-05,
+          0.00033569678247530874
+        ],
+        "share_improved": 0.065
+      },
+      "brier": {
+        "delta": 3.606973538380909e-05,
+        "ci95": [
+          -4.211628557146407e-06,
+          8.540994526375703e-05
+        ],
+        "share_improved": 0.043
+      },
+      "auc": {
+        "delta": -0.00045195510779505454,
+        "ci95": [
+          -0.0007982613767572894,
+          -0.00013886740575647097
+        ],
+        "share_improved": 0.002
+      }
+    },
+    {
+      "a": "Adt_logreg",
+      "b": "Adt_tob_logreg",
+      "n_boot": 1000,
+      "n_groups": 4062,
+      "log_loss": {
+        "delta": -0.004335349758160412,
+        "ci95": [
+          -0.005755665298421868,
+          -0.0027808436109030762
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.0014243695328181316,
+        "ci95": [
+          -0.0018621548042612082,
+          -0.000954581153966054
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.009449919572427135,
+        "ci95": [
+          0.003051941711451481,
+          0.015640875004667813
+        ],
+        "share_improved": 0.995
+      }
+    },
+    {
+      "a": "Bdt_logreg",
+      "b": "Bdt_tob_logreg",
+      "n_boot": 1000,
+      "n_groups": 4062,
+      "log_loss": {
+        "delta": -0.0014640555822724166,
+        "ci95": [
+          -0.002376311932311305,
+          -0.0005057926856575413
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.0005631245787864059,
+        "ci95": [
+          -0.000847519368189389,
+          -0.0002551113601005909
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.002502655766307371,
+        "ci95": [
+          0.00010766856919652845,
+          0.004855529537508376
+        ],
+        "share_improved": 0.98
+      }
+    },
+    {
+      "a": "Bdt_tob_logreg",
+      "b": "Bdt_tt_logreg",
+      "n_boot": 1000,
+      "n_groups": 4062,
+      "log_loss": {
+        "delta": -0.011211631240562903,
+        "ci95": [
+          -0.013574685876386987,
+          -0.008815375046300433
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.00312202132633356,
+        "ci95": [
+          -0.0040097539914944235,
+          -0.0022709293971780956
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.026676335152923003,
+        "ci95": [
+          0.02129480052778445,
+          0.03214321029880451
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Bdt_logreg",
+      "b": "Bdt_ttonly_logreg",
+      "n_boot": 1000,
+      "n_groups": 4062,
+      "log_loss": {
+        "delta": -0.01216500821929234,
+        "ci95": [
+          -0.014600844406081845,
+          -0.009792801553046258
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.0035026377472773262,
+        "ci95": [
+          -0.004396899358431704,
+          -0.00261879791060762
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.029013556739168167,
+        "ci95": [
+          0.02340111278153757,
+          0.034746373521338345
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Adt_tob_logreg",
+      "b": "Bdt_tob_logreg",
+      "n_boot": 1000,
+      "n_groups": 4062,
+      "log_loss": {
+        "delta": -0.01852810820338524,
+        "ci95": [
+          -0.021655834993810335,
+          -0.01543041359325392
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.005003139951537922,
+        "ci95": [
+          -0.006087812753437496,
+          -0.003989587776034034
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.05498439668277666,
+        "ci95": [
+          0.046920484023902816,
+          0.0633380443639886
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Adt_tob_logreg",
+      "b": "Bdt_tt_logreg",
+      "n_boot": 1000,
+      "n_groups": 4062,
+      "log_loss": {
+        "delta": -0.029739739443948143,
+        "ci95": [
+          -0.033629181895712554,
+          -0.026035964943815423
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.008125161277871482,
+        "ci95": [
+          -0.009475644183756859,
+          -0.006762684275988671
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.08166073183569966,
+        "ci95": [
+          0.07241350230578891,
+          0.090945782724578
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Bdt_tt_logreg",
+      "b": "Bdt_tt05_logreg",
+      "n_boot": 1000,
+      "n_groups": 4062,
+      "log_loss": {
+        "delta": -0.0031907074459093243,
+        "ci95": [
+          -0.004059374070667648,
+          -0.0023241050249908734
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.0007288735150036002,
+        "ci95": [
+          -0.001047048153901663,
+          -0.00042016542299929625
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.007913690355684788,
+        "ci95": [
+          0.006053661773540634,
+          0.009679930503666502
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Bdt_tt_logreg",
+      "b": "Bdt_tt20_logreg",
+      "n_boot": 1000,
+      "n_groups": 4062,
+      "log_loss": {
+        "delta": 0.004180797328355967,
+        "ci95": [
+          0.00310851385924015,
+          0.005320720529083006
+        ],
+        "share_improved": 0.0
+      },
+      "brier": {
+        "delta": 0.0009194130419006019,
+        "ci95": [
+          0.0005215162995984432,
+          0.0013324063672350516
+        ],
+        "share_improved": 0.0
+      },
+      "auc": {
+        "delta": -0.011058412135177331,
+        "ci95": [
+          -0.013643192615657409,
+          -0.008764527047475974
+        ],
+        "share_improved": 0.0
+      }
+    },
+    {
+      "a": "Adt_tob_gbm",
+      "b": "Bdt_tob_gbm",
+      "n_boot": 1000,
+      "n_groups": 4062,
+      "log_loss": {
+        "delta": -0.017424856670510136,
+        "ci95": [
+          -0.02026097446754624,
+          -0.014383175890382014
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.004286568800148452,
+        "ci95": [
+          -0.0052256332534106106,
+          -0.003385901041952017
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.04203800892985299,
+        "ci95": [
+          0.034432601567255194,
+          0.04914449984468713
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Bdt_tob_gbm",
+      "b": "Bdt_tt_gbm",
+      "n_boot": 1000,
+      "n_groups": 4062,
+      "log_loss": {
+        "delta": -0.010502221802517198,
+        "ci95": [
+          -0.012842160619086612,
+          -0.008142922068266393
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.0026809776462684565,
+        "ci95": [
+          -0.0034493083947281433,
+          -0.0019339043248428375
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.02170379831635838,
+        "ci95": [
+          0.016603500460577514,
+          0.02725211822061341
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Adt_logreg",
+      "b": "Bdt_logreg",
+      "n_boot": 1000,
+      "n_groups": 4062,
+      "log_loss": {
+        "delta": -0.021399402379273236,
+        "ci95": [
+          -0.024824915905335358,
+          -0.018089345228237387
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.005864384905569647,
+        "ci95": [
+          -0.007010989779791109,
+          -0.00476931054678688
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.06193166048889642,
+        "ci95": [
+          0.052835162201686076,
+          0.07162983822769141
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Bdt_tob_hc_logreg",
+      "b": "Bdt_tt_hc_logreg",
+      "n_boot": 1000,
+      "n_groups": 4062,
+      "log_loss": {
+        "delta": -0.01121163124061697,
+        "ci95": [
+          -0.01357468587640994,
+          -0.008815375046336836
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.0031220213263470076,
+        "ci95": [
+          -0.004009753991465656,
+          -0.00227092939719317
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.026676335152923003,
+        "ci95": [
+          0.02129480052778445,
+          0.03214321029880451
+        ],
+        "share_improved": 1.0
+      }
+    }
+  ],
+  "calibration": {
+    "Adt_logreg": [
+      {
+        "bin": 0,
+        "n": 1,
+        "mean_pred": 0.0129591459404077,
+        "observed": 1.0
+      },
+      {
+        "bin": 1,
+        "n": 1,
+        "mean_pred": 0.18585199308289013,
+        "observed": 0.0
+      },
+      {
+        "bin": 2,
+        "n": 7,
+        "mean_pred": 0.25244675567753394,
+        "observed": 0.7142857142857143
+      },
+      {
+        "bin": 3,
+        "n": 13,
+        "mean_pred": 0.3586744302572203,
+        "observed": 0.38461538461538464
+      },
+      {
+        "bin": 4,
+        "n": 30,
+        "mean_pred": 0.45799479726115927,
+        "observed": 0.9
+      },
+      {
+        "bin": 5,
+        "n": 128,
+        "mean_pred": 0.563408056552489,
+        "observed": 0.6796875
+      },
+      {
+        "bin": 6,
+        "n": 895,
+        "mean_pred": 0.6622516762602189,
+        "observed": 0.6782122905027933
+      },
+      {
+        "bin": 7,
+        "n": 2117,
+        "mean_pred": 0.7531622953130929,
+        "observed": 0.7250826641473783
+      },
+      {
+        "bin": 8,
+        "n": 10448,
+        "mean_pred": 0.862271547904099,
+        "observed": 0.8612174578866769
+      },
+      {
+        "bin": 9,
+        "n": 2274,
+        "mean_pred": 0.9172249828979577,
+        "observed": 0.9278803869832893
+      }
+    ],
+    "Adt_tob_logreg": [
+      {
+        "bin": 0,
+        "n": 1,
+        "mean_pred": 0.01672173376713869,
+        "observed": 1.0
+      },
+      {
+        "bin": 1,
+        "n": 2,
+        "mean_pred": 0.17328533350898528,
+        "observed": 0.5
+      },
+      {
+        "bin": 2,
+        "n": 8,
+        "mean_pred": 0.2561830436797333,
+        "observed": 0.75
+      },
+      {
+        "bin": 3,
+        "n": 11,
+        "mean_pred": 0.3594896405318631,
+        "observed": 0.7272727272727273
+      },
+      {
+        "bin": 4,
+        "n": 44,
+        "mean_pred": 0.4640287764945489,
+        "observed": 0.5681818181818182
+      },
+      {
+        "bin": 5,
+        "n": 174,
+        "mean_pred": 0.5641642539951954,
+        "observed": 0.6264367816091954
+      },
+      {
+        "bin": 6,
+        "n": 1054,
+        "mean_pred": 0.6608966568394867,
+        "observed": 0.642314990512334
+      },
+      {
+        "bin": 7,
+        "n": 2403,
+        "mean_pred": 0.7566888305284066,
+        "observed": 0.7503121098626716
+      },
+      {
+        "bin": 8,
+        "n": 8080,
+        "mean_pred": 0.8581241585612989,
+        "observed": 0.8550742574257426
+      },
+      {
+        "bin": 9,
+        "n": 4137,
+        "mean_pred": 0.9188656806658221,
+        "observed": 0.9272419627749577
+      }
+    ],
+    "Bdt_logreg": [
+      {
+        "bin": 0,
+        "n": 1,
+        "mean_pred": 0.03294202990622773,
+        "observed": 1.0
+      },
+      {
+        "bin": 1,
+        "n": 2,
+        "mean_pred": 0.11687036529781825,
+        "observed": 0.5
+      },
+      {
+        "bin": 2,
+        "n": 22,
+        "mean_pred": 0.26116358838178333,
+        "observed": 0.5454545454545454
+      },
+      {
+        "bin": 3,
+        "n": 47,
+        "mean_pred": 0.35728361600701924,
+        "observed": 0.5106382978723404
+      },
+      {
+        "bin": 4,
+        "n": 185,
+        "mean_pred": 0.4594213637279754,
+        "observed": 0.5621621621621622
+      },
+      {
+        "bin": 5,
+        "n": 504,
+        "mean_pred": 0.5583474370532167,
+        "observed": 0.5833333333333334
+      },
+      {
+        "bin": 6,
+        "n": 1075,
+        "mean_pred": 0.6574324197977099,
+        "observed": 0.6790697674418604
+      },
+      {
+        "bin": 7,
+        "n": 2500,
+        "mean_pred": 0.7566252206235389,
+        "observed": 0.7268
+      },
+      {
+        "bin": 8,
+        "n": 5462,
+        "mean_pred": 0.8571328929097746,
+        "observed": 0.8485902599780301
+      },
+      {
+        "bin": 9,
+        "n": 6116,
+        "mean_pred": 0.9325855431557054,
+        "observed": 0.9413015042511446
+      }
+    ],
+    "Bdt_tob_logreg": [
+      {
+        "bin": 0,
+        "n": 1,
+        "mean_pred": 0.0349060136992942,
+        "observed": 1.0
+      },
+      {
+        "bin": 1,
+        "n": 3,
+        "mean_pred": 0.14984609233029517,
+        "observed": 0.6666666666666666
+      },
+      {
+        "bin": 2,
+        "n": 19,
+        "mean_pred": 0.2681994758815886,
+        "observed": 0.631578947368421
+      },
+      {
+        "bin": 3,
+        "n": 49,
+        "mean_pred": 0.35612469739643615,
+        "observed": 0.42857142857142855
+      },
+      {
+        "bin": 4,
+        "n": 196,
+        "mean_pred": 0.4558750176278959,
+        "observed": 0.5153061224489796
+      },
+      {
+        "bin": 5,
+        "n": 496,
+        "mean_pred": 0.5557239803202024,
+        "observed": 0.6048387096774194
+      },
+      {
+        "bin": 6,
+        "n": 1152,
+        "mean_pred": 0.6570685771035594,
+        "observed": 0.6545138888888888
+      },
+      {
+        "bin": 7,
+        "n": 2482,
+        "mean_pred": 0.7565872110486879,
+        "observed": 0.7356970185334408
+      },
+      {
+        "bin": 8,
+        "n": 5292,
+        "mean_pred": 0.8569763207182727,
+        "observed": 0.8484504913076342
+      },
+      {
+        "bin": 9,
+        "n": 6224,
+        "mean_pred": 0.9343056702479372,
+        "observed": 0.9428020565552699
+      }
+    ],
+    "Bdt_tt_logreg": [
+      {
+        "bin": 0,
+        "n": 4,
+        "mean_pred": 0.04940489930626084,
+        "observed": 0.5
+      },
+      {
+        "bin": 1,
+        "n": 13,
+        "mean_pred": 0.165849187472883,
+        "observed": 0.46153846153846156
+      },
+      {
+        "bin": 2,
+        "n": 57,
+        "mean_pred": 0.25749362816307775,
+        "observed": 0.38596491228070173
+      },
+      {
+        "bin": 3,
+        "n": 150,
+        "mean_pred": 0.3554775503373171,
+        "observed": 0.4666666666666667
+      },
+      {
+        "bin": 4,
+        "n": 254,
+        "mean_pred": 0.45837506379909254,
+        "observed": 0.5196850393700787
+      },
+      {
+        "bin": 5,
+        "n": 568,
+        "mean_pred": 0.5537979355264541,
+        "observed": 0.5950704225352113
+      },
+      {
+        "bin": 6,
+        "n": 1101,
+        "mean_pred": 0.6574947238387194,
+        "observed": 0.6584922797456857
+      },
+      {
+        "bin": 7,
+        "n": 2112,
+        "mean_pred": 0.7565591370826221,
+        "observed": 0.7220643939393939
+      },
+      {
+        "bin": 8,
+        "n": 4704,
+        "mean_pred": 0.8576588342767284,
+        "observed": 0.8420493197278912
+      },
+      {
+        "bin": 9,
+        "n": 6951,
+        "mean_pred": 0.9374120295940709,
+        "observed": 0.9486404833836858
+      }
+    ]
+  },
+  "permutation_importance": {
+    "Bdt_tt_logreg": [
+      {
+        "feature": "dist_to_goal",
+        "importance": 0.4478760165444907
+      },
+      {
+        "feature": "ball_x_att",
+        "importance": 0.32572283993686824
+      },
+      {
+        "feature": "passer_fwd_m_l10",
+        "importance": 0.020010692741704306
+      },
+      {
+        "feature": "def_centroid_fwd_m_l10",
+        "importance": 0.013903461318106991
+      },
+      {
+        "feature": "is_goal_kick",
+        "importance": 0.013650954414293936
+      },
+      {
+        "feature": "att_width_m",
+        "importance": 0.012569044058626766
+      },
+      {
+        "feature": "att_centroid_fwd_m_l10",
+        "importance": 0.008648518635843979
+      },
+      {
+        "feature": "prev_type_pass",
+        "importance": 0.007952054310175361
+      },
+      {
+        "feature": "ball_travel_m_l10",
+        "importance": 0.006503702087511215
+      },
+      {
+        "feature": "def_line_depth_change_m_l10",
+        "importance": 0.006411337709535947
+      },
+      {
+        "feature": "angle_to_goal",
+        "importance": 0.00392548404950332
+      },
+      {
+        "feature": "prev_type_recovery",
+        "importance": 0.003250517059573553
+      },
+      {
+        "feature": "press_nearest_def_change_m_l10",
+        "importance": 0.002468932492422924
+      },
+      {
+        "feature": "press_nearest_def_m",
+        "importance": 0.002102241114923377
+      },
+      {
+        "feature": "press_def_within_10m",
+        "importance": 0.0012956162149230649
+      },
+      {
+        "feature": "ball_y_abs",
+        "importance": 0.0011743177345734227
+      },
+      {
+        "feature": "n_options_over_0_5",
+        "importance": 0.001106486940304103
+      },
+      {
+        "feature": "passer_speed",
+        "importance": 0.0009858936606595102
+      },
+      {
+        "feature": "best_option_p_success_physics",
+        "importance": 0.0009835351249636803
+      },
+      {
+        "feature": "press_closing_speed",
+        "importance": 0.0009376448320940898
+      },
+      {
+        "feature": "att_depth_m",
+        "importance": 0.0008880887545052067
+      },
+      {
+        "feature": "quick_release",
+        "importance": 0.0007155030091338929
+      },
+      {
+        "feature": "def_goal_side_of_ball",
+        "importance": 0.0004660647600955065
+      },
+      {
+        "feature": "passer_control_s",
+        "importance": 0.0004587664258624604
+      },
+      {
+        "feature": "is_restart",
+        "importance": 0.0004133054395285429
+      },
+      {
+        "feature": "time_since_prev_event_s",
+        "importance": 0.00013958577440339705
+      },
+      {
+        "feature": "match_minute",
+        "importance": 0.00011859747034678099
+      },
+      {
+        "feature": "period",
+        "importance": 4.8436074278655765e-05
+      },
+      {
+        "feature": "def_compactness_m",
+        "importance": 4.480960494711721e-05
+      },
+      {
+        "feature": "def_compactness_change_m_l10",
+        "importance": 1.753794632015554e-05
+      },
+      {
+        "feature": "press_def_within_5m",
+        "importance": 8.05821981686494e-06
+      },
+      {
+        "feature": "prev_type_challenge",
+        "importance": -1.1102230246251566e-17
+      },
+      {
+        "feature": "open_lanes_change_l10",
+        "importance": -1.4007064186388833e-07
+      },
+      {
+        "feature": "time_in_possession_s",
+        "importance": -4.591000517346902e-06
+      },
+      {
+        "feature": "def_line_depth_m",
+        "importance": -5.8588651816959745e-06
+      },
+      {
+        "feature": "possession_pass_index",
+        "importance": -2.0873463801795165e-05
+      },
+      {
+        "feature": "press_def_within_5m_change_l10",
+        "importance": -8.764467541678228e-05
+      }
+    ]
+  }
+}
