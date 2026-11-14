@@ -433,21 +433,23 @@ not checked for reachability. The shadow must not be presented as identifying th
 who stops passes. It remains an *explanatory sensitivity* quantity under the model. Its
 parameters are deliberately left unchanged so they are not tuned on this evaluation.
 
-**SkillCorner check (`experiments/results/shadow_validation_v1_skillcorner`, rev c53331d).**
-The same test on the first 8 SkillCorner matches (326 intercepted passes; the cap is
-recorded in the results):
+**SkillCorner check (`experiments/results/shadow_validation_v1_skillcorner`, rev e7e41fc, all 20
+matches).** The same test on every SkillCorner match (881 intercepted passes):
 
 | ranking | top-1 hit [95% CI] | top-3 hit [95% CI] |
 |---|---|---|
 | chance | 0.100 | 0.300 |
-| Defensive Shadow | 0.080 [0.052, 0.110] | 0.307 [0.258, 0.356] |
-| nearest defender to the ball | 0.095 [0.067, 0.129] | **0.402 [0.344, 0.457]** |
-| lane presence | 0.046 [0.025, 0.071] | 0.199 [0.156, 0.242] |
+| Defensive Shadow | 0.083 [0.065, 0.101] | 0.295 [0.267, 0.323] |
+| nearest defender to the ball | 0.094 [0.075, 0.114] | **0.394 [0.360, 0.426]** |
+| lane presence | 0.053 [0.040, 0.069] | 0.182 [0.157, 0.205] |
 
-Shadow − nearest defender (top-3): **−0.095 [−0.156, −0.034]**. On broadcast tracking the
-shadow is at chance, so the "2× chance" signal from Metrica **does not replicate**. The
+Shadow − nearest defender (top-3): **−0.099 [−0.137, −0.060]**. The shadow's top-3 rate is
+below the nearest defender's in 18 of 20 matches (1 tie). On broadcast tracking the shadow
+is at chance, so the "2× chance" signal from Metrica **does not replicate**. The
 nearest-defender baseline still carries top-3 signal. The conclusion that the shadow must not
 be presented as identifying the defender who stops passes is now supported on both providers.
+The first 8 matches (rev c53331d) gave the same picture (top-3 0.307 vs 0.402); that run is
+superseded.
 
 *Units bug found and fixed on the way.* The first SkillCorner run (rev 8709f5e) used a
 50-*frame* recovery window. That is 2 s at Metrica's 25 Hz but 5 s at SkillCorner's 10 fps,
@@ -592,6 +594,7 @@ sensitivity runs show.
 
 ## Log
 * **2026-11-13**: Second independent review (SkillCorner): C23 held but its baseline lacked context. Adapter v2 / pipeline 2. Restated replication −0.021 [−0.025, −0.018], 20/20.
+* **2026-11-14**: Defensive Shadow outcome validation extended to all 20 SkillCorner matches: shadow at chance, worse than nearest-defender in 18/20 matches (top-3 −0.099 [−0.137, −0.060]); C29 updated. Data-quality audit across all matches (C30).
 * **2026-11-13**: Defensive Shadow outcome validation on SkillCorner (8 matches): the shadow is at chance and worse than nearest-defender (top-3 −0.095); non-replication (C29). Fixed a units bug (recovery window in frames, 5 s at 10 fps) found while diagnosing a first, uninformative run.
 * **2026-11-13**: Run value replicated on SkillCorner: tiny positive association (+0.004) but at-chance ranking. The negative result is confirmed. Decision-time importance: defensive structure relative to the ball and attacking width.
 * **2026-11-13**: SkillCorner (20 A-League matches, broadcast) integrated. Cross-provider replication: the decision-time spatial gain replicates (−0.024 vs −0.026; 20/20 matches); interaction features show a small significant gain with 4× the data.

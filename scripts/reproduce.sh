@@ -38,7 +38,8 @@ if [[ " $PROVIDERS " == *" skillcorner "* ]]; then
   for c in pass_outcome_skillcorner_v2 pass_outcome_skillcorner_v2_importance; do
     run uv run footymind experiment "experiments/configs/$c.json"
   done
-  run uv run python -m footymind.research.shadow_validation skillcorner 8
+  run uv run python -m footymind.research.shadow_validation skillcorner
+  run uv run python -m footymind.research.data_quality_audit
   run uv run python -m footymind.research.run_value_validation skillcorner
   run uv run footymind train-option-model --provider skillcorner
 fi

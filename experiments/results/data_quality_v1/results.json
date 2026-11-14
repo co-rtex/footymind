@@ -1,0 +1,403 @@
+{
+  "name": "data_quality_v1",
+  "code_revision": "a82cabb8cd7c2e92f466b8df86f52f2e72a853f1",
+  "providers": {
+    "metrica": {
+      "n_matches": 3,
+      "n_frames": 429923,
+      "n_events": 7300,
+      "n_passes": 2884,
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "frames_over_11": 10,
+      "detected_share_at_pass_start": null,
+      "detected_share_near_ball_at_pass_start": null
+    },
+    "skillcorner": {
+      "n_matches": 20,
+      "n_frames": 1182244,
+      "n_events": 23048,
+      "n_passes": 13449,
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 4,
+      "pass_passer_unobserved_at_start": 4,
+      "pass_ends_in_other_period": 3,
+      "frames_over_11": 0,
+      "detected_share_at_pass_start": 0.6657052625319935,
+      "detected_share_near_ball_at_pass_start": 0.8736914834551903
+    }
+  },
+  "per_match": {
+    "metrica-sample-1": {
+      "provider": "metrica",
+      "n_frames": 145006,
+      "n_events": 1745,
+      "n_passes": 799,
+      "frames_over_11": {
+        "home": 3,
+        "away": 3
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": null,
+      "detected_share_near_ball_at_pass_start": null
+    },
+    "metrica-sample-2": {
+      "provider": "metrica",
+      "n_frames": 141156,
+      "n_events": 1935,
+      "n_passes": 964,
+      "frames_over_11": {
+        "home": 3,
+        "away": 1
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": null,
+      "detected_share_near_ball_at_pass_start": null
+    },
+    "metrica-sample-3": {
+      "provider": "metrica",
+      "n_frames": 143761,
+      "n_events": 3620,
+      "n_passes": 1121,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": null,
+      "detected_share_near_ball_at_pass_start": null
+    },
+    "skillcorner-1874553": {
+      "provider": "skillcorner",
+      "n_frames": 60282,
+      "n_events": 1168,
+      "n_passes": 700,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 1,
+      "pass_passer_unobserved_at_start": 1,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.6862400832357914,
+      "detected_share_near_ball_at_pass_start": 0.9037355380777762
+    },
+    "skillcorner-1886347": {
+      "provider": "skillcorner",
+      "n_frames": 59042,
+      "n_events": 1203,
+      "n_passes": 735,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.6855287569573284,
+      "detected_share_near_ball_at_pass_start": 0.8828120886552678
+    },
+    "skillcorner-1899585": {
+      "provider": "skillcorner",
+      "n_frames": 60511,
+      "n_events": 1131,
+      "n_passes": 606,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 1,
+      "pass_passer_unobserved_at_start": 1,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.660480841472577,
+      "detected_share_near_ball_at_pass_start": 0.8739772361430755
+    },
+    "skillcorner-1925299": {
+      "provider": "skillcorner",
+      "n_frames": 61282,
+      "n_events": 1282,
+      "n_passes": 780,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.6360139860139861,
+      "detected_share_near_ball_at_pass_start": 0.8632655178619993
+    },
+    "skillcorner-1927964": {
+      "provider": "skillcorner",
+      "n_frames": 59051,
+      "n_events": 1319,
+      "n_passes": 902,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 1,
+      "detected_share_at_pass_start": 0.701975408183834,
+      "detected_share_near_ball_at_pass_start": 0.8999398982438049
+    },
+    "skillcorner-1953632": {
+      "provider": "skillcorner",
+      "n_frames": 59231,
+      "n_events": 1154,
+      "n_passes": 759,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.7352976404359802,
+      "detected_share_near_ball_at_pass_start": 0.9135548634415177
+    },
+    "skillcorner-1959846": {
+      "provider": "skillcorner",
+      "n_frames": 58532,
+      "n_events": 1158,
+      "n_passes": 680,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.6707219251336899,
+      "detected_share_near_ball_at_pass_start": 0.8960344972693588
+    },
+    "skillcorner-1986691": {
+      "provider": "skillcorner",
+      "n_frames": 59071,
+      "n_events": 1106,
+      "n_passes": 662,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.7055753913759956,
+      "detected_share_near_ball_at_pass_start": 0.909867861064687
+    },
+    "skillcorner-1996435": {
+      "provider": "skillcorner",
+      "n_frames": 57602,
+      "n_events": 1224,
+      "n_passes": 741,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 1,
+      "pass_passer_unobserved_at_start": 1,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.7622235872235872,
+      "detected_share_near_ball_at_pass_start": 0.9307865812703275
+    },
+    "skillcorner-1996436": {
+      "provider": "skillcorner",
+      "n_frames": 60261,
+      "n_events": 1015,
+      "n_passes": 528,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.6949035812672175,
+      "detected_share_near_ball_at_pass_start": 0.8732597587731015
+    },
+    "skillcorner-2006229": {
+      "provider": "skillcorner",
+      "n_frames": 59251,
+      "n_events": 1188,
+      "n_passes": 723,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 1,
+      "detected_share_at_pass_start": 0.7508487363259146,
+      "detected_share_near_ball_at_pass_start": 0.9164651930152681
+    },
+    "skillcorner-2006363": {
+      "provider": "skillcorner",
+      "n_frames": 59072,
+      "n_events": 1188,
+      "n_passes": 723,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.6004652332453162,
+      "detected_share_near_ball_at_pass_start": 0.8303296563327973
+    },
+    "skillcorner-2007448": {
+      "provider": "skillcorner",
+      "n_frames": 58062,
+      "n_events": 1047,
+      "n_passes": 632,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.6363636363636362,
+      "detected_share_near_ball_at_pass_start": 0.863228370313353
+    },
+    "skillcorner-2007721": {
+      "provider": "skillcorner",
+      "n_frames": 57542,
+      "n_events": 1165,
+      "n_passes": 706,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.7077002317795519,
+      "detected_share_near_ball_at_pass_start": 0.8986730152985886
+    },
+    "skillcorner-2010085": {
+      "provider": "skillcorner",
+      "n_frames": 58972,
+      "n_events": 1121,
+      "n_passes": 710,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 1,
+      "detected_share_at_pass_start": 0.6071702944942382,
+      "detected_share_near_ball_at_pass_start": 0.8401537183219692
+    },
+    "skillcorner-2011166": {
+      "provider": "skillcorner",
+      "n_frames": 59292,
+      "n_events": 981,
+      "n_passes": 498,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.6123585250091274,
+      "detected_share_near_ball_at_pass_start": 0.8206917500018697
+    },
+    "skillcorner-2013725": {
+      "provider": "skillcorner",
+      "n_frames": 56792,
+      "n_events": 1188,
+      "n_passes": 604,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.6521673690547862,
+      "detected_share_near_ball_at_pass_start": 0.8675682906104322
+    },
+    "skillcorner-2015213": {
+      "provider": "skillcorner",
+      "n_frames": 59902,
+      "n_events": 1123,
+      "n_passes": 601,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 1,
+      "pass_passer_unobserved_at_start": 1,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.6501515151515153,
+      "detected_share_near_ball_at_pass_start": 0.864766511817789
+    },
+    "skillcorner-2016236": {
+      "provider": "skillcorner",
+      "n_frames": 60042,
+      "n_events": 1242,
+      "n_passes": 642,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.5610308694420844,
+      "detected_share_near_ball_at_pass_start": 0.8083138252776718
+    },
+    "skillcorner-2017461": {
+      "provider": "skillcorner",
+      "n_frames": 58452,
+      "n_events": 1045,
+      "n_passes": 517,
+      "frames_over_11": {
+        "home": 0,
+        "away": 0
+      },
+      "event_start_not_in_tracking": 0,
+      "pass_ball_unobserved_at_start": 0,
+      "pass_passer_unobserved_at_start": 0,
+      "pass_ends_in_other_period": 0,
+      "detected_share_at_pass_start": 0.5968876384737121,
+      "detected_share_near_ball_at_pass_start": 0.816405497313151
+    }
+  },
+  "runtime_s": 4.2
+}
