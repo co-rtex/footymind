@@ -105,11 +105,18 @@ and the [claims ledger](docs/CLAIMS_LEDGER.md).
 
 ```bash
 uv sync
-uv run footymind download      # Metrica sample games, SHA-256 verified (~180 MB)
-uv run footymind ingest        # build processed bundles (~3 s per match)
-uv run pytest -q               # unit + real-data tests
-uv run footymind serve         # API at http://127.0.0.1:8000 (docs at /docs)
+# Metrica sample games, SHA-256 verified (~180 MB), then processed bundles (~3 s per match)
+uv run footymind download metrica-sample-1 metrica-sample-2 metrica-sample-3
+uv run footymind ingest metrica-sample-1 metrica-sample-2 metrica-sample-3
+uv run footymind build-similarity-index --provider metrica   # "Similar moments" index (~40 s)
+uv run pytest -q             # unit + real-data tests
+uv run footymind serve       # API at http://127.0.0.1:8000 (docs at /docs)
 ```
+
+Without match ids, `download` and `ingest` take **every** registered source, including the
+20 SkillCorner matches (about 1.8 GB more). Data lives in `./data` unless `FOOTYMIND_DATA_DIR`
+points elsewhere. Without the similarity index the API answers `/similar` with a 503 and the
+lab shows a "no index" note.
 
 Run the web lab (in a second terminal, with the API running):
 
@@ -120,11 +127,14 @@ cd web && npm ci && npm run dev    # http://localhost:5173 (proxies /api to :800
 Or build it once (`cd web && npm run build`) and `footymind serve` will serve it at `/`.
 Backend and frontend checks are listed in [`CLAUDE.md`](CLAUDE.md) and [`web/README.md`](web/README.md).
 
-Or run everything in one container (the first start downloads and ingests the data):
+Or run everything in one container (the first start downloads and ingests the three Metrica
+games and builds the similarity index, about a minute; set `FOOTYMIND_SOURCES` to choose
+other sources):
 
 ```bash
 docker build -t footymind .
 docker run --rm -p 8000:8000 -v footymind-data:/data footymind   # http://localhost:8000
+scripts/container_smoke.sh   # build, run on a copy of local data and check it end to end
 ```
 
 Reproduce the research results:

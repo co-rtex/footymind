@@ -1,0 +1,97 @@
+{
+  "name": "api_latency_v1",
+  "code_revision": "9c8c1bac93c545d0a334d70e8cb53f86aceb724c",
+  "method": "In-process (FastAPI TestClient, no network), one request at a time, on real processed data (FOOTYMIND_DATA_DIR) and the on-disk similar-moments indexes. Frames are a seeded sample of pass start frames from two matches per provider. Each match is warmed up once first (bundle load, model load and index load are reported separately as \"cold\"), so the warm numbers are the steady state a user sees while browsing. Requests use the web lab's defaults: analysis with the pitch-control grid, scenarios with the default 24-member ensemble (policy none and marker_follows), similar moments with k = 8. Latency depends on the machine and its load; the results record both. Refuses to write from a dirty src/ tree (the code revision is recorded).",
+  "seed": 20261114,
+  "machine": {
+    "cpu_count": 4,
+    "load_avg_1m_at_start": 8.53,
+    "python": "3.13.18",
+    "platform": "Linux-6.18.44-fc-v470-x86_64-with-glibc2.39"
+  },
+  "providers": {
+    "metrica": {
+      "matches": [
+        "metrica-sample-1",
+        "metrica-sample-2"
+      ],
+      "warm": {
+        "analysis": {
+          "n": 40,
+          "p50_ms": 66.0,
+          "p95_ms": 80.4,
+          "max_ms": 90.4,
+          "mean_ms": 68.1
+        },
+        "scenario_none": {
+          "n": 12,
+          "p50_ms": 462.6,
+          "p95_ms": 512.1,
+          "max_ms": 530.7,
+          "mean_ms": 468.7
+        },
+        "scenario_marker_follows": {
+          "n": 12,
+          "p50_ms": 488.0,
+          "p95_ms": 524.5,
+          "max_ms": 527.7,
+          "mean_ms": 480.7
+        },
+        "similar": {
+          "n": 39,
+          "p50_ms": 30.7,
+          "p95_ms": 41.6,
+          "max_ms": 53.7,
+          "mean_ms": 32.1
+        }
+      },
+      "cold_ms": {
+        "analysis_first_call_metrica-sample-1": 384.6,
+        "similar_first_call": 326.1,
+        "analysis_first_call_metrica-sample-2": 329.8
+      }
+    },
+    "skillcorner": {
+      "matches": [
+        "skillcorner-1874553",
+        "skillcorner-1886347"
+      ],
+      "warm": {
+        "analysis": {
+          "n": 40,
+          "p50_ms": 75.5,
+          "p95_ms": 108.5,
+          "max_ms": 128.0,
+          "mean_ms": 77.3
+        },
+        "scenario_none": {
+          "n": 12,
+          "p50_ms": 526.6,
+          "p95_ms": 599.2,
+          "max_ms": 601.4,
+          "mean_ms": 519.2
+        },
+        "scenario_marker_follows": {
+          "n": 12,
+          "p50_ms": 532.9,
+          "p95_ms": 673.0,
+          "max_ms": 697.7,
+          "mean_ms": 540.7
+        },
+        "similar": {
+          "n": 40,
+          "p50_ms": 34.4,
+          "p95_ms": 66.4,
+          "max_ms": 102.4,
+          "mean_ms": 40.4
+        }
+      },
+      "cold_ms": {
+        "analysis_first_call_skillcorner-1874553": 234.0,
+        "similar_first_call": 52.9,
+        "analysis_first_call_skillcorner-1886347": 289.5
+      }
+    }
+  },
+  "errors": []
+}
