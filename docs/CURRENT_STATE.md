@@ -1,13 +1,41 @@
 # Current state and session handoff
 
-_Last updated: 2026-11-14, end of the final 1.0 release session (started 14:45:49 UTC).
-FootyMind **1.0.0** is a release candidate on this branch, pending the owner's decisions below.
+_Last updated: 2026-11-15, production audit of the released v1.0.0 and its public demo.
 Keep this file factual and update it at every checkpoint._
 
+## Release and deployment (2026-11-15)
+* **v1.0.0 is released** (tag `v1.0.0` at 22572ab, the squash-merged release; GitHub release
+  published by `.github/workflows/publish-release.yml`). `main` also has ffa0aff (Railway
+  Dockerfile builder) and 6d4693a (release docs); CI run #89 on 6d4693a passed.
+* **Public demo:** https://footymind-web-production.up.railway.app/ (Railway, SkillCorner-only:
+  matches 1874553, 1899585, 2017461; settings in `docs/release/DEPLOYMENT.md`).
+* **Production audit (2026-11-15).** Verified against the live site:
+  * `smoke_api.py --require-similar` passed.
+  * 117 of 141 production API responses are identical to a local server on the same code and
+    bundles: summaries, possessions, replays, analyses, Defensive Shadow, and scenarios with a
+    fixed seed. The 24 that differ are similar-moments neighbours, because the demo index has
+    3 matches against 20 locally.
+  * Browser tests passed: 3 viewports × 3 matches, the guided tour, all 7 response policies,
+    similar moments and error routes, with no runtime errors, failed requests or horizontal
+    overflow.
+  * Findings fixed on this branch (PR co-rtex/footymind#3, not yet deployed):
+    * the demo's similar-moments panel claimed a validation done on 20 matches;
+    * no rate limiting on the free-tier instance;
+    * the server ran as root on Railway;
+    * missing security headers, `HEAD /api/health` returned 404, unknown paths returned raw
+      JSON 404s;
+    * relative links in the release notes.
+  * Owner actions:
+    * correct the GitHub repository description, which still describes the archived v1
+      predictor;
+    * add the demo URL as the website, and add topics;
+    * optionally fix the release body's relative links;
+    * set `FOOTYMIND_CLIENT_IP_HEADER=X-Real-IP` on Railway after merging.
+
 ## Branch and repository
-* Working branch: `claude/loving-wright-i0shmp` (pushed to `origin`). `main` is untouched. A
-  non-merging release PR to `main` is prepared for the owner's review (see the release notes);
-  nothing is merged or tagged.
+* Working branch: `claude/loving-wright-i0shmp`, restarted from `main` after the v1.0.0 squash
+  merge (an `ours` merge keeps the pre-release history without a force push). Audit fixes are
+  in PR co-rtex/footymind#3.
 * Commits are authored as Christian Cortez with no assistant trailers (see CLAUDE.md).
 * All specialist worktrees and branches were merged and removed; no other worktrees exist.
 * **Stop-hook note.** The cloud environment runs a *managed* Stop hook
@@ -123,12 +151,12 @@ FootyMind 1.0 is feature-frozen. Post-1.0 research and product ideas are in
 [`docs/ROADMAP.md`](ROADMAP.md); none of them is unfinished 1.0 work.
 
 ## Decisions needing the owner
-* **Merge** the release PR into `main` and **tag/publish** v1.0.0.
-* **Public deployment**: whether and where to host a demo. A SkillCorner-only configuration is
-  licence-clear (MIT, credit given); including Metrica's sample data in a public demo depends on
-  their "responsible use, acknowledge the source" terms (`docs/release/DATA_LICENSES.md`).
-* **A code licence** for the repository (none is set; the project is public but all rights are
-  reserved until one is chosen).
+* Merge PR co-rtex/footymind#3, which redeploys the demo from `main`, and set
+  `FOOTYMIND_CLIENT_IP_HEADER=X-Real-IP` on Railway.
+* Repository settings: the description (still the archived v1 predictor's), the website (the
+  demo URL) and topics.
+* Keep the public demo SkillCorner-only unless Metrica's terms for hosted use are confirmed
+  (`docs/release/DATA_LICENSES.md`). The code is MIT-licensed (`LICENSE`).
 * Whether to change the managed stop hook or enable commit signing.
 
 ## Resume

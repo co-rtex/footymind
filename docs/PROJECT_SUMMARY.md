@@ -6,7 +6,7 @@ not in those files.
 
 ## One paragraph
 
-FootyMind is a public football analytics lab that reconstructs the "invisible game", the
+FootyMind is an open-source (MIT) football analytics lab that reconstructs the "invisible game", the
 space, pressure and passing options event data cannot see, from player-tracking data from two
 providers. It covers 3 Metrica matches at 25 Hz and 20 SkillCorner A-League matches from 10 fps
 broadcast tracking. It combines a leakage-audited research pipeline with an interactive web lab.

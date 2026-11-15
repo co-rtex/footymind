@@ -366,7 +366,8 @@ def scenario_root(r: DockerRunner) -> None:
     check(r.sh('stat -c %u "$D"').strip() == "0", "volume seeded as root-owned")
     r.user = "0"
     try:
-        run_once(r, {"FOOTYMIND_SOURCES": " ".join(ALL3[:2])}, "as root")
+        # the volume left by scenario D: games 1-3 (game 3's data file damaged, manifest valid)
+        run_once(r, {"FOOTYMIND_SOURCES": " ".join(ALL3)}, "as root")
         status = subprocess.run(
             ["docker", "exec", r.name, "sh", "-c", "grep ^Uid /proc/1/status"],
             capture_output=True,
@@ -374,7 +375,7 @@ def scenario_root(r: DockerRunner) -> None:
             check=True,
         ).stdout.split()
         check(status[1:3] == ["10001", "10001"], f"the server runs as uid 10001 ({status[1:3]})")
-        check(served_ids(r) == ALL3[:2], "the matches are served")
+        check(served_ids(r) == ALL3, "the matches are served")
         check_match_works(r, "metrica-sample-1")
         logs = r.stop()
         check("dropping privileges" in logs, "the entrypoint logged the privilege drop")
