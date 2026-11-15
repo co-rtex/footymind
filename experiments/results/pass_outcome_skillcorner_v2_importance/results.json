@@ -1,0 +1,784 @@
+{
+  "name": "pass_outcome_skillcorner_v2_importance",
+  "config": {
+    "name": "pass_outcome_skillcorner_v2_importance",
+    "description": "Which decision-time features carry the replicated decision-time effect? Held-out permutation importance (log loss) for Adt/Bdt logistic models, LOMO over 20 SkillCorner matches, same dataset as pass_outcome_skillcorner_v2. Pipeline v2 (adapter v2).",
+    "matches": [
+      "skillcorner-1874553",
+      "skillcorner-1886347",
+      "skillcorner-1899585",
+      "skillcorner-1925299",
+      "skillcorner-1927964",
+      "skillcorner-1953632",
+      "skillcorner-1959846",
+      "skillcorner-1986691",
+      "skillcorner-1996435",
+      "skillcorner-1996436",
+      "skillcorner-2006229",
+      "skillcorner-2006363",
+      "skillcorner-2007448",
+      "skillcorner-2007721",
+      "skillcorner-2010085",
+      "skillcorner-2011166",
+      "skillcorner-2013725",
+      "skillcorner-2015213",
+      "skillcorner-2016236",
+      "skillcorner-2017461"
+    ],
+    "seed": 0,
+    "dataset": {
+      "rules": "v2",
+      "include_ball_out": true
+    },
+    "n_boot": 1000,
+    "models": [
+      "Adt_logreg",
+      "Bdt_logreg"
+    ],
+    "comparisons": [
+      [
+        "Adt_logreg",
+        "Bdt_logreg"
+      ]
+    ],
+    "calibration": [],
+    "importances": [
+      "Bdt_logreg"
+    ]
+  },
+  "code_revision": "bd074ecdde0410ecf6e0d0520c3b77c42e8d5cf2",
+  "data_files_sha256": {
+    "skillcorner-1874553": {
+      "1874553_dynamic_events.csv": "92507490abbbeec7697227581c864cfb0a96c29b214dd63dcaa48929bb6c6408",
+      "1874553_match.json": "e6974e402779d8be44e75bf88ef2a3acfd4d025b87b3fc57f518fa826a645ad8",
+      "1874553_tracking_extrapolated.jsonl": "ea97f58f8eaad925feaeacc6395ec24860dd80027af8a89450276adebd29d265"
+    },
+    "skillcorner-1886347": {
+      "1886347_dynamic_events.csv": "b21368b9b94eb8f83032fe14a2a8da88ab7eda048b4f8078c06d0e6955d12bfb",
+      "1886347_match.json": "30c608e78663e9f490b3545479a3ce67b171f418c5133d5609cb249a2466abb2",
+      "1886347_tracking_extrapolated.jsonl": "3577e2803da95390f8b2f85d47829eb55fbbfee6211c94adc65db0dc78e46b41"
+    },
+    "skillcorner-1899585": {
+      "1899585_dynamic_events.csv": "14c62ffc99aa5fd62998c238036873509a9d82ced44354697a1db4251424d557",
+      "1899585_match.json": "41de8cb74a0512fcf0cbaaa5c615ae3e7dcaaf6745b9c78a050b59b906b1cb06",
+      "1899585_tracking_extrapolated.jsonl": "90b6289ec2181192d1793ec6240fbbe8225ff0219c7956710c6278c31a661100"
+    },
+    "skillcorner-1925299": {
+      "1925299_dynamic_events.csv": "2557acbdcba6547d764b9f7c277c3d7e81a4d58692d6c20c2bfa28625ae0cce3",
+      "1925299_match.json": "f4345b32c0fdd7c9990df70050b3a74f57b1992cf762e20f2a4d309bd2fba7d2",
+      "1925299_tracking_extrapolated.jsonl": "48528be40ad82fa3e2b232e1af8d311705f7d6d119925ef199d2b59ea36fd3c9"
+    },
+    "skillcorner-1927964": {
+      "1927964_dynamic_events.csv": "638747f76b43690974f95958952dfe62c9e50d64648f9456f43f66d5d91201f3",
+      "1927964_match.json": "f967f911c20f5c5f8c89bbe2020a30c92731173616d5a1e4bafeb65435278b76",
+      "1927964_tracking_extrapolated.jsonl": "858c7a756ca3d33017f864775af5999d2c0f364e58ab60ae040c8b9ebab17827"
+    },
+    "skillcorner-1953632": {
+      "1953632_dynamic_events.csv": "d1f676ebb182da585da128fc80d468e27fb676e254abc47531daf920d977e51f",
+      "1953632_match.json": "366c8dd6b504d4f4ace5685040648b0f30081043a44f01663b8b7e077e6bfde8",
+      "1953632_tracking_extrapolated.jsonl": "1c2014f97c3eff1ce2475203512c9d126930d7599c036105c9ac442d1de1667e"
+    },
+    "skillcorner-1959846": {
+      "1959846_dynamic_events.csv": "aa3d08a927a84f2b42d976cc10401e9efc52468744e0a7a86cb0d3dc2e288058",
+      "1959846_match.json": "4bbe2058af53edd42d5e3acd7fb28ecb8c79e4afb16cb9b77a6fe9b58f6e516b",
+      "1959846_tracking_extrapolated.jsonl": "5ba2d87f6fd1ba3138301b369bd9266be69416a2d799a3fba5b5ec8a52e1284b"
+    },
+    "skillcorner-1986691": {
+      "1986691_dynamic_events.csv": "c2f7102092970368cc487353d6e93e06522f8d3f184326cced63fa167ca0d9f5",
+      "1986691_match.json": "754f6a6fd0d996236cf553ef5c3c24513274b0db024cb6833a7419b08d55dd68",
+      "1986691_tracking_extrapolated.jsonl": "630e946950fe459f5e48872b01a36e6dfc319cf9027e7b98156150bb6e2c30f6"
+    },
+    "skillcorner-1996435": {
+      "1996435_dynamic_events.csv": "379e5bbd90df47d2358a2bfc5b741f7626b934db780ff33d3337a8b1d5efc87c",
+      "1996435_match.json": "f54179645d3c3f308a7094086283277f2a7c99da5f3919302e622cbd82f9d065",
+      "1996435_tracking_extrapolated.jsonl": "f42764d8bde290e8f738fa21141cadbed75408314b0b337bbf1d5a3444540a02"
+    },
+    "skillcorner-1996436": {
+      "1996436_dynamic_events.csv": "94e7d7cc23ace6fd3eda12fb869eb2a0fef49402d7d72b7fb8155b4b2588da2d",
+      "1996436_match.json": "4e8999668a79fccd43f01e5538d7595b4614ec6061d648b831a96951e495c78a",
+      "1996436_tracking_extrapolated.jsonl": "fab9d331e06f3042c83ac17798901b49bb259c99a8f3b319cd0146263cde65e7"
+    },
+    "skillcorner-2006229": {
+      "2006229_dynamic_events.csv": "6308c15890803ed5cd44e8bc2fbb1844cce20bd59d63b154aec82977af8c6588",
+      "2006229_match.json": "87386df74b45eb7ccac80742c603763146cb2b61f47561122355fe246d8795eb",
+      "2006229_tracking_extrapolated.jsonl": "3ee193ba01f1fe2cbce087eca8a881c21b8b0ea3485ae6c3d7e32e8b2f51e738"
+    },
+    "skillcorner-2006363": {
+      "2006363_dynamic_events.csv": "430d5f840723c4c667b907e161716265b5ae4b87b4466a4883d3b95b5b5e5a58",
+      "2006363_match.json": "26d4068baf7454d1e066b6e70715da6c7ac016b14963a3bfa3ed99ed7c3aba79",
+      "2006363_tracking_extrapolated.jsonl": "61dfdbd83f8e654127b249b8503f062338c14ec0c9e65404bcf70fb7c1346bd4"
+    },
+    "skillcorner-2007448": {
+      "2007448_dynamic_events.csv": "076e7a85949a1aca485bf202823a2b04b6d5eb20212faac1e51d346c6f4ac2a7",
+      "2007448_match.json": "434b31c032656be4a89e7042eadd442d4dfb468e4bfa87ce188102f314262873",
+      "2007448_tracking_extrapolated.jsonl": "12d00d6e4257218812df6e4c4263c49387ba0313a83ff8d826c4416828f9c798"
+    },
+    "skillcorner-2007721": {
+      "2007721_dynamic_events.csv": "c102f35837a9e50f642bd3378f9303ccd4d9a40d07717a12423966c3fb66fe36",
+      "2007721_match.json": "0ed112bc955eb341bc25005f9a7bb3fdf040223c8e1765646225c47e974b6139",
+      "2007721_tracking_extrapolated.jsonl": "fea913b8d4cbde8d85c6bdf5f1a4b3fd203b78227e976a171c8ab0946705d378"
+    },
+    "skillcorner-2010085": {
+      "2010085_dynamic_events.csv": "792b2ac103e314835b4e7d5a213b67093497c4a8a3756dfae3ec66b059de6ee3",
+      "2010085_match.json": "3222413d358251e1ac1cdde1f5ee2fd126b0d9cc3470c2aa1bb07177a09ef24d",
+      "2010085_tracking_extrapolated.jsonl": "04562d9754b2977c80430535e9b5733426bc4ce910db56fe7a3760876211ac5a"
+    },
+    "skillcorner-2011166": {
+      "2011166_dynamic_events.csv": "7c2827cea8135395b77f70592c59721189da3b6c9abc94688884c073c3233a18",
+      "2011166_match.json": "6b381b8bd338859c394c1992da137436e2e09cd609a81ac94d5f5f941d35d1bc",
+      "2011166_tracking_extrapolated.jsonl": "8ec2937050930d87e4f52b2d65515f70ef8edd0ae2814bf40155c4448133390e"
+    },
+    "skillcorner-2013725": {
+      "2013725_dynamic_events.csv": "20bd127c17768d70dade9a76b43c1201c2c5e10f6c89d420847250136270ad83",
+      "2013725_match.json": "c8b9372fbd2e79ddcbb859b51b5086111ed7f3cd84ca0b457091c7d0e5209df3",
+      "2013725_tracking_extrapolated.jsonl": "13eb83329814ed5f5d73da8f8ab5c5979d6c8a7858e89e28a7fa8072f91fb250"
+    },
+    "skillcorner-2015213": {
+      "2015213_dynamic_events.csv": "1452564da8278500f4672152a27e361d3f5f1b9d741493e598e5bf7729a88811",
+      "2015213_match.json": "300342194bf3dcd9fe356ed30df26fd0ee6e8caeb8ce5d8cfd27cf90cd995dff",
+      "2015213_tracking_extrapolated.jsonl": "413990d0024d84856ce1f2a16866b8887472c0cea22c61caef0d1f46505a609e"
+    },
+    "skillcorner-2016236": {
+      "2016236_dynamic_events.csv": "425274b44a124ec5e81ff8f2819cebd22702065d0f4e4f8070306db9ae97590a",
+      "2016236_match.json": "93ccf67cead82def1acda87d3cf550fd42f96cb0e1adbff9eeb8824077980495",
+      "2016236_tracking_extrapolated.jsonl": "d78555f9dfd7d1ce9de38066d3c98e6d54417c6d45d73b1f1ce7e26f07263d8f"
+    },
+    "skillcorner-2017461": {
+      "2017461_dynamic_events.csv": "d4ce943cd9b912cfcf1f6d2744c9f4ecd6db4d5f7bcd6152b946e2f5ba308878",
+      "2017461_match.json": "db27759bf734dc8e3d9e56f047965cc7c74833bc3d0345ee3821ab97681ce4b9",
+      "2017461_tracking_extrapolated.jsonl": "59cfa5588efee041da439f44df5b5b92f2b7305571dc831164e3d05f7415787a"
+    }
+  },
+  "runtime_s": 178.5,
+  "dataset": {
+    "n": 15914,
+    "success_rate": 0.840454945331155,
+    "by_match": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "success_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "success_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "success_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "success_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "success_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "success_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "success_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "success_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "success_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "success_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "success_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "success_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "success_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "success_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "success_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "success_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "success_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "success_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "success_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "success_rate": 0.7919254658385093
+      }
+    },
+    "by_label_source": {
+      "BALL LOST": 2132,
+      "BALL OUT": 407,
+      "PASS": 13375
+    },
+    "n_truncated_release": 41,
+    "receiver_inference": {
+      "n_completed": 13375,
+      "accuracy": 0.7518881328049054
+    }
+  },
+  "models": {
+    "Adt_logreg": {
+      "family": "A-decision",
+      "description": "decision-time event context only (no release features), LR",
+      "n_features": 13
+    },
+    "Bdt_logreg": {
+      "family": "B-decision",
+      "description": "decision-time event + spatial context (no release features), LR",
+      "n_features": 25
+    }
+  },
+  "pooled_oof_metrics": {
+    "Adt_logreg": {
+      "n": 15914,
+      "log_loss": 0.41818101686147097,
+      "brier": 0.12856583809811434,
+      "auc": 0.6631992432078271,
+      "ece": 0.008914149373161633,
+      "mean_pred": 0.8404189615572049,
+      "base_rate": 0.840454945331155
+    },
+    "Bdt_logreg": {
+      "n": 15914,
+      "log_loss": 0.39678161448219773,
+      "brier": 0.12270145319254469,
+      "auc": 0.7251309036967235,
+      "ece": 0.015369993386093964,
+      "mean_pred": 0.8403197028099644,
+      "base_rate": 0.840454945331155
+    }
+  },
+  "fold_metrics": {
+    "Adt_logreg": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.4160211912326095,
+        "brier": 0.12785677433775947,
+        "auc": 0.6768213637542132,
+        "ece": 0.012589841706205286,
+        "mean_pred": 0.8459553888027656,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.3634706394337825,
+        "brier": 0.10827103295681219,
+        "auc": 0.7137838196766833,
+        "ece": 0.02709061447834315,
+        "mean_pred": 0.8547323848012246,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.45582095762033664,
+        "brier": 0.14268419889601067,
+        "auc": 0.6191377578613922,
+        "ece": 0.02455583871846436,
+        "mean_pred": 0.8419131024060037,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.39588866149897406,
+        "brier": 0.11862605532837106,
+        "auc": 0.6187096774193548,
+        "ece": 0.020561429842638767,
+        "mean_pred": 0.8457699965498702,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.30027892215417473,
+        "brier": 0.08248420333766503,
+        "auc": 0.6893618061582467,
+        "ece": 0.04834871813521742,
+        "mean_pred": 0.8601794155913506,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.3420857004649112,
+        "brier": 0.09885100668091194,
+        "auc": 0.7052883859814552,
+        "ece": 0.03285838199941906,
+        "mean_pred": 0.8592301994654881,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.42966572531153285,
+        "brier": 0.13283799736405502,
+        "auc": 0.6363800130604158,
+        "ece": 0.018957959205156773,
+        "mean_pred": 0.8268399764147695,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.36358634593086453,
+        "brier": 0.10746380161826585,
+        "auc": 0.7120060790273557,
+        "ece": 0.04221541270136014,
+        "mean_pred": 0.838545018774084,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.40613317797032966,
+        "brier": 0.12366146364587026,
+        "auc": 0.6520671597693419,
+        "ece": 0.03025958627389826,
+        "mean_pred": 0.8451277197700316,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.47407204722150226,
+        "brier": 0.15065788109827136,
+        "auc": 0.6620425380228137,
+        "ece": 0.04222451701059359,
+        "mean_pred": 0.8428851647693898,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.4242467709365306,
+        "brier": 0.13004431127691257,
+        "auc": 0.6303683532199726,
+        "ece": 0.018381929521279067,
+        "mean_pred": 0.8490430576669423,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.40112674247638974,
+        "brier": 0.12096970508372668,
+        "auc": 0.6391912550718974,
+        "ece": 0.029071193906303958,
+        "mean_pred": 0.8305357823208868,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.4068222923972793,
+        "brier": 0.12472792880465335,
+        "auc": 0.6865417847515034,
+        "ece": 0.02295051579938782,
+        "mean_pred": 0.8385779165202226,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.4284686093302622,
+        "brier": 0.13185963763534617,
+        "auc": 0.652048974230031,
+        "ece": 0.02536518948998405,
+        "mean_pred": 0.8586791952686773,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.40252280872341123,
+        "brier": 0.12189047474730888,
+        "auc": 0.6735179034532963,
+        "ece": 0.0298716778668639,
+        "mean_pred": 0.8390398213334611,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.4903322574282531,
+        "brier": 0.15754160330689476,
+        "auc": 0.6349045691150954,
+        "ece": 0.02839471661718757,
+        "mean_pred": 0.8172376242279863,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.4870087645195131,
+        "brier": 0.1562827560771523,
+        "auc": 0.6358766233766233,
+        "ece": 0.027643551223993302,
+        "mean_pred": 0.8160307658643786,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.4486437000492406,
+        "brier": 0.14111159297190706,
+        "auc": 0.6703401464307505,
+        "ece": 0.020836600875394764,
+        "mean_pred": 0.8303330482416932,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.518036824397878,
+        "brier": 0.16832161199978662,
+        "auc": 0.6158723411791793,
+        "ece": 0.05124400075630115,
+        "mean_pred": 0.8260754082674956,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.4963288233598016,
+        "brier": 0.15988856252260045,
+        "auc": 0.6437225636523265,
+        "ece": 0.03759447968593152,
+        "mean_pred": 0.8222810974106686,
+        "base_rate": 0.7919254658385093
+      }
+    },
+    "Bdt_logreg": {
+      "skillcorner-1874553": {
+        "n": 829,
+        "log_loss": 0.3943334524009609,
+        "brier": 0.12132374245149355,
+        "auc": 0.7255639097744362,
+        "ece": 0.03444947082522212,
+        "mean_pred": 0.8483218313185765,
+        "base_rate": 0.8395657418576599
+      },
+      "skillcorner-1886347": {
+        "n": 846,
+        "log_loss": 0.329816765230557,
+        "brier": 0.0988383946693727,
+        "auc": 0.80464571587246,
+        "ece": 0.043739068499545265,
+        "mean_pred": 0.847091531627643,
+        "base_rate": 0.8664302600472813
+      },
+      "skillcorner-1899585": {
+        "n": 731,
+        "log_loss": 0.4374783043090771,
+        "brier": 0.13673139856764688,
+        "auc": 0.677483324319452,
+        "ece": 0.02994955775107488,
+        "mean_pred": 0.8395989918165916,
+        "base_rate": 0.8235294117647058
+      },
+      "skillcorner-1925299": {
+        "n": 901,
+        "log_loss": 0.3670531394039986,
+        "brier": 0.1119090201476591,
+        "auc": 0.7342549923195085,
+        "ece": 0.025209186182335377,
+        "mean_pred": 0.8461115553562523,
+        "base_rate": 0.8601553829078802
+      },
+      "skillcorner-1927964": {
+        "n": 990,
+        "log_loss": 0.276212305102764,
+        "brier": 0.07767929897066668,
+        "auc": 0.7734601327482307,
+        "ece": 0.03692083440555189,
+        "mean_pred": 0.8716904107464393,
+        "base_rate": 0.908080808080808
+      },
+      "skillcorner-1953632": {
+        "n": 857,
+        "log_loss": 0.31857949758478454,
+        "brier": 0.0928273087627042,
+        "auc": 0.7552255225522553,
+        "ece": 0.025095287656174338,
+        "mean_pred": 0.8767756763088949,
+        "base_rate": 0.882147024504084
+      },
+      "skillcorner-1959846": {
+        "n": 809,
+        "log_loss": 0.409908349608705,
+        "brier": 0.12754700952969772,
+        "auc": 0.7032470895539192,
+        "ece": 0.03281968703630249,
+        "mean_pred": 0.8240290100856903,
+        "base_rate": 0.8380716934487021
+      },
+      "skillcorner-1986691": {
+        "n": 756,
+        "log_loss": 0.35290944901686694,
+        "brier": 0.10676054374915578,
+        "auc": 0.7428664474908505,
+        "ece": 0.03418096502368564,
+        "mean_pred": 0.8361894053466847,
+        "base_rate": 0.8703703703703703
+      },
+      "skillcorner-1996435": {
+        "n": 871,
+        "log_loss": 0.38794502953045706,
+        "brier": 0.11930837056120339,
+        "auc": 0.7238115614238848,
+        "ece": 0.024922934652308344,
+        "mean_pred": 0.8279429706748204,
+        "base_rate": 0.8473019517795637
+      },
+      "skillcorner-1996436": {
+        "n": 654,
+        "log_loss": 0.45794724308260043,
+        "brier": 0.14418895415023336,
+        "auc": 0.6921785884030418,
+        "ece": 0.04552672762184312,
+        "mean_pred": 0.8290218415720454,
+        "base_rate": 0.8042813455657493
+      },
+      "skillcorner-2006229": {
+        "n": 852,
+        "log_loss": 0.39656173679117573,
+        "brier": 0.12309864496610817,
+        "auc": 0.737517149627905,
+        "ece": 0.03787151252855731,
+        "mean_pred": 0.863969636806879,
+        "base_rate": 0.8427230046948356
+      },
+      "skillcorner-2006363": {
+        "n": 840,
+        "log_loss": 0.38258924863431004,
+        "brier": 0.11589312273260129,
+        "auc": 0.6992149335049829,
+        "ece": 0.025942916506857393,
+        "mean_pred": 0.831223209788429,
+        "base_rate": 0.8559523809523809
+      },
+      "skillcorner-2007448": {
+        "n": 744,
+        "log_loss": 0.3948319355600885,
+        "brier": 0.12120872995218208,
+        "auc": 0.708038985276837,
+        "ece": 0.01417451708467842,
+        "mean_pred": 0.8395594081452181,
+        "base_rate": 0.8454301075268817
+      },
+      "skillcorner-2007721": {
+        "n": 840,
+        "log_loss": 0.4064509096852194,
+        "brier": 0.12471315104984274,
+        "auc": 0.7187060622543334,
+        "ece": 0.033509810317927886,
+        "mean_pred": 0.8641041748109238,
+        "base_rate": 0.8345238095238096
+      },
+      "skillcorner-2010085": {
+        "n": 833,
+        "log_loss": 0.368367445518775,
+        "brier": 0.11312437578271656,
+        "auc": 0.772441876336503,
+        "ece": 0.03139295462605607,
+        "mean_pred": 0.8528649604223354,
+        "base_rate": 0.851140456182473
+      },
+      "skillcorner-2011166": {
+        "n": 620,
+        "log_loss": 0.48670567180468916,
+        "brier": 0.15726393899735608,
+        "auc": 0.6541353383458646,
+        "ece": 0.03540070001673205,
+        "mean_pred": 0.7950734808155744,
+        "base_rate": 0.7967741935483871
+      },
+      "skillcorner-2013725": {
+        "n": 754,
+        "log_loss": 0.472751203102751,
+        "brier": 0.1537259045630425,
+        "auc": 0.7010822510822512,
+        "ece": 0.041113481191332756,
+        "mean_pred": 0.8121596816220482,
+        "base_rate": 0.7957559681697612
+      },
+      "skillcorner-2015213": {
+        "n": 728,
+        "log_loss": 0.4266331676174536,
+        "brier": 0.1342310089265139,
+        "auc": 0.7219849501728697,
+        "ece": 0.021492370599298857,
+        "mean_pred": 0.8304704188766558,
+        "base_rate": 0.8186813186813187
+      },
+      "skillcorner-2016236": {
+        "n": 815,
+        "log_loss": 0.4882895763771746,
+        "brier": 0.15847601217570953,
+        "auc": 0.7036023590669996,
+        "ece": 0.04776571349034894,
+        "mean_pred": 0.8233992563202195,
+        "base_rate": 0.7828220858895706
+      },
+      "skillcorner-2017461": {
+        "n": 644,
+        "log_loss": 0.47768882233315585,
+        "brier": 0.15129517054291722,
+        "auc": 0.6757974831723734,
+        "ece": 0.044908693586253434,
+        "mean_pred": 0.8139067504878016,
+        "base_rate": 0.7919254658385093
+      }
+    }
+  },
+  "comparisons": [
+    {
+      "a": "Adt_logreg",
+      "b": "Bdt_logreg",
+      "n_boot": 1000,
+      "n_groups": 4062,
+      "log_loss": {
+        "delta": -0.021399402379273236,
+        "ci95": [
+          -0.024824915905335358,
+          -0.018089345228237387
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.005864384905569647,
+        "ci95": [
+          -0.007010989779791109,
+          -0.00476931054678688
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.06193166048889642,
+        "ci95": [
+          0.052835162201686076,
+          0.07162983822769141
+        ],
+        "share_improved": 1.0
+      }
+    }
+  ],
+  "calibration": {},
+  "permutation_importance": {
+    "Bdt_logreg": [
+      {
+        "feature": "dist_to_goal",
+        "importance": 0.4571166375244239
+      },
+      {
+        "feature": "ball_x_att",
+        "importance": 0.3297157806387786
+      },
+      {
+        "feature": "def_goal_side_of_ball",
+        "importance": 0.019964474797674592
+      },
+      {
+        "feature": "is_goal_kick",
+        "importance": 0.017279085378402458
+      },
+      {
+        "feature": "prev_type_pass",
+        "importance": 0.011815701786007519
+      },
+      {
+        "feature": "att_width_m",
+        "importance": 0.009885464029253867
+      },
+      {
+        "feature": "prev_type_recovery",
+        "importance": 0.007949825866535294
+      },
+      {
+        "feature": "angle_to_goal",
+        "importance": 0.007396723948370201
+      },
+      {
+        "feature": "ball_y_abs",
+        "importance": 0.0021007067366193284
+      },
+      {
+        "feature": "press_closing_speed",
+        "importance": 0.0015280685120928343
+      },
+      {
+        "feature": "n_options_over_0_5",
+        "importance": 0.0014650798890129897
+      },
+      {
+        "feature": "def_line_depth_m",
+        "importance": 0.0014356715814412614
+      },
+      {
+        "feature": "is_restart",
+        "importance": 0.0009151153124106989
+      },
+      {
+        "feature": "passer_speed",
+        "importance": 0.00062417280902868
+      },
+      {
+        "feature": "press_nearest_def_m",
+        "importance": 0.0006222930100558954
+      },
+      {
+        "feature": "best_option_p_success_physics",
+        "importance": 0.0005816474666272035
+      },
+      {
+        "feature": "def_compactness_m",
+        "importance": 0.00045966488933327584
+      },
+      {
+        "feature": "match_minute",
+        "importance": 0.00022211461186454843
+      },
+      {
+        "feature": "press_def_within_10m",
+        "importance": 0.00011922651812686814
+      },
+      {
+        "feature": "period",
+        "importance": 9.168029610870403e-05
+      },
+      {
+        "feature": "press_def_within_5m",
+        "importance": 3.5928270567430195e-05
+      },
+      {
+        "feature": "prev_type_challenge",
+        "importance": 0.0
+      },
+      {
+        "feature": "possession_pass_index",
+        "importance": -2.19409542206947e-05
+      },
+      {
+        "feature": "time_in_possession_s",
+        "importance": -4.691897557905084e-05
+      },
+      {
+        "feature": "att_depth_m",
+        "importance": -6.800767260381757e-05
+      }
+    ]
+  }
+}

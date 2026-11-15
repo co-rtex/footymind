@@ -1,0 +1,69 @@
+{
+  "name": "temporal_guard_skillcorner_v1_02s",
+  "description": "Leakage guard (independent review, 2026-11-14): EVERY decision-time feature, static positions/pressure/structure and temporal history, is computed 0.2 s BEFORE the release frame, so no frame near the kick can enter it (on SkillCorner the ball is already leaving the foot at the event start frame in ~32% of passes). It also guards C20/C28 (Adt -> Bdt). For SkillCorner the 0.2 s guard is the primary RQ2 analysis.",
+  "matches": [
+    "skillcorner-1874553",
+    "skillcorner-1886347",
+    "skillcorner-1899585",
+    "skillcorner-1925299",
+    "skillcorner-1927964",
+    "skillcorner-1953632",
+    "skillcorner-1959846",
+    "skillcorner-1986691",
+    "skillcorner-1996435",
+    "skillcorner-1996436",
+    "skillcorner-2006229",
+    "skillcorner-2006363",
+    "skillcorner-2007448",
+    "skillcorner-2007721",
+    "skillcorner-2010085",
+    "skillcorner-2011166",
+    "skillcorner-2013725",
+    "skillcorner-2015213",
+    "skillcorner-2016236",
+    "skillcorner-2017461"
+  ],
+  "seed": 0,
+  "dataset": {
+    "rules": "v2",
+    "include_ball_out": true,
+    "temporal_offset_s": 0.2,
+    "static_offset_s": 0.2
+  },
+  "n_boot": 1000,
+  "models": [
+    "base_rate",
+    "Adt_logreg",
+    "Adt_tob_logreg",
+    "Bdt_logreg",
+    "Bdt_tob_logreg",
+    "Bdt_tt_logreg",
+    "Bdt_tob_gbm",
+    "Bdt_tt_gbm"
+  ],
+  "comparisons": [
+    [
+      "Adt_logreg",
+      "Bdt_logreg"
+    ],
+    [
+      "Adt_logreg",
+      "Adt_tob_logreg"
+    ],
+    [
+      "Bdt_tob_logreg",
+      "Bdt_tt_logreg"
+    ],
+    [
+      "Bdt_tob_gbm",
+      "Bdt_tt_gbm"
+    ],
+    [
+      "Adt_tob_logreg",
+      "Bdt_tob_logreg"
+    ]
+  ],
+  "importances": [
+    "Bdt_tt_logreg"
+  ]
+}

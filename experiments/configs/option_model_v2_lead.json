@@ -1,0 +1,35 @@
+{
+  "name": "option_model_v2_lead",
+  "description": "Pre-specified: do lead-pass target features (receiver position + causal velocity x ball travel time) improve the option model over v1? LOMO on 3 matches; adopt only if the paired CI excludes 0.",
+  "matches": [
+    "metrica-sample-1",
+    "metrica-sample-2",
+    "metrica-sample-3"
+  ],
+  "seed": 0,
+  "dataset": {
+    "include_ball_out": true,
+    "rules": "v1"
+  },
+  "n_boot": 2000,
+  "models": [
+    "option_logreg",
+    "option_v2_logreg",
+    "A_logreg",
+    "B_logreg"
+  ],
+  "comparisons": [
+    [
+      "option_logreg",
+      "option_v2_logreg"
+    ],
+    [
+      "A_logreg",
+      "option_v2_logreg"
+    ]
+  ],
+  "calibration": [
+    "option_logreg",
+    "option_v2_logreg"
+  ]
+}

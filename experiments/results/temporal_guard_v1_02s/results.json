@@ -1,0 +1,757 @@
+{
+  "name": "temporal_guard_v1_02s",
+  "config": {
+    "name": "temporal_guard_v1_02s",
+    "description": "Leakage guard (independent review, 2026-11-14): EVERY decision-time feature, static positions/pressure/structure and temporal history, is computed 0.2 s BEFORE the release frame, so no frame near the kick can enter it (on SkillCorner the ball is already leaving the foot at the event start frame in ~32% of passes). It also guards C20/C28 (Adt -> Bdt). For SkillCorner the 0.2 s guard is the primary RQ2 analysis.",
+    "matches": [
+      "metrica-sample-1",
+      "metrica-sample-2",
+      "metrica-sample-3"
+    ],
+    "seed": 0,
+    "dataset": {
+      "rules": "v2",
+      "include_ball_out": true,
+      "temporal_offset_s": 0.2,
+      "static_offset_s": 0.2
+    },
+    "n_boot": 2000,
+    "models": [
+      "base_rate",
+      "Adt_logreg",
+      "Adt_tob_logreg",
+      "Bdt_logreg",
+      "Bdt_tob_logreg",
+      "Bdt_tt_logreg",
+      "Bdt_tob_gbm",
+      "Bdt_tt_gbm"
+    ],
+    "comparisons": [
+      [
+        "Adt_logreg",
+        "Bdt_logreg"
+      ],
+      [
+        "Adt_logreg",
+        "Adt_tob_logreg"
+      ],
+      [
+        "Bdt_tob_logreg",
+        "Bdt_tt_logreg"
+      ],
+      [
+        "Bdt_tob_gbm",
+        "Bdt_tt_gbm"
+      ],
+      [
+        "Adt_tob_logreg",
+        "Bdt_tob_logreg"
+      ]
+    ],
+    "importances": [
+      "Bdt_tt_logreg"
+    ]
+  },
+  "code_revision": "379b98eea585e3a4754166ac9bbc27bdc9e35a95",
+  "data_files_sha256": {
+    "metrica-sample-1": {
+      "Sample_Game_1_RawEventsData.csv": "097dda6345e17390dca095331458fd00e47960c480c76f4356fd4edf2575ef05",
+      "Sample_Game_1_RawTrackingData_Away_Team.csv": "0a3df68a92af0290ede472e62de3b6489ddee29223da09bdf0cf76c8e0ab0618",
+      "Sample_Game_1_RawTrackingData_Home_Team.csv": "0a3d0eff7785950379c587d3597b86a2d91c2492281b4652e1abb97c99b6b364"
+    },
+    "metrica-sample-2": {
+      "Sample_Game_2_RawEventsData.csv": "edf31a18599265b77a8baf150f2ce6d89456fb0324b62ea7a391229657a619ba",
+      "Sample_Game_2_RawTrackingData_Away_Team.csv": "aa639f40762eade46c389020fe4458266b5ba14027b1e96e22e75db62803718b",
+      "Sample_Game_2_RawTrackingData_Home_Team.csv": "3f9990ac204b07133e4202441d6fcbb386897c7c7f81e1bc3ce4d35bc8644694"
+    },
+    "metrica-sample-3": {
+      "Sample_Game_3_events.json": "28a53bfe9eaf32535362335553d517cdce0eabb588af6166009081753751f4e0",
+      "Sample_Game_3_metadata.xml": "009c7dcfcb66192014917ca1559c158f612353e390eafb85f8214b06a1c7dec1",
+      "Sample_Game_3_tracking.txt": "570e6ce82c2d93bc92723af331d93c31110bec1d6dc0be07c6d44ca3f981d658"
+    }
+  },
+  "runtime_s": 803.5,
+  "dataset": {
+    "n": 3592,
+    "success_rate": 0.7956570155902004,
+    "by_match": {
+      "metrica-sample-1": {
+        "n": 1030,
+        "success_rate": 0.7621359223300971
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "success_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "success_rate": 0.7997128499641063
+      }
+    },
+    "by_label_source": {
+      "BALL LOST": 598,
+      "BALL OUT": 136,
+      "PASS": 2858
+    },
+    "n_truncated_release": 16,
+    "receiver_inference": {
+      "n_completed": 2858,
+      "accuracy": 0.7571728481455563
+    }
+  },
+  "models": {
+    "base_rate": {
+      "family": "baseline",
+      "description": "training-set completion rate",
+      "n_features": 0
+    },
+    "Adt_logreg": {
+      "family": "A-decision",
+      "description": "decision-time event context only (no release features), LR",
+      "n_features": 13
+    },
+    "Bdt_logreg": {
+      "family": "B-decision",
+      "description": "decision-time event + spatial context (no release features), LR",
+      "n_features": 25
+    },
+    "Adt_tob_logreg": {
+      "family": "temporal",
+      "description": "decision-time events + event timing + tracking time-on-ball, LR",
+      "n_features": 16
+    },
+    "Bdt_tob_logreg": {
+      "family": "temporal",
+      "description": "decision-time spatial + event timing + time-on-ball, LR",
+      "n_features": 28
+    },
+    "Bdt_tt_logreg": {
+      "family": "temporal",
+      "description": "decision-time spatial + timing + time-on-ball + 1.0 s movement history, LR",
+      "n_features": 37
+    },
+    "Bdt_tob_gbm": {
+      "family": "temporal",
+      "description": "decision-time spatial + event timing + time-on-ball, GBM",
+      "n_features": 28
+    },
+    "Bdt_tt_gbm": {
+      "family": "temporal",
+      "description": "decision-time spatial + timing + time-on-ball + 1.0 s movement history, GBM",
+      "n_features": 37
+    }
+  },
+  "pooled_oof_metrics": {
+    "base_rate": {
+      "n": 3592,
+      "log_loss": 0.5080952033914676,
+      "brier": 0.16314656965943003,
+      "auc": 0.4624265649460475,
+      "ece": 0.02796357156192427,
+      "mean_pred": 0.7946463917705919,
+      "base_rate": 0.7956570155902004
+    },
+    "Adt_logreg": {
+      "n": 3592,
+      "log_loss": 0.4821071066263624,
+      "brier": 0.15344271000201418,
+      "auc": 0.6458490245841779,
+      "ece": 0.012630040081369417,
+      "mean_pred": 0.7968869648296014,
+      "base_rate": 0.7956570155902004
+    },
+    "Bdt_logreg": {
+      "n": 3592,
+      "log_loss": 0.45628861952204064,
+      "brier": 0.14592217184249426,
+      "auc": 0.7207051099928877,
+      "ece": 0.02121311489739394,
+      "mean_pred": 0.7965049511756792,
+      "base_rate": 0.7956570155902004
+    },
+    "Adt_tob_logreg": {
+      "n": 3592,
+      "log_loss": 0.4798369157660698,
+      "brier": 0.15271461798745986,
+      "auc": 0.6536091624828627,
+      "ece": 0.009163708535737572,
+      "mean_pred": 0.7950400492911947,
+      "base_rate": 0.7956570155902004
+    },
+    "Bdt_tob_logreg": {
+      "n": 3592,
+      "log_loss": 0.45569933185147715,
+      "brier": 0.14559356166454246,
+      "auc": 0.7209630026523378,
+      "ece": 0.017353226766080428,
+      "mean_pred": 0.795050026673897,
+      "base_rate": 0.7956570155902004
+    },
+    "Bdt_tt_logreg": {
+      "n": 3592,
+      "log_loss": 0.4419716023723105,
+      "brier": 0.14030948610184893,
+      "auc": 0.7496920542365901,
+      "ece": 0.019360793991584562,
+      "mean_pred": 0.7952994353171952,
+      "base_rate": 0.7956570155902004
+    },
+    "Bdt_tob_gbm": {
+      "n": 3592,
+      "log_loss": 0.44980202311549045,
+      "brier": 0.14446719229633015,
+      "auc": 0.7381083358916032,
+      "ece": 0.018495293254171735,
+      "mean_pred": 0.7932589029870344,
+      "base_rate": 0.7956570155902004
+    },
+    "Bdt_tt_gbm": {
+      "n": 3592,
+      "log_loss": 0.4371826449883742,
+      "brier": 0.1393195423401772,
+      "auc": 0.756422051586159,
+      "ece": 0.02139683477353698,
+      "mean_pred": 0.7965784022809262,
+      "base_rate": 0.7956570155902004
+    }
+  },
+  "fold_metrics": {
+    "base_rate": {
+      "metrica-sample-1": {
+        "n": 1030,
+        "log_loss": 0.5553597754824751,
+        "brier": 0.18349352954040668,
+        "auc": 0.5,
+        "ece": 0.04699756713126124,
+        "mean_pred": 0.8091334894613583,
+        "base_rate": 0.7621359223300971
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.47498278721823567,
+        "brier": 0.1487109636280793,
+        "auc": 0.5,
+        "ece": 0.036620115114385454,
+        "mean_pred": 0.7837391663227403,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.5009350492297808,
+        "brier": 0.16021609928846306,
+        "auc": 0.5,
+        "ece": 0.0066250827972119675,
+        "mean_pred": 0.7930877671668943,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Adt_logreg": {
+      "metrica-sample-1": {
+        "n": 1030,
+        "log_loss": 0.5360998867912262,
+        "brier": 0.1750430509179004,
+        "auc": 0.6494683478486936,
+        "ece": 0.055085823975768784,
+        "mean_pred": 0.8128619804283519,
+        "base_rate": 0.7621359223300971
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.4391272020035103,
+        "brier": 0.13631141407727576,
+        "auc": 0.6888971647052982,
+        "ece": 0.039191604212352245,
+        "mean_pred": 0.7837104879753706,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.4782527957392872,
+        "brier": 0.15184768759903955,
+        "auc": 0.6355990553592916,
+        "ece": 0.01468771950357343,
+        "mean_pred": 0.7961325035057563,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_logreg": {
+      "metrica-sample-1": {
+        "n": 1030,
+        "log_loss": 0.5090092132308788,
+        "brier": 0.16464287753043005,
+        "auc": 0.7104120629143378,
+        "ece": 0.05983622703204616,
+        "mean_pred": 0.8170015659936969,
+        "base_rate": 0.7621359223300971
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.41700997173887083,
+        "brier": 0.13137535264843161,
+        "auc": 0.7428571428571429,
+        "ece": 0.03174063047908373,
+        "mean_pred": 0.7891952340394277,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.45026889786979535,
+        "brier": 0.14428750190658995,
+        "auc": 0.726504636332632,
+        "ece": 0.03781904673765812,
+        "mean_pred": 0.7874838069328363,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Adt_tob_logreg": {
+      "metrica-sample-1": {
+        "n": 1030,
+        "log_loss": 0.5331084516226411,
+        "brier": 0.1737247254505021,
+        "auc": 0.6556973872351488,
+        "ece": 0.0591853497071335,
+        "mean_pred": 0.8163515565900259,
+        "base_rate": 0.7621359223300971
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.43620495531151854,
+        "brier": 0.1352927607991134,
+        "auc": 0.6950593376036547,
+        "ece": 0.040854395647370444,
+        "mean_pred": 0.7876717445174897,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.47706310373383876,
+        "brier": 0.15179985873853197,
+        "auc": 0.6476676769431735,
+        "ece": 0.015927491134670988,
+        "mean_pred": 0.785465530815003,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_tob_logreg": {
+      "metrica-sample-1": {
+        "n": 1030,
+        "log_loss": 0.5069512739120686,
+        "brier": 0.1634814158933838,
+        "auc": 0.7142961133497985,
+        "ece": 0.06318297199390713,
+        "mean_pred": 0.8186181494351896,
+        "base_rate": 0.7621359223300971
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.41700270613122553,
+        "brier": 0.1312532514838967,
+        "auc": 0.7404389493023487,
+        "ece": 0.030057553780219022,
+        "mean_pred": 0.7909806219618335,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.4502771173106049,
+        "brier": 0.1444014100101766,
+        "auc": 0.7257067109386562,
+        "ece": 0.027631255771874023,
+        "mean_pred": 0.7810385174594467,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_tt_logreg": {
+      "metrica-sample-1": {
+        "n": 1030,
+        "log_loss": 0.4814316628716904,
+        "brier": 0.1530875406790282,
+        "auc": 0.7516859482646561,
+        "ece": 0.05538662607616167,
+        "mean_pred": 0.8129356148263133,
+        "base_rate": 0.7621359223300971
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.40162652095113277,
+        "brier": 0.1266248120795115,
+        "auc": 0.7777546054918316,
+        "ece": 0.036674172788484484,
+        "mean_pred": 0.7836851086486412,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.4466518162036064,
+        "brier": 0.14234537103911937,
+        "auc": 0.7385185614177332,
+        "ece": 0.028619373420462127,
+        "mean_pred": 0.7920057404005749,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_tob_gbm": {
+      "metrica-sample-1": {
+        "n": 1030,
+        "log_loss": 0.49450956239407234,
+        "brier": 0.16095032474685517,
+        "auc": 0.7415728584427402,
+        "ece": 0.059230523867158796,
+        "mean_pred": 0.8108605174320987,
+        "base_rate": 0.7621359223300971
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.41903278245540193,
+        "brier": 0.1336552106837519,
+        "auc": 0.7471820845126371,
+        "ece": 0.03895458083858198,
+        "mean_pred": 0.7819433187420307,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.44256618454743885,
+        "brier": 0.14135274870771802,
+        "auc": 0.7406485074290714,
+        "ece": 0.021464663363340655,
+        "mean_pred": 0.7897400624299581,
+        "base_rate": 0.7997128499641063
+      }
+    },
+    "Bdt_tt_gbm": {
+      "metrica-sample-1": {
+        "n": 1030,
+        "log_loss": 0.48024869756856525,
+        "brier": 0.15432794925186127,
+        "auc": 0.75515923566879,
+        "ece": 0.05470904021584064,
+        "mean_pred": 0.8130269612285945,
+        "base_rate": 0.7621359223300971
+      },
+      "metrica-sample-2": {
+        "n": 1169,
+        "log_loss": 0.40361469882354184,
+        "brier": 0.1275073820660413,
+        "auc": 0.7743333829882317,
+        "ece": 0.038818687398642346,
+        "mean_pred": 0.7815405940384833,
+        "base_rate": 0.8203592814371258
+      },
+      "metrica-sample-3": {
+        "n": 1393,
+        "log_loss": 0.43350920271205856,
+        "brier": 0.13813487345391037,
+        "auc": 0.7567871920104503,
+        "ece": 0.028998298231499173,
+        "mean_pred": 0.7970358194520087,
+        "base_rate": 0.7997128499641063
+      }
+    }
+  },
+  "comparisons": [
+    {
+      "a": "Adt_logreg",
+      "b": "Bdt_logreg",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.025818487104321775,
+        "ci95": [
+          -0.03437601985622973,
+          -0.017643942023627412
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.007520538159519918,
+        "ci95": [
+          -0.010557276732959987,
+          -0.0046638687791948795
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.0748560854087098,
+        "ci95": [
+          0.057268155366842766,
+          0.09327886513770779
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Adt_logreg",
+      "b": "Adt_tob_logreg",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.00227019086029262,
+        "ci95": [
+          -0.005102107444089595,
+          0.0005105106390620002
+        ],
+        "share_improved": 0.941
+      },
+      "brier": {
+        "delta": -0.0007280920145543157,
+        "ci95": [
+          -0.0016613755438810926,
+          0.0001764683740199807
+        ],
+        "share_improved": 0.941
+      },
+      "auc": {
+        "delta": 0.0077601378986847935,
+        "ci95": [
+          -0.0016042101947871812,
+          0.01723434589353638
+        ],
+        "share_improved": 0.9505
+      }
+    },
+    {
+      "a": "Bdt_tob_logreg",
+      "b": "Bdt_tt_logreg",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.013727729479166673,
+        "ci95": [
+          -0.02056571161602032,
+          -0.006701238804692038
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.00528407556269353,
+        "ci95": [
+          -0.00789957783496326,
+          -0.002688259896510426
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.02872905158425232,
+        "ci95": [
+          0.018881263771650975,
+          0.03919082127118886
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Bdt_tob_gbm",
+      "b": "Bdt_tt_gbm",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.01261937812711622,
+        "ci95": [
+          -0.019415973373979354,
+          -0.0060342523544749185
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.005147649956152939,
+        "ci95": [
+          -0.0076333303029923315,
+          -0.0027137494274040853
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.018313715694555865,
+        "ci95": [
+          0.00885069245531768,
+          0.028361360434146235
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "Adt_tob_logreg",
+      "b": "Bdt_tob_logreg",
+      "n_boot": 2000,
+      "n_groups": 979,
+      "log_loss": {
+        "delta": -0.024137583914592642,
+        "ci95": [
+          -0.032247603583094,
+          -0.016089829278451834
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.007121056322917402,
+        "ci95": [
+          -0.010046675260423054,
+          -0.004368011970084267
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.0673538401694751,
+        "ci95": [
+          0.050258741831795656,
+          0.08539548762723838
+        ],
+        "share_improved": 1.0
+      }
+    }
+  ],
+  "calibration": {},
+  "permutation_importance": {
+    "Bdt_tt_logreg": [
+      {
+        "feature": "dist_to_goal",
+        "importance": 0.15179847017323453
+      },
+      {
+        "feature": "ball_x_att",
+        "importance": 0.02752014459257632
+      },
+      {
+        "feature": "passer_fwd_m_l10",
+        "importance": 0.025727763553603757
+      },
+      {
+        "feature": "ball_travel_m_l10",
+        "importance": 0.023275195643033254
+      },
+      {
+        "feature": "att_width_m",
+        "importance": 0.018094721929201845
+      },
+      {
+        "feature": "prev_type_pass",
+        "importance": 0.015937841980695717
+      },
+      {
+        "feature": "press_nearest_def_change_m_l10",
+        "importance": 0.012578141266728524
+      },
+      {
+        "feature": "def_line_depth_change_m_l10",
+        "importance": 0.011933783398989066
+      },
+      {
+        "feature": "att_depth_m",
+        "importance": 0.011442266795419148
+      },
+      {
+        "feature": "n_options_over_0_5",
+        "importance": 0.010238178976065103
+      },
+      {
+        "feature": "def_goal_side_of_ball",
+        "importance": 0.009266707725309745
+      },
+      {
+        "feature": "press_def_within_5m",
+        "importance": 0.008770442329936573
+      },
+      {
+        "feature": "def_centroid_fwd_m_l10",
+        "importance": 0.0074196501469877595
+      },
+      {
+        "feature": "att_centroid_fwd_m_l10",
+        "importance": 0.0068726553193898705
+      },
+      {
+        "feature": "match_minute",
+        "importance": 0.006233093131600133
+      },
+      {
+        "feature": "angle_to_goal",
+        "importance": 0.004414844815247082
+      },
+      {
+        "feature": "ball_y_abs",
+        "importance": 0.004151610059787869
+      },
+      {
+        "feature": "passer_control_s",
+        "importance": 0.004056272318266794
+      },
+      {
+        "feature": "quick_release",
+        "importance": 0.003734803077204104
+      },
+      {
+        "feature": "period",
+        "importance": 0.0036302891069442734
+      },
+      {
+        "feature": "prev_type_recovery",
+        "importance": 0.0034431585807559485
+      },
+      {
+        "feature": "press_closing_speed",
+        "importance": 0.0028393717768456783
+      },
+      {
+        "feature": "time_in_possession_s",
+        "importance": 0.0026313125066189363
+      },
+      {
+        "feature": "press_def_within_10m",
+        "importance": 0.0023562704787734572
+      },
+      {
+        "feature": "is_restart",
+        "importance": 0.002213286063082089
+      },
+      {
+        "feature": "def_line_depth_m",
+        "importance": 0.0019541112669327733
+      },
+      {
+        "feature": "def_compactness_change_m_l10",
+        "importance": 0.0015652774984684517
+      },
+      {
+        "feature": "def_compactness_m",
+        "importance": 0.0013635052465708376
+      },
+      {
+        "feature": "time_since_prev_event_s",
+        "importance": 0.0013351667554734623
+      },
+      {
+        "feature": "press_def_within_5m_change_l10",
+        "importance": 0.0009671118384552295
+      },
+      {
+        "feature": "is_goal_kick",
+        "importance": 0.0005819459671440504
+      },
+      {
+        "feature": "possession_pass_index",
+        "importance": 0.0005282343413590388
+      },
+      {
+        "feature": "prev_type_challenge",
+        "importance": -9.05649059129617e-05
+      },
+      {
+        "feature": "passer_speed",
+        "importance": -9.24440419269368e-05
+      },
+      {
+        "feature": "open_lanes_change_l10",
+        "importance": -0.0001510570214142748
+      },
+      {
+        "feature": "press_nearest_def_m",
+        "importance": -0.00030950205724157483
+      },
+      {
+        "feature": "best_option_p_success_physics",
+        "importance": -0.0010323453181726395
+      }
+    ]
+  }
+}

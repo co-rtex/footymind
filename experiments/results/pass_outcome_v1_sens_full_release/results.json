@@ -1,0 +1,418 @@
+{
+  "name": "pass_outcome_v1_sens_full_release",
+  "config": {
+    "name": "pass_outcome_v1_sens_full_release",
+    "description": "Leakage sensitivity: drop attempts whose release window had to be truncated before the outcome frame (resolved within 0.12 s).",
+    "matches": [
+      "metrica-sample-1",
+      "metrica-sample-2"
+    ],
+    "seed": 0,
+    "dataset": {
+      "include_ball_out": true
+    },
+    "filters": [
+      "exclude_truncated_release"
+    ],
+    "n_boot": 2000,
+    "models": [
+      "base_rate",
+      "A_logreg",
+      "A_gbm",
+      "B_logreg",
+      "B_gbm",
+      "C_gbm",
+      "abl_A+defender_only_logreg"
+    ],
+    "comparisons": [
+      [
+        "A_logreg",
+        "B_logreg"
+      ],
+      [
+        "A_gbm",
+        "B_gbm"
+      ],
+      [
+        "A_logreg",
+        "abl_A+defender_only_logreg"
+      ]
+    ]
+  },
+  "code_revision": "a9f8c81b81cfe573f50a27de5361060d92956b33",
+  "data_files_sha256": {
+    "metrica-sample-1": {
+      "Sample_Game_1_RawEventsData.csv": "097dda6345e17390dca095331458fd00e47960c480c76f4356fd4edf2575ef05",
+      "Sample_Game_1_RawTrackingData_Away_Team.csv": "0a3df68a92af0290ede472e62de3b6489ddee29223da09bdf0cf76c8e0ab0618",
+      "Sample_Game_1_RawTrackingData_Home_Team.csv": "0a3d0eff7785950379c587d3597b86a2d91c2492281b4652e1abb97c99b6b364"
+    },
+    "metrica-sample-2": {
+      "Sample_Game_2_RawEventsData.csv": "edf31a18599265b77a8baf150f2ce6d89456fb0324b62ea7a391229657a619ba",
+      "Sample_Game_2_RawTrackingData_Away_Team.csv": "aa639f40762eade46c389020fe4458266b5ba14027b1e96e22e75db62803718b",
+      "Sample_Game_2_RawTrackingData_Home_Team.csv": "3f9990ac204b07133e4202441d6fcbb386897c7c7f81e1bc3ce4d35bc8644694"
+    }
+  },
+  "runtime_s": 43.5,
+  "dataset": {
+    "n": 2214,
+    "success_rate": 0.7940379403794038,
+    "by_match": {
+      "metrica-sample-1": {
+        "n": 1042,
+        "success_rate": 0.7629558541266794
+      },
+      "metrica-sample-2": {
+        "n": 1172,
+        "success_rate": 0.8216723549488054
+      }
+    },
+    "by_label_source": {
+      "BALL LOST": 370,
+      "BALL OUT": 86,
+      "PASS": 1758
+    },
+    "n_truncated_release": 0,
+    "receiver_inference": {
+      "n_completed": 1758,
+      "accuracy": 0.785551763367463
+    }
+  },
+  "models": {
+    "base_rate": {
+      "family": "baseline",
+      "description": "training-set completion rate",
+      "n_features": 0
+    },
+    "A_logreg": {
+      "family": "A",
+      "description": "event features, logistic regression",
+      "n_features": 18
+    },
+    "A_gbm": {
+      "family": "A",
+      "description": "event features, gradient boosting",
+      "n_features": 18
+    },
+    "B_logreg": {
+      "family": "B",
+      "description": "event + spatial, logistic regression",
+      "n_features": 34
+    },
+    "B_gbm": {
+      "family": "B",
+      "description": "event + spatial, gradient boosting",
+      "n_features": 34
+    },
+    "C_gbm": {
+      "family": "C",
+      "description": "event + spatial + interaction, gradient boosting",
+      "n_features": 45
+    },
+    "abl_A+defender_only_logreg": {
+      "family": "ablation",
+      "description": "A+defender_only",
+      "n_features": 25
+    }
+  },
+  "pooled_oof_metrics": {
+    "base_rate": {
+      "n": 2214,
+      "log_loss": 0.5164460189935524,
+      "brier": 0.16613038182904322,
+      "auc": 0.4552758816837315,
+      "ece": 0.05871650082212614,
+      "mean_pred": 0.7905902686960813,
+      "base_rate": 0.7940379403794038
+    },
+    "A_logreg": {
+      "n": 2214,
+      "log_loss": 0.43402346787393126,
+      "brier": 0.14050389604970093,
+      "auc": 0.7755972696245734,
+      "ece": 0.03692888615820105,
+      "mean_pred": 0.7954556945473873,
+      "base_rate": 0.7940379403794038
+    },
+    "A_gbm": {
+      "n": 2214,
+      "log_loss": 0.42343699397485596,
+      "brier": 0.1377028523789401,
+      "auc": 0.7913984691535437,
+      "ece": 0.033562992389000665,
+      "mean_pred": 0.7972587960576785,
+      "base_rate": 0.7940379403794038
+    },
+    "B_logreg": {
+      "n": 2214,
+      "log_loss": 0.3721176774367638,
+      "brier": 0.1176056782022036,
+      "auc": 0.8579039678262779,
+      "ece": 0.035370896778446625,
+      "mean_pred": 0.8014919571615635,
+      "base_rate": 0.7940379403794038
+    },
+    "B_gbm": {
+      "n": 2214,
+      "log_loss": 0.3692036561906182,
+      "brier": 0.1196050176727864,
+      "auc": 0.8568686006825939,
+      "ece": 0.03817532520549838,
+      "mean_pred": 0.803562068364747,
+      "base_rate": 0.7940379403794038
+    },
+    "C_gbm": {
+      "n": 2214,
+      "log_loss": 0.36666156069993655,
+      "brier": 0.11833477388180164,
+      "auc": 0.8571255713230744,
+      "ece": 0.03736973423767845,
+      "mean_pred": 0.8009208507558302,
+      "base_rate": 0.7940379403794038
+    },
+    "abl_A+defender_only_logreg": {
+      "n": 2214,
+      "log_loss": 0.4224826262343065,
+      "brier": 0.13769676405649106,
+      "auc": 0.8009500429116022,
+      "ece": 0.05010702111287429,
+      "mean_pred": 0.7974761598747655,
+      "base_rate": 0.7940379403794038
+    }
+  },
+  "fold_metrics": {
+    "base_rate": {
+      "metrica-sample-1": {
+        "n": 1042,
+        "log_loss": 0.5585504417158274,
+        "brier": 0.18430184624930315,
+        "auc": 0.5,
+        "ece": 0.058716500822126316,
+        "mean_pred": 0.8216723549488057,
+        "base_rate": 0.7629558541266794
+      },
+      "metrica-sample-2": {
+        "n": 1172,
+        "log_loss": 0.4790118820681169,
+        "brier": 0.14997452353048446,
+        "auc": 0.5,
+        "ece": 0.05871650082212598,
+        "mean_pred": 0.7629558541266794,
+        "base_rate": 0.8216723549488054
+      }
+    },
+    "A_logreg": {
+      "metrica-sample-1": {
+        "n": 1042,
+        "log_loss": 0.46289724491052664,
+        "brier": 0.15196431920319992,
+        "auc": 0.7831690983627427,
+        "ece": 0.059493697029031706,
+        "mean_pred": 0.8062430959987681,
+        "base_rate": 0.7629558541266794
+      },
+      "metrica-sample-2": {
+        "n": 1172,
+        "log_loss": 0.4083524135461732,
+        "brier": 0.1303146802425798,
+        "auc": 0.7771567122280354,
+        "ece": 0.047127883193940664,
+        "mean_pred": 0.7858648478645044,
+        "base_rate": 0.8216723549488054
+      }
+    },
+    "A_gbm": {
+      "metrica-sample-1": {
+        "n": 1042,
+        "log_loss": 0.45452300783864585,
+        "brier": 0.1499279357087388,
+        "auc": 0.7939704122425076,
+        "ece": 0.05276218411018756,
+        "mean_pred": 0.8011376188612406,
+        "base_rate": 0.7629558541266794
+      },
+      "metrica-sample-2": {
+        "n": 1172,
+        "log_loss": 0.3957990874509063,
+        "brier": 0.12683379365056957,
+        "auc": 0.7927131621179826,
+        "ece": 0.03610295320981296,
+        "mean_pred": 0.7938102181043408,
+        "base_rate": 0.8216723549488054
+      }
+    },
+    "B_logreg": {
+      "metrica-sample-1": {
+        "n": 1042,
+        "log_loss": 0.4139313624549606,
+        "brier": 0.13204865299253307,
+        "auc": 0.8485880885086446,
+        "ece": 0.056366226933247235,
+        "mean_pred": 0.7979744259785618,
+        "base_rate": 0.7629558541266794
+      },
+      "metrica-sample-2": {
+        "n": 1172,
+        "log_loss": 0.33494202915266735,
+        "brier": 0.1047647398647264,
+        "auc": 0.8711512567882465,
+        "ece": 0.029348052360138325,
+        "mean_pred": 0.8046193185034474,
+        "base_rate": 0.8216723549488054
+      }
+    },
+    "B_gbm": {
+      "metrica-sample-1": {
+        "n": 1042,
+        "log_loss": 0.40851233581921537,
+        "brier": 0.1332054478752777,
+        "auc": 0.8498510427010924,
+        "ece": 0.05855806310442254,
+        "mean_pred": 0.8012939865860249,
+        "base_rate": 0.7629558541266794
+      },
+      "metrica-sample-2": {
+        "n": 1172,
+        "log_loss": 0.3342551543365241,
+        "brier": 0.10751316761220968,
+        "auc": 0.8668932313792126,
+        "ece": 0.029476093520613214,
+        "mean_pred": 0.8055785711065803,
+        "base_rate": 0.8216723549488054
+      }
+    },
+    "C_gbm": {
+      "metrica-sample-1": {
+        "n": 1042,
+        "log_loss": 0.4111002899026971,
+        "brier": 0.13315491406101254,
+        "auc": 0.8462404196267157,
+        "ece": 0.05778740366987861,
+        "mean_pred": 0.7998082063346635,
+        "base_rate": 0.7629558541266794
+      },
+      "metrica-sample-2": {
+        "n": 1172,
+        "log_loss": 0.32715204207427406,
+        "brier": 0.10515850590676945,
+        "auc": 0.8718716928259476,
+        "ece": 0.030577750625018787,
+        "mean_pred": 0.8019100789869359,
+        "base_rate": 0.8216723549488054
+      }
+    },
+    "abl_A+defender_only_logreg": {
+      "metrica-sample-1": {
+        "n": 1042,
+        "log_loss": 0.458805580493525,
+        "brier": 0.15280566462968484,
+        "auc": 0.8033407175413134,
+        "ece": 0.07384608646164731,
+        "mean_pred": 0.8089507407156694,
+        "base_rate": 0.7629558541266794
+      },
+      "metrica-sample-2": {
+        "n": 1172,
+        "log_loss": 0.39018866860793644,
+        "brier": 0.12426376542400994,
+        "auc": 0.8095117431074146,
+        "ece": 0.048028335578046026,
+        "mean_pred": 0.787274356772187,
+        "base_rate": 0.8216723549488054
+      }
+    }
+  },
+  "comparisons": [
+    {
+      "a": "A_logreg",
+      "b": "B_logreg",
+      "n_boot": 2000,
+      "n_groups": 623,
+      "log_loss": {
+        "delta": -0.06190579043716743,
+        "ci95": [
+          -0.08274620967592673,
+          -0.04253363975884617
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.02289821784749732,
+        "ci95": [
+          -0.030051486110345818,
+          -0.01627025684037017
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.08230669820170444,
+        "ci95": [
+          0.06328724928250085,
+          0.10225561266493553
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "A_gbm",
+      "b": "B_gbm",
+      "n_boot": 2000,
+      "n_groups": 623,
+      "log_loss": {
+        "delta": -0.05423333778423778,
+        "ci95": [
+          -0.07313759808400733,
+          -0.03462719407296028
+        ],
+        "share_improved": 1.0
+      },
+      "brier": {
+        "delta": -0.018097834706153684,
+        "ci95": [
+          -0.025034699700458275,
+          -0.011405006868510205
+        ],
+        "share_improved": 1.0
+      },
+      "auc": {
+        "delta": 0.06547013152905012,
+        "ci95": [
+          0.046991785951894495,
+          0.08439910995317007
+        ],
+        "share_improved": 1.0
+      }
+    },
+    {
+      "a": "A_logreg",
+      "b": "abl_A+defender_only_logreg",
+      "n_boot": 2000,
+      "n_groups": 623,
+      "log_loss": {
+        "delta": -0.011540841639624766,
+        "ci95": [
+          -0.022073433513411615,
+          -0.0008596748029695748
+        ],
+        "share_improved": 0.983
+      },
+      "brier": {
+        "delta": -0.002807131993209866,
+        "ci95": [
+          -0.006778069936630104,
+          0.0008856458117775627
+        ],
+        "share_improved": 0.92
+      },
+      "auc": {
+        "delta": 0.025352773287028785,
+        "ci95": [
+          0.011353256768594522,
+          0.03907568052313139
+        ],
+        "share_improved": 1.0
+      }
+    }
+  ],
+  "calibration": {},
+  "permutation_importance": {}
+}

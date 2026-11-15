@@ -1,0 +1,159 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python lint, types, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run ruff check src tests scripts
+      - run: uv run ruff format --check src tests scripts
+      - run: uv run mypy
+      - run: uv run mypy scripts
+      # Real-data tests skip automatically when data is absent.
+      - run: uv run pytest -q
+
+  data:
+    name: Real-data ingestion, tests and browser tests (Metrica sample)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Cache raw provider data (checksum-verified on use)
+        uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: raw-${{ hashFiles('src/footymind/data/sources.py') }}
+      # Metrica only (~180 MB); SkillCorner (~1.8 GB) is too large for every CI run.
+      - run: uv run footymind download metrica-sample-1 metrica-sample-2 metrica-sample-3
+      - run: uv run footymind ingest metrica-sample-1 metrica-sample-2 metrica-sample-3
+      - run: uv run pytest -q
+      # Browser tests against the real API on the Metrica data above: every Playwright test
+      # except those tagged @skillcorner (broadcast data is too large for every CI run).
+      - run: uv run footymind build-similarity-index --provider metrica
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: npx playwright test --trace off --grep-invert @skillcorner
+        working-directory: web
+
+  legacy:
+    name: Legacy v1 predictor (historical reproduction)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Pinned to the set verified with the legacy tests (Python 3.12, 2026-11-14). The historical
+      # pins in legacy/requirements.txt do not install on current Python (legacy README).
+      - run: >-
+          pip install pandas==3.1.1 numpy==2.5.4 scikit-learn==1.9.1 joblib==1.6.0
+          fastapi==0.162.7 pytest==9.2.0 matplotlib==3.11.2 seaborn==0.13.2
+      - run: cd legacy/match_outcome_predictor && PYTHONPATH=. pytest -q tests
+
+  web:
+    name: Web typecheck, lint, unit tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npm audit --omit=dev
+
+  docker:
+    name: Docker image builds, starts and serves (Metrica sample)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [python, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: footymind:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # First start on an EMPTY volume, as documented: the entrypoint downloads two Metrica games
+      # (checksum-verified, ~120 MB), ingests them and builds the similar-moments index; then the
+      # smoke checks call the real API (analysis, scenario with a response policy, similar moments
+      # with the validated estimate) and the web lab. No data is faked or baked into the image.
+      - name: Start the container
+        run: |
+          docker run -d --name fm -p 127.0.0.1:8000:8000 -v fm-data:/data \
+            -e FOOTYMIND_SOURCES="metrica-sample-1 metrica-sample-2" footymind:ci
+      # Fails fast if the container exits (e.g. a failed download or ingest), instead of
+      # polling a dead port until the timeout.
+      - name: Wait for the API
+        run: |
+          deadline=$((SECONDS + 900))
+          until curl -sf http://127.0.0.1:8000/api/health >/dev/null; do
+            if [ "$(docker inspect -f '{{.State.Running}}' fm)" != true ]; then
+              echo "container exited: $(docker inspect -f '{{.State.Status}} (exit {{.State.ExitCode}})' fm)"
+              exit 1
+            fi
+            [ "$SECONDS" -lt "$deadline" ] || { echo "no health after 900 s"; exit 1; }
+            sleep 3
+          done
+      - name: Smoke-check the running container
+        run: |
+          python3 scripts/smoke_api.py http://127.0.0.1:8000 --wait 60 \
+            --expect-matches metrica-sample-1 metrica-sample-2 --require-similar
+      - name: Docker HEALTHCHECK reports healthy
+        run: |
+          timeout 120 sh -c 'until [ "$(docker inspect -f "{{.State.Health.Status}}" fm)" = healthy ]; do sleep 3; done'
+      # The entrypoint's recovery paths on a second, separate volume, through the real image:
+      # restart on a healthy volume (no re-ingest), an outdated pipeline-version bundle, an
+      # interrupted first start (partial bundle, no index) and an unknown source id plus an
+      # unreadable bundle file. Every check reads the real API (scripts/container_recovery.py).
+      - name: Entrypoint recovery on existing volumes
+        run: python3 scripts/container_recovery.py docker --image footymind:ci --port 8011
+      - name: Container logs
+        if: always()
+        run: docker logs fm 2>&1 | tail -n 100; docker rm -f fm || true

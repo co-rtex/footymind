@@ -1,0 +1,12 @@
+.git
+.venv
+data
+experiments/results/*/oof_predictions.parquet
+legacy
+web/node_modules
+web/dist
+web/test-results
+web/playwright-report
+web/screenshots
+.claude
+**/__pycache__

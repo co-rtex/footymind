@@ -1,0 +1,402 @@
+{
+  "name": "shadow_stability_v1",
+  "code_revision": "39ce3a41fcdb3279216d00d94b2a94c6d3dbeb05",
+  "n_frames": 30,
+  "runtime_s": 118.3,
+  "summary": {
+    "noise_0.1_rho": {
+      "mean": 0.9488215488215485,
+      "median": 0.9717171717171715
+    },
+    "noise_0.1_mean_abs_change": {
+      "mean": 0.011323722125408038,
+      "median": 0.00987961696992882
+    },
+    "noise_0.3_rho": {
+      "mean": 0.8421548821548821,
+      "median": 0.8828282828282827
+    },
+    "noise_0.3_mean_abs_change": {
+      "mean": 0.024862463383601527,
+      "median": 0.018969313977908783
+    },
+    "ring_0.3_rho": {
+      "mean": 0.8537373737373737,
+      "median": 0.8787878787878788
+    },
+    "ring_0.7_rho": {
+      "mean": 0.8961616161616158,
+      "median": 0.9333333333333333
+    },
+    "vs_lane_presence_rho": {
+      "mean": 0.2618181818181818,
+      "median": 0.30303030303030304
+    },
+    "mean_abs_shadow": {
+      "mean": 0.07792587337427778,
+      "median": 0.07272107680791687
+    }
+  },
+  "frames": [
+    {
+      "match_id": "metrica-sample-1",
+      "frame": 52026,
+      "noise_0.1_rho": 0.9919191919191919,
+      "noise_0.1_mean_abs_change": 0.0029983083642985517,
+      "noise_0.3_rho": 0.9191919191919191,
+      "noise_0.3_mean_abs_change": 0.013461068463326774,
+      "ring_0.3_rho": 0.8909090909090909,
+      "ring_0.7_rho": 0.9515151515151514,
+      "vs_lane_presence_rho": 0.11515151515151514,
+      "mean_abs_shadow": 0.03439213727891825
+    },
+    {
+      "match_id": "metrica-sample-1",
+      "frame": 59705,
+      "noise_0.1_rho": 0.9878787878787878,
+      "noise_0.1_mean_abs_change": 0.006476555534351884,
+      "noise_0.3_rho": 0.7494949494949493,
+      "noise_0.3_mean_abs_change": 0.022143822538508304,
+      "ring_0.3_rho": 0.9030303030303028,
+      "ring_0.7_rho": 0.709090909090909,
+      "vs_lane_presence_rho": 0.38181818181818183,
+      "mean_abs_shadow": 0.04794621361429589
+    },
+    {
+      "match_id": "metrica-sample-1",
+      "frame": 55799,
+      "noise_0.1_rho": 0.8626262626262625,
+      "noise_0.1_mean_abs_change": 0.02674609111960316,
+      "noise_0.3_rho": 0.6686868686868687,
+      "noise_0.3_mean_abs_change": 0.0693179128710855,
+      "ring_0.3_rho": 0.9757575757575757,
+      "ring_0.7_rho": 0.9030303030303028,
+      "vs_lane_presence_rho": 0.07878787878787878,
+      "mean_abs_shadow": 0.16749412606905886
+    },
+    {
+      "match_id": "metrica-sample-1",
+      "frame": 784,
+      "noise_0.1_rho": 0.9999999999999999,
+      "noise_0.1_mean_abs_change": 0.005815607063432034,
+      "noise_0.3_rho": 0.9555555555555554,
+      "noise_0.3_mean_abs_change": 0.0183377328048147,
+      "ring_0.3_rho": 0.9999999999999999,
+      "ring_0.7_rho": 0.9636363636363635,
+      "vs_lane_presence_rho": 0.43030303030303024,
+      "mean_abs_shadow": 0.10297158446271056
+    },
+    {
+      "match_id": "metrica-sample-1",
+      "frame": 74749,
+      "noise_0.1_rho": 0.8383838383838382,
+      "noise_0.1_mean_abs_change": 0.007420839982621233,
+      "noise_0.3_rho": 0.8101010101010101,
+      "noise_0.3_mean_abs_change": 0.017051139764905594,
+      "ring_0.3_rho": 0.9030303030303028,
+      "ring_0.7_rho": 0.43030303030303024,
+      "vs_lane_presence_rho": 0.38181818181818183,
+      "mean_abs_shadow": 0.022708688786833787
+    },
+    {
+      "match_id": "metrica-sample-1",
+      "frame": 2263,
+      "noise_0.1_rho": 0.9353535353535353,
+      "noise_0.1_mean_abs_change": 0.016017411425617984,
+      "noise_0.3_rho": 0.8787878787878788,
+      "noise_0.3_mean_abs_change": 0.048328646959387635,
+      "ring_0.3_rho": 0.7939393939393938,
+      "ring_0.7_rho": 0.9030303030303028,
+      "vs_lane_presence_rho": 0.2606060606060606,
+      "mean_abs_shadow": 0.09950236120425923
+    },
+    {
+      "match_id": "metrica-sample-1",
+      "frame": 124219,
+      "noise_0.1_rho": 0.9595959595959594,
+      "noise_0.1_mean_abs_change": 0.0113042397940568,
+      "noise_0.3_rho": 0.7292929292929292,
+      "noise_0.3_mean_abs_change": 0.03004307828490752,
+      "ring_0.3_rho": 0.709090909090909,
+      "ring_0.7_rho": 0.9151515151515152,
+      "vs_lane_presence_rho": 0.49090909090909085,
+      "mean_abs_shadow": 0.11292391268064428
+    },
+    {
+      "match_id": "metrica-sample-1",
+      "frame": 123349,
+      "noise_0.1_rho": 0.9959595959595958,
+      "noise_0.1_mean_abs_change": 0.0026477055791368424,
+      "noise_0.3_rho": 0.8707070707070707,
+      "noise_0.3_mean_abs_change": 0.017989091758512463,
+      "ring_0.3_rho": 0.7939393939393938,
+      "ring_0.7_rho": 0.9515151515151514,
+      "vs_lane_presence_rho": 0.4666666666666666,
+      "mean_abs_shadow": 0.051546357318498257
+    },
+    {
+      "match_id": "metrica-sample-1",
+      "frame": 47995,
+      "noise_0.1_rho": 0.9838383838383837,
+      "noise_0.1_mean_abs_change": 0.012351069991046485,
+      "noise_0.3_rho": 0.911111111111111,
+      "noise_0.3_mean_abs_change": 0.02378605797823032,
+      "ring_0.3_rho": 0.8545454545454544,
+      "ring_0.7_rho": 0.9515151515151514,
+      "vs_lane_presence_rho": 0.11515151515151514,
+      "mean_abs_shadow": 0.08993947811024175
+    },
+    {
+      "match_id": "metrica-sample-1",
+      "frame": 13625,
+      "noise_0.1_rho": 0.9838383838383837,
+      "noise_0.1_mean_abs_change": 0.01530423210455698,
+      "noise_0.3_rho": 0.8989898989898989,
+      "noise_0.3_mean_abs_change": 0.03075626208572796,
+      "ring_0.3_rho": 0.8545454545454544,
+      "ring_0.7_rho": 0.9878787878787878,
+      "vs_lane_presence_rho": -0.6121212121212121,
+      "mean_abs_shadow": 0.12355815551738339
+    },
+    {
+      "match_id": "metrica-sample-1",
+      "frame": 51630,
+      "noise_0.1_rho": 0.8343434343434343,
+      "noise_0.1_mean_abs_change": 0.00872685620545545,
+      "noise_0.3_rho": 0.6404040404040403,
+      "noise_0.3_mean_abs_change": 0.016924335329923736,
+      "ring_0.3_rho": 0.9030303030303028,
+      "ring_0.7_rho": 0.8787878787878788,
+      "vs_lane_presence_rho": 0.43030303030303024,
+      "mean_abs_shadow": 0.03099916389518258
+    },
+    {
+      "match_id": "metrica-sample-1",
+      "frame": 143578,
+      "noise_0.1_rho": 0.9838383838383837,
+      "noise_0.1_mean_abs_change": 0.009056006967654481,
+      "noise_0.3_rho": 0.8626262626262625,
+      "noise_0.3_mean_abs_change": 0.03680457030841679,
+      "ring_0.3_rho": 0.8787878787878788,
+      "ring_0.7_rho": 0.9030303030303028,
+      "vs_lane_presence_rho": 0.4424242424242424,
+      "mean_abs_shadow": 0.07823753425715489
+    },
+    {
+      "match_id": "metrica-sample-1",
+      "frame": 18252,
+      "noise_0.1_rho": 0.9838383838383837,
+      "noise_0.1_mean_abs_change": 0.018220894141722756,
+      "noise_0.3_rho": 0.8868686868686867,
+      "noise_0.3_mean_abs_change": 0.0368706721988711,
+      "ring_0.3_rho": 0.7212121212121211,
+      "ring_0.7_rho": 0.9999999999999999,
+      "vs_lane_presence_rho": -0.309090909090909,
+      "mean_abs_shadow": 0.1500194888302568
+    },
+    {
+      "match_id": "metrica-sample-1",
+      "frame": 16045,
+      "noise_0.1_rho": 0.9757575757575756,
+      "noise_0.1_mean_abs_change": 0.008110883753676213,
+      "noise_0.3_rho": 0.793939393939394,
+      "noise_0.3_mean_abs_change": 0.018230275486945342,
+      "ring_0.3_rho": 0.9030303030303028,
+      "ring_0.7_rho": 0.9272727272727272,
+      "vs_lane_presence_rho": -0.05454545454545454,
+      "mean_abs_shadow": 0.0532962370760516
+    },
+    {
+      "match_id": "metrica-sample-1",
+      "frame": 11674,
+      "noise_0.1_rho": 0.911111111111111,
+      "noise_0.1_mean_abs_change": 0.012827697478034377,
+      "noise_0.3_rho": 0.915151515151515,
+      "noise_0.3_mean_abs_change": 0.014070946450710053,
+      "ring_0.3_rho": 0.8787878787878788,
+      "ring_0.7_rho": 0.8666666666666665,
+      "vs_lane_presence_rho": -0.12727272727272726,
+      "mean_abs_shadow": 0.056596490321360715
+    },
+    {
+      "match_id": "metrica-sample-3",
+      "frame": 41937,
+      "noise_0.1_rho": 0.9919191919191919,
+      "noise_0.1_mean_abs_change": 0.012748893574969007,
+      "noise_0.3_rho": 0.9393939393939393,
+      "noise_0.3_mean_abs_change": 0.03712065856035922,
+      "ring_0.3_rho": 0.9636363636363635,
+      "ring_0.7_rho": 0.9878787878787878,
+      "vs_lane_presence_rho": 0.16363636363636364,
+      "mean_abs_shadow": 0.10828225575546116
+    },
+    {
+      "match_id": "metrica-sample-3",
+      "frame": 51060,
+      "noise_0.1_rho": 0.9999999999999999,
+      "noise_0.1_mean_abs_change": 0.004000699336440494,
+      "noise_0.3_rho": 0.9838383838383837,
+      "noise_0.3_mean_abs_change": 0.007954288493265871,
+      "ring_0.3_rho": 0.9515151515151514,
+      "ring_0.7_rho": 0.9515151515151514,
+      "vs_lane_presence_rho": -0.09090909090909088,
+      "mean_abs_shadow": 0.08720386418102546
+    },
+    {
+      "match_id": "metrica-sample-3",
+      "frame": 45348,
+      "noise_0.1_rho": 0.9676767676767676,
+      "noise_0.1_mean_abs_change": 0.03232597750309046,
+      "noise_0.3_rho": 0.7979797979797979,
+      "noise_0.3_mean_abs_change": 0.02722394778829343,
+      "ring_0.3_rho": 0.8787878787878788,
+      "ring_0.7_rho": 0.8666666666666665,
+      "vs_lane_presence_rho": 0.6969696969696969,
+      "mean_abs_shadow": 0.07412653706399759
+    },
+    {
+      "match_id": "metrica-sample-3",
+      "frame": 1473,
+      "noise_0.1_rho": 0.9595959595959594,
+      "noise_0.1_mean_abs_change": 0.016010053124434088,
+      "noise_0.3_rho": 0.9838383838383837,
+      "noise_0.3_mean_abs_change": 0.021360976242128515,
+      "ring_0.3_rho": 0.9757575757575757,
+      "ring_0.7_rho": 0.9393939393939393,
+      "vs_lane_presence_rho": 0.2121212121212121,
+      "mean_abs_shadow": 0.1642907951411008
+    },
+    {
+      "match_id": "metrica-sample-3",
+      "frame": 65853,
+      "noise_0.1_rho": 0.8949494949494948,
+      "noise_0.1_mean_abs_change": 0.010508063265446782,
+      "noise_0.3_rho": 0.494949494949495,
+      "noise_0.3_mean_abs_change": 0.04047481854480569,
+      "ring_0.3_rho": 0.9030303030303028,
+      "ring_0.7_rho": 0.9151515151515152,
+      "vs_lane_presence_rho": 0.3696969696969697,
+      "mean_abs_shadow": 0.09209719141005017
+    },
+    {
+      "match_id": "metrica-sample-3",
+      "frame": 2181,
+      "noise_0.1_rho": 0.9999999999999999,
+      "noise_0.1_mean_abs_change": 0.005887204825348568,
+      "noise_0.3_rho": 0.9717171717171716,
+      "noise_0.3_mean_abs_change": 0.012177090840372823,
+      "ring_0.3_rho": 0.7454545454545454,
+      "ring_0.7_rho": 0.9757575757575757,
+      "vs_lane_presence_rho": -0.13939393939393938,
+      "mean_abs_shadow": 0.04688276818508506
+    },
+    {
+      "match_id": "metrica-sample-3",
+      "frame": 118917,
+      "noise_0.1_rho": 0.9353535353535353,
+      "noise_0.1_mean_abs_change": 0.012264643788973947,
+      "noise_0.3_rho": 0.8949494949494948,
+      "noise_0.3_mean_abs_change": 0.018760600694306306,
+      "ring_0.3_rho": 0.6363636363636362,
+      "ring_0.7_rho": 0.8787878787878788,
+      "vs_lane_presence_rho": 0.24848484848484845,
+      "mean_abs_shadow": 0.058924434113290666
+    },
+    {
+      "match_id": "metrica-sample-3",
+      "frame": 117658,
+      "noise_0.1_rho": 0.9676767676767675,
+      "noise_0.1_mean_abs_change": 0.008536942801093872,
+      "noise_0.3_rho": 0.9232323232323231,
+      "noise_0.3_mean_abs_change": 0.01961520237283416,
+      "ring_0.3_rho": 0.9515151515151514,
+      "ring_0.7_rho": 0.9636363636363635,
+      "vs_lane_presence_rho": 0.4424242424242424,
+      "mean_abs_shadow": 0.07131561655183613
+    },
+    {
+      "match_id": "metrica-sample-3",
+      "frame": 39635,
+      "noise_0.1_rho": 0.9838383838383837,
+      "noise_0.1_mean_abs_change": 0.011831211094049068,
+      "noise_0.3_rho": 0.9070707070707069,
+      "noise_0.3_mean_abs_change": 0.01917802726151126,
+      "ring_0.3_rho": 0.8545454545454544,
+      "ring_0.7_rho": 0.8060606060606059,
+      "vs_lane_presence_rho": 0.2121212121212121,
+      "mean_abs_shadow": 0.10606647037744352
+    },
+    {
+      "match_id": "metrica-sample-3",
+      "frame": 12357,
+      "noise_0.1_rho": 0.9393939393939393,
+      "noise_0.1_mean_abs_change": 0.005566647169615131,
+      "noise_0.3_rho": 0.8868686868686867,
+      "noise_0.3_mean_abs_change": 0.01435554232890599,
+      "ring_0.3_rho": 0.6848484848484848,
+      "ring_0.7_rho": 0.6969696969696969,
+      "vs_lane_presence_rho": 0.7333333333333332,
+      "mean_abs_shadow": 0.03819669204235456
+    },
+    {
+      "match_id": "metrica-sample-3",
+      "frame": 41175,
+      "noise_0.1_rho": 0.7616161616161614,
+      "noise_0.1_mean_abs_change": 0.026290997972884315,
+      "noise_0.3_rho": 0.5676767676767676,
+      "noise_0.3_mean_abs_change": 0.04918704287656984,
+      "ring_0.3_rho": 0.9878787878787878,
+      "ring_0.7_rho": 0.9393939393939393,
+      "vs_lane_presence_rho": 0.2121212121212121,
+      "mean_abs_shadow": 0.08680576637596724
+    },
+    {
+      "match_id": "metrica-sample-3",
+      "frame": 143469,
+      "noise_0.1_rho": 0.9878787878787878,
+      "noise_0.1_mean_abs_change": 0.006422632701373931,
+      "noise_0.3_rho": 0.8585858585858585,
+      "noise_0.3_mean_abs_change": 0.017602018051560486,
+      "ring_0.3_rho": 0.7939393939393938,
+      "ring_0.7_rho": 0.9757575757575757,
+      "vs_lane_presence_rho": 0.709090909090909,
+      "mean_abs_shadow": 0.0522871866997038
+    },
+    {
+      "match_id": "metrica-sample-3",
+      "frame": 14959,
+      "noise_0.1_rho": 0.9999999999999999,
+      "noise_0.1_mean_abs_change": 0.0034610011613162976,
+      "noise_0.3_rho": 0.9232323232323232,
+      "noise_0.3_mean_abs_change": 0.016401219874362678,
+      "ring_0.3_rho": 0.9272727272727272,
+      "ring_0.7_rho": 0.9878787878787878,
+      "vs_lane_presence_rho": 0.7333333333333332,
+      "mean_abs_shadow": 0.05019785479387471
+    },
+    {
+      "match_id": "metrica-sample-3",
+      "frame": 14268,
+      "noise_0.1_rho": 0.911111111111111,
+      "noise_0.1_mean_abs_change": 0.010581125263529086,
+      "noise_0.3_rho": 0.8424242424242423,
+      "noise_0.3_mean_abs_change": 0.017462265592892334,
+      "ring_0.3_rho": 0.6121212121212121,
+      "ring_0.7_rho": 0.9393939393939393,
+      "vs_lane_presence_rho": 0.5151515151515151,
+      "mean_abs_shadow": 0.04917739265543251
+    },
+    {
+      "match_id": "metrica-sample-3",
+      "frame": 11192,
+      "noise_0.1_rho": 0.9353535353535353,
+      "noise_0.1_mean_abs_change": 0.009251170674410858,
+      "noise_0.3_rho": 0.7979797979797979,
+      "noise_0.3_mean_abs_change": 0.012884588701603347,
+      "ring_0.3_rho": 0.7818181818181817,
+      "ring_0.7_rho": 0.8181818181818182,
+      "vs_lane_presence_rho": 0.34545454545454546,
+      "mean_abs_shadow": 0.02978944645885928
+    }
+  ]
+}

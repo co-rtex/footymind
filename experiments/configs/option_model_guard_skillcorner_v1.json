@@ -1,0 +1,47 @@
+{
+  "name": "option_model_guard_skillcorner_v1",
+  "description": "Held-out (LOMO) performance of the serving option-model feature set (option_v2_logreg) with every decision-time input read 0.2 s before the event start frame (ADR-0007). Added after the session-4 methodology review: the model card's metrics (C21, C24) were measured at the start frame, which on SkillCorner often already contains the kick. Evaluation only; the served coefficients are unchanged.",
+  "matches": [
+    "skillcorner-1874553",
+    "skillcorner-1886347",
+    "skillcorner-1899585",
+    "skillcorner-1925299",
+    "skillcorner-1927964",
+    "skillcorner-1953632",
+    "skillcorner-1959846",
+    "skillcorner-1986691",
+    "skillcorner-1996435",
+    "skillcorner-1996436",
+    "skillcorner-2006229",
+    "skillcorner-2006363",
+    "skillcorner-2007448",
+    "skillcorner-2007721",
+    "skillcorner-2010085",
+    "skillcorner-2011166",
+    "skillcorner-2013725",
+    "skillcorner-2015213",
+    "skillcorner-2016236",
+    "skillcorner-2017461"
+  ],
+  "seed": 0,
+  "dataset": {
+    "rules": "v2",
+    "include_ball_out": true,
+    "static_offset_s": 0.2,
+    "temporal_offset_s": 0.2
+  },
+  "n_boot": 1000,
+  "models": [
+    "base_rate",
+    "option_v2_logreg"
+  ],
+  "comparisons": [
+    [
+      "base_rate",
+      "option_v2_logreg"
+    ]
+  ],
+  "calibration": [
+    "option_v2_logreg"
+  ]
+}

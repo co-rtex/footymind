@@ -1,0 +1,91 @@
+{
+  "name": "pass_outcome_skillcorner_v2",
+  "description": "Cross-provider replication after the second independent review: SkillCorner adapter v2 (restart, recovery and ball-out context from game_interruption_* and start_type; receiver from player_targeted_id; 2-frame release window at 10 fps; pipeline v2). Same rules/features/protocol as pass_outcome_v3. Supersedes pass_outcome_skillcorner_v1, whose event baseline lacked restart/recovery context.",
+  "matches": [
+    "skillcorner-1874553",
+    "skillcorner-1886347",
+    "skillcorner-1899585",
+    "skillcorner-1925299",
+    "skillcorner-1927964",
+    "skillcorner-1953632",
+    "skillcorner-1959846",
+    "skillcorner-1986691",
+    "skillcorner-1996435",
+    "skillcorner-1996436",
+    "skillcorner-2006229",
+    "skillcorner-2006363",
+    "skillcorner-2007448",
+    "skillcorner-2007721",
+    "skillcorner-2010085",
+    "skillcorner-2011166",
+    "skillcorner-2013725",
+    "skillcorner-2015213",
+    "skillcorner-2016236",
+    "skillcorner-2017461"
+  ],
+  "seed": 0,
+  "dataset": {
+    "rules": "v2",
+    "include_ball_out": true
+  },
+  "n_boot": 1000,
+  "models": [
+    "base_rate",
+    "Adt_logreg",
+    "Adt_gbm",
+    "Bdt_logreg",
+    "Bdt_gbm",
+    "A_logreg",
+    "A_gbm",
+    "B_logreg",
+    "B_gbm",
+    "C_gbm",
+    "physics_raw",
+    "physics_platt",
+    "option_logreg",
+    "option_v2_logreg",
+    "abl_A+defender_only_logreg",
+    "abl_A+target_geometry_logreg"
+  ],
+  "comparisons": [
+    [
+      "Adt_logreg",
+      "Bdt_logreg"
+    ],
+    [
+      "Adt_gbm",
+      "Bdt_gbm"
+    ],
+    [
+      "A_logreg",
+      "B_logreg"
+    ],
+    [
+      "A_gbm",
+      "B_gbm"
+    ],
+    [
+      "B_gbm",
+      "C_gbm"
+    ],
+    [
+      "A_logreg",
+      "abl_A+defender_only_logreg"
+    ],
+    [
+      "A_logreg",
+      "abl_A+target_geometry_logreg"
+    ],
+    [
+      "option_logreg",
+      "option_v2_logreg"
+    ]
+  ],
+  "calibration": [
+    "A_logreg",
+    "B_logreg",
+    "Bdt_logreg",
+    "physics_raw",
+    "option_v2_logreg"
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "name": "guard_calibration_v1",
+  "code_revision": "6b9fd6d79fd1b02459cf2272f5132f7108e84da0",
+  "away_mps": 3.0,
+  "providers": {
+    "metrica": {
+      "n_matches": 3,
+      "by_offset": [
+        {
+          "offset_s": 0.0,
+          "share_ball_moving_away": 0.018473895582329317,
+          "n": 2490
+        },
+        {
+          "offset_s": 0.1,
+          "share_ball_moving_away": 0.022459078797106968,
+          "n": 2627
+        },
+        {
+          "offset_s": 0.2,
+          "share_ball_moving_away": 0.016244805440120892,
+          "n": 2647
+        },
+        {
+          "offset_s": 0.3,
+          "share_ball_moving_away": 0.01662259161314696,
+          "n": 2647
+        },
+        {
+          "offset_s": 0.4,
+          "share_ball_moving_away": 0.01399394856278366,
+          "n": 2644
+        },
+        {
+          "offset_s": 0.6,
+          "share_ball_moving_away": 0.018525519848771266,
+          "n": 2645
+        }
+      ],
+      "guard_ball_fallback": {
+        "pass_rows": 3656,
+        "ball_unobserved_at_guard": 295,
+        "of_which_restarts": 227,
+        "open_play_fallbacks": 68
+      }
+    },
+    "skillcorner": {
+      "n_matches": 20,
+      "by_offset": [
+        {
+          "offset_s": 0.0,
+          "share_ball_moving_away": 0.6266835330009674,
+          "n": 13439
+        },
+        {
+          "offset_s": 0.1,
+          "share_ball_moving_away": 0.26882120783379254,
+          "n": 13429
+        },
+        {
+          "offset_s": 0.2,
+          "share_ball_moving_away": 0.15560026827632462,
+          "n": 13419
+        },
+        {
+          "offset_s": 0.3,
+          "share_ball_moving_away": 0.1550849985087981,
+          "n": 13412
+        },
+        {
+          "offset_s": 0.4,
+          "share_ball_moving_away": 0.18067885117493473,
+          "n": 13405
+        },
+        {
+          "offset_s": 0.6,
+          "share_ball_moving_away": 0.19015609828964075,
+          "n": 13389
+        }
+      ],
+      "guard_ball_fallback": {
+        "pass_rows": 16006,
+        "ball_unobserved_at_guard": 26,
+        "of_which_restarts": 11,
+        "open_play_fallbacks": 15
+      }
+    }
+  },
+  "runtime_s": 19.5
+}

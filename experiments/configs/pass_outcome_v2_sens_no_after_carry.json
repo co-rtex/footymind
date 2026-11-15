@@ -1,0 +1,40 @@
+{
+  "name": "pass_outcome_v2_sens_no_after_carry",
+  "description": "Annotation sensitivity: drop attempts (both classes) immediately preceded by the same player's CARRY (Game 3 only has CARRY annotations).",
+  "matches": [
+    "metrica-sample-1",
+    "metrica-sample-2",
+    "metrica-sample-3"
+  ],
+  "seed": 0,
+  "dataset": {
+    "include_ball_out": true,
+    "rules": "v1"
+  },
+  "filters": [
+    "exclude_after_own_carry"
+  ],
+  "n_boot": 2000,
+  "models": [
+    "base_rate",
+    "A_logreg",
+    "A_gbm",
+    "B_logreg",
+    "B_gbm",
+    "abl_A+defender_only_logreg"
+  ],
+  "comparisons": [
+    [
+      "A_logreg",
+      "B_logreg"
+    ],
+    [
+      "A_gbm",
+      "B_gbm"
+    ],
+    [
+      "A_logreg",
+      "abl_A+defender_only_logreg"
+    ]
+  ]
+}

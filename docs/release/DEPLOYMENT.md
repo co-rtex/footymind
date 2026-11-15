@@ -1,0 +1,97 @@
+# Deployment and operations (FootyMind 1.0)
+
+FootyMind ships as one container: the FastAPI backend serves the API under `/api` and the built
+web lab at `/`. Nothing is deployed by this repository; this page is what an operator needs to
+run it. Data licences and the licence-clear public-demo configuration are in
+[`DATA_LICENSES.md`](DATA_LICENSES.md).
+
+## Build
+
+```bash
+docker build -t footymind .
+```
+
+Two stages: `node:22-slim` builds `web/dist`; `python:3.12-slim` installs the locked runtime
+dependencies (`uv sync --frozen --no-dev`) and copies the package, the built lab and the
+committed `experiments/results` (validation summaries the API serves). **No match data is in
+the image.** Base images are overridable (`--build-arg NODE_IMAGE=... PYTHON_IMAGE=...`), and a
+TLS-intercepting proxy's CA can be passed as the `ca_bundle` build secret (see the Dockerfile
+header). The container runs as an unprivileged user (uid 10001).
+
+## Run
+
+```bash
+docker run -d --name footymind -p 8000:8000 -v footymind-data:/data footymind
+```
+
+| Variable | Default (image) | Meaning |
+|---|---|---|
+| `FOOTYMIND_SOURCES` | `metrica-sample-1 metrica-sample-2 metrica-sample-3` | sources to download and ingest: match ids or the groups `metrica`, `skillcorner`, `all` |
+| `FOOTYMIND_DATA_DIR` | `/data` (the volume) | raw downloads and processed bundles |
+| `FOOTYMIND_WEB_DIST` | `/app/web/dist` | built lab served at `/` |
+| `FOOTYMIND_EXPERIMENTS_DIR` | `/app/experiments` | committed results read for validation summaries |
+| `FOOTYMIND_CORS_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | comma-separated origins allowed to call the API from another origin (only needed when the lab is served elsewhere; same-origin use needs none) |
+
+Sizing, measured on the Metrica default: about 180 MB of raw data and 70 MB of bundles in the
+volume, first start about a minute (download, ingest, similar-moments index). Adding all 20
+SkillCorner matches adds about 1.8 GB and 120 MB, and about 2.5 minutes of indexing on 4 vCPU.
+Warm latency is in C67 (frame analysis about 70 ms p50; a scenario with the 24-member ensemble
+about 0.5 s).
+
+**Health.** `GET /api/health` answers 200 with `matches` (servable) and `unavailable` (bundles
+whose manifest is from another pipeline version or unreadable; they need `footymind ingest`).
+A source that was never ingested appears in neither list. A damaged data file under a valid
+manifest stays listed and answers 503 with the fix when opened; the similar-moments index is
+built from the readable bundles only. The image's `HEALTHCHECK` polls it with a 300 s start period,
+long enough for a first start that downloads and indexes.
+
+**Limits.** Request bodies over 1 MB get 413; every query and body parameter is bounded and
+validated (422 without echoing the input); unknown ids are 404; missing or stale derived data is
+503 with the command that fixes it; no response contains NaN or Infinity (C68). The API has no
+authentication and no rate limiting: put it behind a reverse proxy that adds those if it is
+exposed publicly.
+
+## Start-up, upgrades and recovery
+
+The entrypoint (`docker/entrypoint.sh`) makes the volume servable before starting the server:
+
+* **Empty volume:** download (SHA-256 verified) and ingest `FOOTYMIND_SOURCES`, then build the
+  similar-moments index. A failure here stops the container (nothing to serve).
+* **Existing volume:** re-ingest bundles written by another pipeline version (an image
+  upgrade), ingest any source in `FOOTYMIND_SOURCES` that has no bundle (a first start that
+  failed part-way), one source at a time, and rebuild a missing or stale index (also when a
+  match was added). A source that fails is logged and is not served; the server still starts.
+
+These paths are tested in the built image in CI (`scripts/container_recovery.py`, four
+scenarios; see [`VERIFICATION.md`](VERIFICATION.md)).
+
+**Upgrade:** pull or build the new image and start it on the same volume. Bundles from an older
+pipeline version are re-ingested from the raw files already in the volume.
+
+**Rollback:** start the previous image on the same volume. If the newer image had bumped the
+pipeline version, an older image from 1.0 onward re-ingests the bundles at its own version on
+start (the raw files are kept), so no manual step is needed. For an image from before 1.0, use a
+fresh volume.
+
+**Repair a single match** (for example a damaged data file, which answers 503 naming the fix):
+
+```bash
+docker exec footymind footymind ingest metrica-sample-2
+docker exec footymind footymind build-similarity-index --provider metrica
+```
+
+A running server picks up a re-ingest or an index rebuild on the next request; no restart.
+
+**Reset:** remove the volume (`docker volume rm footymind-data`) and start again.
+
+## Without Docker
+
+```bash
+uv sync --frozen --no-dev
+uv run footymind download metrica && uv run footymind ingest metrica
+uv run footymind build-similarity-index --provider metrica
+(cd web && npm ci && npm run build)
+uv run footymind serve --host 0.0.0.0 --port 8000
+```
+
+`footymind serve` runs a single uvicorn worker; caches are per process.

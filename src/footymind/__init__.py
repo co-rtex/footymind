@@ -1,6 +1,3 @@
-"""
-FootyMind package root.
-"""
+"""FootyMind 2.0: The Invisible Game."""
 
-# Nothing to export yet
-__all__ = []
+__version__ = "1.0.0"
