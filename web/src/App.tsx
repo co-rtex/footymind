@@ -31,9 +31,10 @@ export function App() {
     [matches.data, matchId, single.data],
   );
 
-  // Coming back from the lab (its "Possessions" button or the browser's Back), the landing brings
-  // the possession list into view instead of opening at the top of the page.
-  const [revealList, setRevealList] = useState(false);
+  // Coming back from the lab (its "Possessions" button or the browser's Back), or opening a
+  // #/match/<id> link directly, the landing brings the possession list (or the "match not found"
+  // notice) into view instead of opening at the top of the page.
+  const [revealList, setRevealList] = useState(() => route.name === "home" && route.matchId !== null);
   const prevRoute = useRef(route.name);
   useEffect(() => {
     if (route.name === "home" && prevRoute.current !== "home") setRevealList(true);
