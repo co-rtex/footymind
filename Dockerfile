@@ -57,7 +57,7 @@ COPY docker/entrypoint.sh /usr/local/bin/footymind-entrypoint
 RUN chmod +x /usr/local/bin/footymind-entrypoint && useradd --create-home --uid 10001 app \
     && mkdir -p /data && chown app /data
 USER app
-VOLUME ["/data"]
+# Persistent /data storage is attached by the hosting platform or docker run.
 EXPOSE 8000
 # The server starts after the entrypoint has built any missing similar-moments index (about 40 s
 # for Metrica and 2.5 minutes for all 20 SkillCorner matches on 4 vCPU), hence the long start period.
