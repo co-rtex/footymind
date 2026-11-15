@@ -122,12 +122,13 @@ mounted at `/data`. Railway rejects Dockerfile `VOLUME` instructions and BuildKi
 - `FOOTYMIND_SOURCES="skillcorner-1874553 skillcorner-1899585 skillcorner-2017461"`.
 - `FOOTYMIND_DATA_DIR=/data` and `PORT=8000`.
 - `RAILWAY_RUN_UID=0`: Railway's volume is root-owned and not writable by uid 10001, so
-  the container starts as root; from the audit fix onwards the entrypoint then hands `/data`
-  to `app` and the server runs as uid 10001 (the deploy log shows "dropping privileges").
-- Recommended: `FOOTYMIND_CLIENT_IP_HEADER=X-Real-IP`, so the rate limit is per visitor rather
-  than shared (Railway's edge fills this header with the client address; check one request in
-  the deploy log after setting it). The default limits (120 requests per minute per client,
-  4 concurrent heavy computations) need no setting.
+  the container starts as root; the entrypoint then hands `/data` to `app` and the server
+  runs as uid 10001 (the deploy log shows "dropping privileges").
+- `FOOTYMIND_CLIENT_IP_HEADER=X-Real-IP`, so the rate limit is keyed per visitor rather than
+  shared by every request arriving from Railway's edge proxy. The server keys on the header's
+  last value, so a client-sent copy cannot pick a fresh bucket when the proxy appends its own.
+- `FOOTYMIND_RATE_LIMIT_PER_MIN=60` and `FOOTYMIND_MAX_HEAVY_REQUESTS=2`, tighter than the
+  defaults (120 and 4) for the 0.5 vCPU instance.
 - Single replica capped at 0.5 vCPU and 0.5 GB RAM; restart on failure
   (two retries).
 
@@ -139,6 +140,5 @@ Railway free-trial credits and resource limits can cause the demo to become unav
 exhausted.
 
 **Similar moments on the demo.** The demo's index holds 3 matches, while the held-out
-validation of the k = 50 estimate (C36) used all 20 SkillCorner matches. From the audit fix
-onwards the lab says "not validated here" and states both counts instead of "validated
-held-out".
+validation of the k = 50 estimate (C36) used all 20 SkillCorner matches, so the lab says
+"not validated here" and states both counts instead of "validated held-out".

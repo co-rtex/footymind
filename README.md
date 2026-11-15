@@ -297,6 +297,12 @@ container checks.
 * **Negative results.** Physics pass probabilities, the Defensive Shadow metric and simple
   off-ball run value did not survive evaluation. They are kept, and labelled, as experimental
   or explanatory tools. See the [research report](docs/RESEARCH_REPORT.md).
+* **The hosted demo is small.** It serves three SkillCorner matches on a free-tier instance;
+  Metrica data is not hosted publicly ([data licences](docs/release/DATA_LICENSES.md)). Its
+  similar-moments index holds only those three matches, so the lab marks those results "not
+  validated here". The API has no authentication; per-client rate limits and a cap on heavy
+  computations protect the instance, which can be slow under load and goes offline if its
+  free credits run out ([deployment notes](docs/release/DEPLOYMENT.md)).
 
 ## Data and attribution
 
