@@ -81,14 +81,22 @@ export function similarHeadline(s: SimilarMomentsOut): string {
   } completed.`;
 }
 
-/** The pre-registered held-out criterion is explicitly met. */
-export function isValidated(s: SimilarMomentsOut): boolean {
-  return s.validation?.knn_beats_base_rate === true;
+/**
+ * The validation was run with a different index than this server's (e.g. 20 matches, while a
+ * public demo serves 3): the same method, but its held-out result does not carry over.
+ */
+export function isOtherIndex(s: SimilarMomentsOut): boolean {
+  return s.validation?.applies_to_this_index === false;
 }
 
-/** Not validated unless the pre-registered held-out criterion is explicitly met. */
+/** The pre-registered held-out criterion is explicitly met, for the index this server uses. */
+export function isValidated(s: SimilarMomentsOut): boolean {
+  return s.validation?.knn_beats_base_rate === true && !isOtherIndex(s);
+}
+
+/** The held-out criterion is not met (or unknown) for the validated index. */
 export function isUnvalidated(s: SimilarMomentsOut): boolean {
-  return s.validation?.knn_beats_base_rate !== true;
+  return s.validation?.knn_beats_base_rate !== true && !isOtherIndex(s);
 }
 
 /** Expected "nothing to show" outcomes, rendered as quiet empty states rather than errors. */

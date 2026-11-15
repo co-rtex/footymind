@@ -397,10 +397,16 @@ export function parseSimilar(raw: unknown): SimilarMomentsOut {
     need(kb === undefined || kb === null || typeof kb === "boolean", "validation.knn_beats_base_rate is not a boolean or null");
     const ref = val.ref;
     need(ref === undefined || ref === null || typeof ref === "string", "validation.ref is not a string or null");
+    const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+    const ap = val.applies_to_this_index;
+    need(ap === undefined || ap === null || typeof ap === "boolean", "validation.applies_to_this_index is not a boolean or null");
     validation = {
       ref: typeof ref === "string" ? ref : null,
       knn_beats_base_rate: typeof kb === "boolean" ? kb : null,
       log_loss: val.log_loss ?? null,
+      validated_matches: num(val.validated_matches),
+      index_matches: num(val.index_matches),
+      applies_to_this_index: typeof ap === "boolean" ? ap : null,
     };
   }
   const features = Array.isArray(raw.features) ? (raw.features as string[]) : [];

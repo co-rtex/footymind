@@ -641,7 +641,15 @@ SIMILAR_DISCLAIMER = (
 )
 
 
-def _similarity_validation(provider: str) -> dict[str, Any] | None:
+def _similarity_validation(
+    provider: str, index_matches: set[str] | None = None
+) -> dict[str, Any] | None:
+    """The held-out validation summary, and whether it applies to the index being served.
+
+    The validation (C36) was run with an index of specific matches. A server whose index holds
+    other matches (e.g. a three-match public demo) serves a different estimator: the summary is
+    still returned, but ``applies_to_this_index`` is false so the lab does not call it validated.
+    """
     name = "similarity_validation_v1" + ("" if provider == "metrica" else f"_{provider}")
     p = EXPERIMENTS_DIR / "results" / name / "results.json"
     if not p.exists():
@@ -657,10 +665,15 @@ def _similarity_validation(provider: str) -> dict[str, Any] | None:
             f"validation results experiments/results/{name}/results.json unreadable "
             f"({type(e).__name__})",
         ) from e
+    validated = sorted(str(m) for m in r.get("matches") or [])
+    applies = None if index_matches is None or not validated else set(validated) == index_matches
     return {
         "ref": f"experiments/results/{name}/results.json",
         "knn_beats_base_rate": r.get("criterion_knn_beats_base_rate"),
         "log_loss": {k: v.get("log_loss") for k, v in r.get("metrics", {}).items()},
+        "validated_matches": len(validated) or None,
+        "index_matches": None if index_matches is None else len(index_matches),
+        "applies_to_this_index": applies,
     }
 
 
@@ -702,7 +715,7 @@ def similar_moments(
     from footymind.research.similarity_validation import PRIOR_STRENGTH
     from footymind.research.similarity_validation import K as K_VALID
 
-    validation = _similarity_validation(provider)
+    validation = _similarity_validation(provider, set(idx.rows["match_id"].unique().to_list()))
     got, dist = idx.query(x, exclude_match=match_id, k=k)
     # The validated estimate (C36) uses exactly the validated configuration: k = 50, shrunk.
     estimate = None

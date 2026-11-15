@@ -620,3 +620,25 @@ def test_response_models_labelled_for_another_provider_are_not_used(
         monkeypatch.setattr(mod, "_CACHE", {})
         m = load("metrica")
         assert m is not None and m.meta["provider"] == "metrica"
+
+
+def test_similar_validation_applies_only_to_the_validated_index() -> None:
+    """Audit 2026-11-15: the public demo serves a 3-match SkillCorner index while the held-out
+    validation (C36) used all 20 matches. The summary must say it does not apply there."""
+    import json
+
+    from footymind.api.app import _similarity_validation
+    from footymind.paths import EXPERIMENTS_DIR
+
+    res = EXPERIMENTS_DIR / "results" / "similarity_validation_v1_skillcorner" / "results.json"
+    validated = set(json.loads(res.read_text())["matches"])
+    assert len(validated) == 20
+    demo = {"skillcorner-1874553", "skillcorner-1899585", "skillcorner-2017461"}
+    v = _similarity_validation("skillcorner", demo)
+    assert v is not None and v["applies_to_this_index"] is False
+    assert (v["validated_matches"], v["index_matches"]) == (20, 3)
+    assert v["knn_beats_base_rate"] is True  # the result itself is reported unchanged
+    full = _similarity_validation("skillcorner", validated)
+    assert full is not None and full["applies_to_this_index"] is True
+    unknown = _similarity_validation("skillcorner")
+    assert unknown is not None and unknown["applies_to_this_index"] is None

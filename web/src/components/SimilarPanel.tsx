@@ -6,6 +6,7 @@ import { routeHash } from "../lib/hooks";
 import {
   ballZone,
   idLabel,
+  isOtherIndex,
   isUnvalidated,
   isValidated,
   loadMatchIndex,
@@ -125,6 +126,28 @@ function ValidationNote({ data }: { data: SimilarMomentsOut }) {
   );
 }
 
+/** The validation used another index (e.g. all 20 matches, while this server holds 3): say so plainly. */
+function OtherIndexNote({ data }: { data: SimilarMomentsOut }) {
+  if (!isOtherIndex(data)) return null;
+  const v = data.validation;
+  const have = v?.index_matches;
+  const validated = v?.validated_matches;
+  return (
+    <p className="small muted similar-validation" data-testid="similar-other-index">
+      Not validated on this server: the held-out validation of this estimate used an index of{" "}
+      {validated ?? "more"} matches, and this server&apos;s index has {have ?? "fewer"}, so its result does not carry
+      over.
+      {data.estimate ? (
+        <>
+          {" "}
+          The same method gives <strong>{Math.round(data.estimate.completion * 100)}%</strong> here (overall{" "}
+          {Math.round(data.estimate.base_rate * 100)}%), shown for illustration.
+        </>
+      ) : null}
+    </p>
+  );
+}
+
 /**
  * "Similar moments": past pass decisions from other matches of the same provider whose
  * decision-time situation was closest, with their observed outcomes. Fetched on demand only
@@ -194,6 +217,14 @@ export const SimilarPanel = memo(function SimilarPanel({ matchId, frame, provide
           >
             unvalidated
           </span>
+        ) : res?.status === "success" && isOtherIndex(res.data) ? (
+          <span
+            className="badge badge--experimental"
+            data-testid="similar-other-index-pill"
+            title="The held-out validation used a different set of matches than this server's index"
+          >
+            not validated here
+          </span>
         ) : res?.status === "success" && isValidated(res.data) ? (
           <span className="pill pill--ok similar-validated-pill" data-testid="similar-validated-pill">
             validated held-out
@@ -247,6 +278,7 @@ export const SimilarPanel = memo(function SimilarPanel({ matchId, frame, provide
             <p className="small muted">No comparable passes were found in other matches.</p>
           )}
           <ValidationNote data={res.data} />
+          <OtherIndexNote data={res.data} />
           <p className="disclaimer" data-testid="similar-disclaimer">
             {res.data.disclaimer}
           </p>
