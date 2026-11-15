@@ -1,8 +1,8 @@
 # Deployment and operations (FootyMind 1.0)
 
 FootyMind ships as one container: the FastAPI backend serves the API under `/api` and the built
-web lab at `/`. Nothing is deployed by this repository; this page is what an operator needs to
-run it. Data licences and the licence-clear public-demo configuration are in
+web lab at `/`. The SkillCorner-only public demo is deployed on Railway; this page also documents how to
+run it independently. Data licences and the licence-clear public-demo configuration are in
 [`DATA_LICENSES.md`](DATA_LICENSES.md).
 
 ## Build
@@ -14,9 +14,10 @@ docker build -t footymind .
 Two stages: `node:22-slim` builds `web/dist`; `python:3.12-slim` installs the locked runtime
 dependencies (`uv sync --frozen --no-dev`) and copies the package, the built lab and the
 committed `experiments/results` (validation summaries the API serves). **No match data is in
-the image.** Base images are overridable (`--build-arg NODE_IMAGE=... PYTHON_IMAGE=...`), and a
-TLS-intercepting proxy's CA can be passed as the `ca_bundle` build secret (see the Dockerfile
-header). The container runs as an unprivileged user (uid 10001).
+the image.** Base images are overridable (`--build-arg NODE_IMAGE=... PYTHON_IMAGE=...`).
+The image defaults to an unprivileged user (uid 10001). For TLS-intercepting proxies,
+configure the custom CA in the base images or build environment; the Dockerfile does
+not use BuildKit secret mounts.
 
 ## Run
 
@@ -95,3 +96,27 @@ uv run footymind serve --host 0.0.0.0 --port 8000
 ```
 
 `footymind serve` runs a single uvicorn worker; caches are per process.
+
+## Railway public demo (free-trial configuration)
+
+The [public SkillCorner demo](https://footymind-web-production.up.railway.app/) runs this
+Dockerfile in one Railway service. Its data lives in a separately attached persistent volume
+mounted at `/data`. Railway rejects Dockerfile `VOLUME` instructions and BuildKit
+`RUN --mount=type=secret` directives.
+
+- Source: `co-rtex/footymind`, branch `main`, Dockerfile at repository root.
+- HTTP port: `8000`; health check: `/api/health`.
+- Volume: `/data`, 500 MB.
+- `FOOTYMIND_SOURCES="skillcorner-1874553 skillcorner-1899585 skillcorner-2017461"`.
+- `FOOTYMIND_DATA_DIR=/data` and `PORT=8000`.
+- `RAILWAY_RUN_UID=0`: Railway's root-owned volume is not writable by the
+  image's default unprivileged uid 10001. This is a hosting-specific security
+  trade-off, not a recommended default elsewhere.
+- Single replica capped at 0.5 vCPU and 0.5 GB RAM; restart on failure
+  (two retries).
+
+The public demo excludes Metrica files because their redistribution terms are
+not sufficiently clear for public demo hosting. The API has no authentication
+or rate limiting; it should not be marketed as hardened production infrastructure
+without edge request limits. Railway free-trial credits and resource limits can
+cause the demo to become unavailable when exhausted.
