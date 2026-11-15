@@ -1,6 +1,6 @@
 # FootyMind: The Invisible Game. Technical research report
 
-_Version 1.0 release candidate. Every number below is traceable to a row of
+_Version 1.0. Every number below is traceable to a row of
 [`CLAIMS_LEDGER.md`](CLAIMS_LEDGER.md) (the `Cxx` labels), which points to a committed
 `experiments/results/*/results.json` or a test. The chronological lab notebook, with full
 tables, superseded analyses and review responses, is [`RESEARCH.md`](RESEARCH.md)._

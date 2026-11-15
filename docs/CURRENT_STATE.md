@@ -1,41 +1,36 @@
 # Current state and session handoff
 
-_Last updated: 2026-11-15, production audit of the released v1.0.0 and its public demo.
+_Last updated: 2026-11-15, final completion pass after the production audit.
 Keep this file factual and update it at every checkpoint._
 
 ## Release and deployment (2026-11-15)
 * **v1.0.0 is released** (tag `v1.0.0` at 22572ab, the squash-merged release; GitHub release
-  published by `.github/workflows/publish-release.yml`). `main` also has ffa0aff (Railway
-  Dockerfile builder) and 6d4693a (release docs); CI run #89 on 6d4693a passed.
-* **Public demo:** https://footymind-web-production.up.railway.app/ (Railway, SkillCorner-only:
-  matches 1874553, 1899585, 2017461; settings in `docs/release/DEPLOYMENT.md`).
-* **Production audit (2026-11-15).** Verified against the live site:
-  * `smoke_api.py --require-similar` passed.
-  * 117 of 141 production API responses are identical to a local server on the same code and
-    bundles: summaries, possessions, replays, analyses, Defensive Shadow, and scenarios with a
-    fixed seed. The 24 that differ are similar-moments neighbours, because the demo index has
-    3 matches against 20 locally.
-  * Browser tests passed: 3 viewports × 3 matches, the guided tour, all 7 response policies,
-    similar moments and error routes, with no runtime errors, failed requests or horizontal
-    overflow.
-  * Findings fixed on this branch (PR co-rtex/footymind#3, not yet deployed):
-    * the demo's similar-moments panel claimed a validation done on 20 matches;
-    * no rate limiting on the free-tier instance;
-    * the server ran as root on Railway;
-    * missing security headers, `HEAD /api/health` returned 404, unknown paths returned raw
-      JSON 404s;
-    * relative links in the release notes.
-  * Owner actions:
-    * correct the GitHub repository description, which still describes the archived v1
-      predictor;
-    * add the demo URL as the website, and add topics;
-    * optionally fix the release body's relative links;
-    * set `FOOTYMIND_CLIENT_IP_HEADER=X-Real-IP` on Railway after merging.
+  published by `.github/workflows/publish-release.yml`). The tag is never moved.
+  `.github/workflows/pin-release-links.yml` (manual) rewrites the published body's relative
+  links to absolute links pinned to the tag, leaving every other character unchanged.
+* **Public demo:** https://footymind-web-production.up.railway.app/ (Railway, deploys from
+  `main`; SkillCorner-only: matches 1874553, 1899585, 2017461; settings in
+  `docs/release/DEPLOYMENT.md`, including `FOOTYMIND_CLIENT_IP_HEADER=X-Real-IP`, 60 requests
+  per minute per client and 2 concurrent heavy computations).
+* **Production audit fixes are merged and deployed** (PR co-rtex/footymind#3, 15ef0bb on
+  `main`; CI passed): the similar-moments panel says "not validated here" on the 3-match demo
+  index, per-client rate limiting and a heavy-request cap, the server drops root to uid 10001,
+  security headers, `HEAD /api/health`, the lab served for unknown non-API paths while unknown
+  `/api/*` routes and missing assets stay 404.
+* **Verified on the live site after deployment:** health (GET and HEAD) lists the three
+  matches and no Metrica; security headers; 404 JSON for unknown API routes and assets; 413
+  for a 1.1 MB body; the served bundle is byte-identical to a local build of 15ef0bb; a paced
+  browser run (desktop and phone) of the tour, all three matches, analysis, Defensive Shadow,
+  similar moments ("not validated on this server"), a counterfactual and error routes, with
+  no 429s and no runtime errors. Rate-limit, spoofing and concurrency behaviour is verified by
+  local tests only (`tests/test_public_hardening.py`), not by load on the free-tier service.
+* **Final pass fix:** opening a `#/match/<id>` link directly now brings that match's
+  possession list (or the "match not found" notice) into view instead of the page top
+  (`web/e2e/journey.spec.ts`).
 
 ## Branch and repository
-* Working branch: `claude/loving-wright-i0shmp`, restarted from `main` after the v1.0.0 squash
-  merge (an `ours` merge keeps the pre-release history without a force push). Audit fixes are
-  in PR co-rtex/footymind#3.
+* Working branch: `claude/loving-wright-i0shmp`, restarted from `main` after each merge (an
+  `ours` merge keeps the earlier branch history without a force push).
 * Commits are authored as Christian Cortez with no assistant trailers (see CLAUDE.md).
 * All specialist worktrees and branches were merged and removed; no other worktrees exist.
 * **Stop-hook note.** The cloud environment runs a *managed* Stop hook
@@ -151,10 +146,8 @@ FootyMind 1.0 is feature-frozen. Post-1.0 research and product ideas are in
 [`docs/ROADMAP.md`](ROADMAP.md); none of them is unfinished 1.0 work.
 
 ## Decisions needing the owner
-* Merge PR co-rtex/footymind#3, which redeploys the demo from `main`, and set
-  `FOOTYMIND_CLIENT_IP_HEADER=X-Real-IP` on Railway.
-* Repository settings: the description (still the archived v1 predictor's), the website (the
-  demo URL) and topics.
+* Repository settings (need admin rights, not available to automation): the description
+  (still the archived v1 predictor's), the website (the demo URL) and topics.
 * Keep the public demo SkillCorner-only unless Metrica's terms for hosted use are confirmed
   (`docs/release/DATA_LICENSES.md`). The code is MIT-licensed (`LICENSE`).
 * Whether to change the managed stop hook or enable commit signing.

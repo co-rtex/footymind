@@ -1,0 +1,45 @@
+name: Pin v1.0.0 release-note links
+
+# Maintenance, manual trigger only. The published v1.0.0 release body used repository-relative
+# links (e.g. ../CLAIMS_LEDGER.md), which 404 on a GitHub Release page. This rewrites only those
+# link targets to absolute URLs pinned to the v1.0.0 tag, so the historical notes point at the
+# documents as released. Every other character of the body must stay the same (checked), the tag
+# itself is never touched, and a second run changes nothing.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  pin-links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Rewrite relative links in the v1.0.0 release body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view v1.0.0 --json body --jq .body > before.md
+          base="https://github.com/${GH_REPO}/blob/v1.0.0/docs"
+          sed -E \
+            -e "s#\]\(\.\./([^)]+)\)#](${base}/\1)#g" \
+            -e "s#\]\((RELEASE_CHECKLIST|VERIFICATION|DATA_LICENSES)\.md\)#](${base}/release/\1.md)#g" \
+            before.md > after.md
+          diff before.md after.md || true
+          if grep -qE '\]\((\.\./|[A-Z_]+\.md\))' after.md; then
+            echo "a relative link is left"; exit 1
+          fi
+          strip() { sed -E 's/\]\([^)]*\)/]()/g' "$1"; }
+          if [[ "$(strip before.md)" != "$(strip after.md)" ]]; then
+            echo "text outside link targets would change"; exit 1
+          fi
+          if cmp -s before.md after.md; then
+            echo "links already absolute; nothing to change"; exit 0
+          fi
+          gh release edit v1.0.0 --notes-file after.md
+          echo "links now in the published body:"
+          gh release view v1.0.0 --json body --jq .body | grep -oE '\]\(https://[^)]+\)' | sort -u

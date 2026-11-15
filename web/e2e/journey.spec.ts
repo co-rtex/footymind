@@ -267,6 +267,20 @@ test("back from the lab returns to the possession list, not the top of the landi
   await expect(heading).toBeInViewport();
 });
 
+test("a direct #/match link shows that match's possessions, or why there are none", async ({ page }) => {
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/#/match/metrica-sample-2");
+    await page.reload(); // a fresh load of the link, not an in-app navigation
+    const heading = page.getByRole("heading", { name: "Possessions", level: 2 });
+    await expect(heading).toBeInViewport();
+    await expect(page.getByTestId("possessions-match")).toHaveText("Metrica Sports Sample Game 2");
+    await page.goto("/#/match/no-such-match");
+    await page.reload();
+    await expect(page.getByTestId("unknown-match")).toBeInViewport();
+  }
+});
+
 test("featured links are titled as the lab; an unknown match says so", async ({ page }) => {
   await page.goto("/#/at/metrica-sample-1?f=53708&tour=press");
   await expect(page.getByTestId("guide")).toBeVisible();
