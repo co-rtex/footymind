@@ -11,10 +11,7 @@
 # Base images are overridable, e.g. to use a registry mirror when Docker Hub rate-limits:
 #   docker build --build-arg NODE_IMAGE=mirror.gcr.io/library/node:22-slim \
 #                --build-arg PYTHON_IMAGE=mirror.gcr.io/library/python:3.12-slim -t footymind .
-# Behind a TLS-intercepting proxy, pass the proxy as build args and its CA as a secret:
-#   docker build --network=host --build-arg HTTPS_PROXY=... \
-#                --secret id=ca_bundle,src=/path/to/ca.crt -t footymind .
-# Without the secret these steps use the image's default trust store.
+# In a TLS-intercepting environment, configure trusted certificates in the build images.
 ARG NODE_IMAGE=node:22-slim
 ARG PYTHON_IMAGE=python:3.12-slim
 
@@ -22,9 +19,7 @@ ARG PYTHON_IMAGE=python:3.12-slim
 FROM ${NODE_IMAGE} AS web
 WORKDIR /app/web
 COPY web/package.json web/package-lock.json ./
-RUN --mount=type=secret,id=ca_bundle,required=false \
-    if [ -f /run/secrets/ca_bundle ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/ca_bundle; fi; \
-    npm ci --no-audit --no-fund
+RUN npm ci --no-audit --no-fund
 COPY web/ ./
 RUN npm run build
 
@@ -41,14 +36,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH=/opt/venv/bin:$PATH
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
-RUN --mount=type=secret,id=ca_bundle,required=false \
-    if [ -f /run/secrets/ca_bundle ]; then \
-      export PIP_CERT=/run/secrets/ca_bundle SSL_CERT_FILE=/run/secrets/ca_bundle; fi; \
-    pip install --no-cache-dir uv==0.11.32 && uv sync --frozen --no-dev --no-install-project
+RUN pip install --no-cache-dir uv==0.11.32 && uv sync --frozen --no-dev --no-install-project
 COPY src ./src
-RUN --mount=type=secret,id=ca_bundle,required=false \
-    if [ -f /run/secrets/ca_bundle ]; then export SSL_CERT_FILE=/run/secrets/ca_bundle; fi; \
-    uv sync --frozen --no-dev --no-editable
+RUN uv sync --frozen --no-dev --no-editable
 COPY --from=web /app/web/dist ./web/dist
 # committed results.json files: validation summaries served by the API (out-of-fold parquet files
 # are excluded by .dockerignore)
