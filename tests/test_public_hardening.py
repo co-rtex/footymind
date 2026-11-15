@@ -109,3 +109,6 @@ def test_unknown_extensionless_paths_open_the_lab_but_missing_assets_stay_404(
     assert r.status_code == 200 and "id=root" in r.text
     assert c.get("/assets/app.js").status_code == 200
     assert c.get("/assets/old-build.js").status_code == 404
+    # Unknown API routes are not SPA navigation: clients must receive a real 404.
+    assert c.get("/api/nonexistent").status_code == 404
+    assert c.get("/api").status_code == 404
