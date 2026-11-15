@@ -9,7 +9,7 @@ leakage-audited research pipeline with an interactive web lab: replay, evidence-
 explanations, similar moments, and "what if" repositioning under stated, partly validated
 assumptions about how defenders respond.
 
-Every number below is traced in [`docs/CLAIMS_LEDGER.md`](../CLAIMS_LEDGER.md) to a committed
+Every number below is traced in [`docs/CLAIMS_LEDGER.md`](https://github.com/co-rtex/footymind/blob/main/docs/CLAIMS_LEDGER.md) to a committed
 result or a test.
 
 ## What is in 1.0
@@ -57,8 +57,8 @@ bounded, validated API inputs; per-provider model isolation (C69).
   changes its modelled value by almost nothing, and the credit depends on the background
   convention (C45–C49).
 
-Full write-up: [`docs/RESEARCH_REPORT.md`](../RESEARCH_REPORT.md); models:
-[`docs/MODEL_CARDS.md`](../MODEL_CARDS.md).
+Full write-up: [`docs/RESEARCH_REPORT.md`](https://github.com/co-rtex/footymind/blob/main/docs/RESEARCH_REPORT.md); models:
+[`docs/MODEL_CARDS.md`](https://github.com/co-rtex/footymind/blob/main/docs/MODEL_CARDS.md).
 
 ## Changes in the final release session
 
@@ -74,7 +74,7 @@ Full write-up: [`docs/RESEARCH_REPORT.md`](../RESEARCH_REPORT.md); models:
   release checklist.
 * Response models labelled for another provider are refused (C69); claims-ledger and
   documentation corrections from an independent research-integrity audit; product-QA fixes
-  (see [`docs/product/release-1.0/QA_REPORT.md`](../product/release-1.0/QA_REPORT.md)).
+  (see [`docs/product/release-1.0/QA_REPORT.md`](https://github.com/co-rtex/footymind/blob/main/docs/product/release-1.0/QA_REPORT.md)).
 * `scripts/` is linted and type-checked in CI, and CI runs the Playwright suite on Metrica data.
 * An independent final review's findings are fixed: one damaged or outdated bundle no longer
   disables similar moments for its provider, a newly added match makes the index rebuild,
@@ -92,7 +92,7 @@ Full write-up: [`docs/RESEARCH_REPORT.md`](../RESEARCH_REPORT.md); models:
 | Security | hostile-input sweep with no 500 and no leaked paths; `pip-audit` and `npm audit --omit=dev` clean |
 | Reviews | research-claims audit, browser product QA and a final release-blocker review; every critical, high and medium finding fixed |
 
-Details: [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) and [`VERIFICATION.md`](VERIFICATION.md).
+Details: [`RELEASE_CHECKLIST.md`](https://github.com/co-rtex/footymind/blob/main/docs/release/RELEASE_CHECKLIST.md) and [`VERIFICATION.md`](https://github.com/co-rtex/footymind/blob/main/docs/release/VERIFICATION.md).
 
 ## Known limitations
 
@@ -105,7 +105,8 @@ Details: [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) and [`VERIFICATION.md`](
   edits; `learned_innovation` extrapolates beyond about 2.3 / 2.5 m of unexpected movement.
 * The option model is fitted on attempted passes with inferred targets; options nobody chose
   are extrapolations.
-* The API has no authentication or rate limiting; put a reverse proxy in front of a public
+* The API has no authentication. (v1.0.0 also had no rate limiting; later commits on `main` add
+  a per-client limit and a heavy-request cap.) Put a reverse proxy in front of a public
   deployment.
 * A data file damaged under a valid manifest is not repaired automatically; it answers 503
   with the command that fixes it.
@@ -115,7 +116,7 @@ Details: [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) and [`VERIFICATION.md`](
 Raw data is never committed and the image contains none. SkillCorner open data is MIT-licensed
 (credit requested); Metrica's sample data has no licence file and asks for responsible use and
 acknowledgement. A SkillCorner-only public-demo configuration avoids the open question. See
-[`DATA_LICENSES.md`](DATA_LICENSES.md).
+[`DATA_LICENSES.md`](https://github.com/co-rtex/footymind/blob/main/docs/release/DATA_LICENSES.md).
 
 ## Upgrading
 

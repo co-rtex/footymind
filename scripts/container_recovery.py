@@ -23,6 +23,9 @@ D  an unknown source id in FOOTYMIND_SOURCES and an unreadable bundle file: the 
    is logged and skipped, the server still starts, and the unreadable match answers 503
    while the other matches keep working. Then a restart on that damaged volume with the
    index deleted: the server starts and the index is built from the readable bundles.
+R  (docker mode only) the volume made root-owned and the container started as root, as on
+   Railway with RAILWAY_RUN_UID=0: the server must run as the unprivileged `app` user and
+   the volume must end up owned by it.
 
 Only Metrica sample games are used (1-3). Exits non-zero on the first failed check.
 """
@@ -116,11 +119,14 @@ class DockerRunner(Runner):
         self.image, self.port = image, port
         self.volume = f"fm-recovery-{os.getpid()}"
         self.name = f"fm-recovery-{os.getpid()}"
+        self.user: str | None = None  # e.g. "0": run the container as root
         subprocess.run(["docker", "volume", "create", self.volume], check=True, capture_output=True)
 
     def start(self, env: dict[str, str]) -> None:
         args = ["docker", "run", "-d", "--name", self.name, "-p", f"127.0.0.1:{self.port}:8000"]
         args += ["-v", f"{self.volume}:/data"]
+        if self.user is not None:
+            args += ["--user", self.user]
         for k, v in env.items():
             args += ["-e", f"{k}={v}"]
         subprocess.run([*args, self.image], check=True, capture_output=True)
@@ -345,6 +351,40 @@ def scenario_d(r: Runner) -> None:
     check("Traceback" not in logs, "no traceback in the logs")
 
 
+def scenario_root(r: DockerRunner) -> None:
+    """Docker only: a root-owned volume and a container started as root (Railway's setup with
+    RAILWAY_RUN_UID=0). The entrypoint must hand the volume to `app` and drop root."""
+    print("R: started as root on a root-owned volume")
+    subprocess.run(
+        [
+            *("docker", "run", "--rm", "--user", "0", "-v", f"{r.volume}:/data"),
+            *("--entrypoint", "sh", r.image, "-c", "chown -R root:root /data && chmod 755 /data"),
+        ],
+        check=True,
+        capture_output=True,
+    )
+    check(r.sh('stat -c %u "$D"').strip() == "0", "volume seeded as root-owned")
+    r.user = "0"
+    try:
+        run_once(r, {"FOOTYMIND_SOURCES": " ".join(ALL3[:2])}, "as root")
+        status = subprocess.run(
+            ["docker", "exec", r.name, "sh", "-c", "grep ^Uid /proc/1/status"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.split()
+        check(status[1:3] == ["10001", "10001"], f"the server runs as uid 10001 ({status[1:3]})")
+        check(served_ids(r) == ALL3[:2], "the matches are served")
+        check_match_works(r, "metrica-sample-1")
+        logs = r.stop()
+        check("dropping privileges" in logs, "the entrypoint logged the privilege drop")
+        check("WARNING: running as root" not in logs, "no fallback to root")
+    finally:
+        r.user = None
+    owner = r.sh('stat -c %u "$D" "$D/processed" "$D/processed/metrica-sample-1/manifest.json"')
+    check(set(owner.split()) == {"10001"}, "the volume now belongs to app (uid 10001)")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("mode", choices=["docker", "local"])
@@ -357,6 +397,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         for sc in (scenario_a, scenario_b, scenario_c, scenario_d):
             sc(r)
+        if isinstance(r, DockerRunner):
+            scenario_root(r)
     except (Fail, KeyError, ValueError, subprocess.CalledProcessError) as e:
         print(f"RECOVERY FAILED: {type(e).__name__}: {e}", file=sys.stderr)
         with contextlib.suppress(Exception):  # best-effort log dump

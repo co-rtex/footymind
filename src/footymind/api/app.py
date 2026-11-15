@@ -20,9 +20,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from footymind import __version__
 from footymind.api import schemas as S
+from footymind.api.limits import RequestLimits
 from footymind.counterfactual.response import POLICY_NAMES, PolicyInfo, policy_info
 from footymind.counterfactual.scenario import REACH_SPEED_MPS, Intervention, run_scenario
 from footymind.data.store import (
@@ -120,12 +122,18 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+# Per-client rate limit and a cap on concurrent heavy computations (api/limits.py).
+app.add_middleware(RequestLimits)
 
 
 @app.middleware("http")
 async def timing_header(request: Request, call_next: Any) -> Response:
     t0 = time.perf_counter()
     response: Response = await call_next(request)
+    # conservative hardening that the lab does not depend on (no CSP: inline styles are used)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers["Server-Timing"] = f"app;dur={(time.perf_counter() - t0) * 1000:.1f}"
     return response
 
@@ -207,7 +215,7 @@ def _possession_out(r: dict[str, Any], fps: float) -> S.PossessionSummary:
     )
 
 
-@app.get("/api/health")
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 def health() -> dict[str, Any]:
     ids = available_matches()
     ok = [m for m in ids if _servable(m)]
@@ -977,6 +985,20 @@ def scenario(req: S.ScenarioRequest) -> S.ScenarioResponse:
     )
 
 
+class SpaStaticFiles(StaticFiles):
+    """The built lab, with ``index.html`` for unknown extension-less paths (the lab routes by
+    URL hash, so e.g. ``/about`` opens the landing instead of a raw JSON 404). A missing file
+    with an extension (an old asset) is still a 404, never HTML served as a script."""
+
+    async def get_response(self, path: str, scope: Any) -> Response:
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as e:
+            if e.status_code == 404 and "." not in path.rsplit("/", 1)[-1]:
+                return await super().get_response("index.html", scope)
+            raise
+
+
 _web_dist = Path(os.environ.get("FOOTYMIND_WEB_DIST", REPO_ROOT / "web" / "dist"))
 if _web_dist.exists():
-    app.mount("/", StaticFiles(directory=_web_dist, html=True), name="web")
+    app.mount("/", SpaStaticFiles(directory=_web_dist, html=True), name="web")

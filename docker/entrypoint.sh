@@ -12,6 +12,20 @@
 # * Then build each provider's similar-moments index if it is missing or no longer matches
 #   the bundles (pipeline version, re-ingested bundles).
 set -eu
+# Started as root (some hosts mount the volume root-owned and need root to write it, e.g.
+# Railway with RAILWAY_RUN_UID=0): hand the data directory to the unprivileged `app` user and
+# re-run this script as that user, so the server never runs as root. If that is not possible,
+# say so and carry on as before rather than fail the deployment.
+if [ "$(id -u)" = 0 ] && id app >/dev/null 2>&1; then
+  if command -v setpriv >/dev/null 2>&1 \
+     && mkdir -p "${FOOTYMIND_DATA_DIR}" \
+     && find "${FOOTYMIND_DATA_DIR}" ! -user app -exec chown app:app {} + \
+     && setpriv --reuid=app --regid=app --init-groups test -w "${FOOTYMIND_DATA_DIR}"; then
+    echo "footymind: started as root; ${FOOTYMIND_DATA_DIR} now belongs to app; dropping privileges"
+    exec setpriv --reuid=app --regid=app --init-groups env HOME=/home/app "$0" "$@"
+  fi
+  echo "footymind: WARNING: running as root (could not hand ${FOOTYMIND_DATA_DIR} to app)" >&2
+fi
 PROCESSED="${FOOTYMIND_DATA_DIR}/processed"
 # The same default in both branches, so a first start that failed part-way is completed on the
 # next start (the volume is then no longer empty).
