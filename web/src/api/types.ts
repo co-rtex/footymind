@@ -279,6 +279,11 @@ export interface SimilarValidation {
   /** pre-registered criterion: does the neighbour outcome beat the base rate on held-out matches */
   knn_beats_base_rate: boolean | null;
   log_loss: unknown;
+  /** matches the validation's index held, and the served index holds (newer backends) */
+  validated_matches?: number | null;
+  index_matches?: number | null;
+  /** false when the served index is not the validated one (e.g. a smaller public demo): not validated here */
+  applies_to_this_index?: boolean | null;
 }
 
 /** GET /api/matches/{mid}/frames/{frame}/similar (mirrors SimilarMomentsOut). 404: no pass decision near the frame; 503: no index. */

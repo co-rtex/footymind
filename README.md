@@ -306,6 +306,9 @@ data** (https://github.com/SkillCorner/opendata, MIT; credit SkillCorner). Raw d
 downloaded at setup and is not redistributed in this repository. See
 [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md).
 
+The code is MIT-licensed ([`LICENSE`](LICENSE)); the data keeps its providers' terms
+([`docs/release/DATA_LICENSES.md`](docs/release/DATA_LICENSES.md)).
+
 ## History
 
 An earlier prototype, a match-outcome predictor trained on a small synthetic sample (called

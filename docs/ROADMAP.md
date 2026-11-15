@@ -25,5 +25,5 @@ claims-ledger entries before any result is quoted.
 
 * An automatic repair of a bundle whose data file is damaged under a valid manifest. Today it
   answers 503 with the command that fixes it (`footymind ingest <id>`).
-* Authentication and rate limiting, if a public demo is hosted without a reverse proxy that
-  provides them (see `docs/release/DEPLOYMENT.md`).
+* Authentication and edge rate limiting for a service with real traffic (the server has an
+  in-process per-client limit and a heavy-request cap; see `docs/release/DEPLOYMENT.md`).

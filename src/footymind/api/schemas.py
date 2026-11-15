@@ -276,7 +276,11 @@ class SimilarMomentsOut(BaseModel):
     provider: str
     features: list[str]
     validation: dict[str, Any] | None = Field(
-        default=None, description="held-out validation summary for this provider, if available"
+        default=None,
+        description="held-out validation summary for this provider, if available. "
+        "`applies_to_this_index` is true only when the served index holds exactly the matches "
+        "the validation used (`validated_matches`); otherwise the estimate is the same method on "
+        "a different index and is not validated",
     )
     disclaimer: str
 

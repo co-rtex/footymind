@@ -32,6 +32,10 @@ docker run -d --name footymind -p 8000:8000 -v footymind-data:/data footymind
 | `FOOTYMIND_WEB_DIST` | `/app/web/dist` | built lab served at `/` |
 | `FOOTYMIND_EXPERIMENTS_DIR` | `/app/experiments` | committed results read for validation summaries |
 | `FOOTYMIND_CORS_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | comma-separated origins allowed to call the API from another origin (only needed when the lab is served elsewhere; same-origin use needs none) |
+| `FOOTYMIND_RATE_LIMIT_PER_MIN` | `120` | per-client `/api` requests per minute (burst of the same size); over it, 429 with `Retry-After`; `0` disables. Loopback clients and `/api/health` are exempt |
+| `FOOTYMIND_CLIENT_IP_HEADER` | unset | header a reverse proxy fills with the client address (e.g. `X-Real-IP`); unset, every request is keyed by its peer address, so behind a proxy all clients share one bucket (a global cap) |
+| `FOOTYMIND_MAX_HEAVY_REQUESTS` | `4` | scenarios, frame analyses, Defensive Shadow and similar-moments requests running at once; others wait |
+| `FOOTYMIND_HEAVY_WAIT_S` | `15` | how long a heavy request waits for a slot before a 503 with `Retry-After` |
 
 Sizing, measured on the Metrica default: about 180 MB of raw data and 70 MB of bundles in the
 volume, first start about a minute (download, ingest, similar-moments index). Adding all 20
@@ -48,9 +52,17 @@ long enough for a first start that downloads and indexes.
 
 **Limits.** Request bodies over 1 MB get 413; every query and body parameter is bounded and
 validated (422 without echoing the input); unknown ids are 404; missing or stale derived data is
-503 with the command that fixes it; no response contains NaN or Infinity (C68). The API has no
-authentication and no rate limiting: put it behind a reverse proxy that adds those if it is
-exposed publicly.
+503 with the command that fixes it; no response contains NaN or Infinity (C68). Each client is
+rate-limited and heavy computations are capped (variables above); responses carry
+`X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and `X-Frame-Options: DENY`.
+The API has no authentication (it serves public open data read-only). These in-process limits
+protect a small instance; a service with real traffic should still add edge rate limiting.
+
+**Privileges.** The image runs as the unprivileged user `app` (uid 10001). If a platform starts
+it as root (for example to write a root-owned volume), the entrypoint gives the data directory
+to `app` and drops root before doing anything else; the server never runs as root. If that is
+impossible it logs `WARNING: running as root` and continues. Both paths are tested in CI
+(`scripts/container_recovery.py`, scenario R).
 
 ## Start-up, upgrades and recovery
 
@@ -109,14 +121,24 @@ mounted at `/data`. Railway rejects Dockerfile `VOLUME` instructions and BuildKi
 - Volume: `/data`, 500 MB.
 - `FOOTYMIND_SOURCES="skillcorner-1874553 skillcorner-1899585 skillcorner-2017461"`.
 - `FOOTYMIND_DATA_DIR=/data` and `PORT=8000`.
-- `RAILWAY_RUN_UID=0`: Railway's root-owned volume is not writable by the
-  image's default unprivileged uid 10001. This is a hosting-specific security
-  trade-off, not a recommended default elsewhere.
+- `RAILWAY_RUN_UID=0`: Railway's volume is root-owned and not writable by uid 10001, so
+  the container starts as root; from the audit fix onwards the entrypoint then hands `/data`
+  to `app` and the server runs as uid 10001 (the deploy log shows "dropping privileges").
+- Recommended: `FOOTYMIND_CLIENT_IP_HEADER=X-Real-IP`, so the rate limit is per visitor rather
+  than shared (Railway's edge fills this header with the client address; check one request in
+  the deploy log after setting it). The default limits (120 requests per minute per client,
+  4 concurrent heavy computations) need no setting.
 - Single replica capped at 0.5 vCPU and 0.5 GB RAM; restart on failure
   (two retries).
 
 The public demo excludes Metrica files because their redistribution terms are
-not sufficiently clear for public demo hosting. The API has no authentication
-or rate limiting; it should not be marketed as hardened production infrastructure
-without edge request limits. Railway free-trial credits and resource limits can
-cause the demo to become unavailable when exhausted.
+not sufficiently clear for public demo hosting. The API has no authentication; its in-process
+rate limit and concurrency cap bound what one client can make the 0.5 vCPU instance do, but it
+should not be marketed as hardened production infrastructure without edge request limits.
+Railway free-trial credits and resource limits can cause the demo to become unavailable when
+exhausted.
+
+**Similar moments on the demo.** The demo's index holds 3 matches, while the held-out
+validation of the k = 50 estimate (C36) used all 20 SkillCorner matches. From the audit fix
+onwards the lab says "not validated here" and states both counts instead of "validated
+held-out".

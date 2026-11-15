@@ -20,9 +20,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from footymind import __version__
 from footymind.api import schemas as S
+from footymind.api.limits import RequestLimits
 from footymind.counterfactual.response import POLICY_NAMES, PolicyInfo, policy_info
 from footymind.counterfactual.scenario import REACH_SPEED_MPS, Intervention, run_scenario
 from footymind.data.store import (
@@ -120,12 +122,18 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+# Per-client rate limit and a cap on concurrent heavy computations (api/limits.py).
+app.add_middleware(RequestLimits)
 
 
 @app.middleware("http")
 async def timing_header(request: Request, call_next: Any) -> Response:
     t0 = time.perf_counter()
     response: Response = await call_next(request)
+    # conservative hardening that the lab does not depend on (no CSP: inline styles are used)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers["Server-Timing"] = f"app;dur={(time.perf_counter() - t0) * 1000:.1f}"
     return response
 
@@ -207,7 +215,7 @@ def _possession_out(r: dict[str, Any], fps: float) -> S.PossessionSummary:
     )
 
 
-@app.get("/api/health")
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 def health() -> dict[str, Any]:
     ids = available_matches()
     ok = [m for m in ids if _servable(m)]
@@ -641,7 +649,15 @@ SIMILAR_DISCLAIMER = (
 )
 
 
-def _similarity_validation(provider: str) -> dict[str, Any] | None:
+def _similarity_validation(
+    provider: str, index_matches: set[str] | None = None
+) -> dict[str, Any] | None:
+    """The held-out validation summary, and whether it applies to the index being served.
+
+    The validation (C36) was run with an index of specific matches. A server whose index holds
+    other matches (e.g. a three-match public demo) serves a different estimator: the summary is
+    still returned, but ``applies_to_this_index`` is false so the lab does not call it validated.
+    """
     name = "similarity_validation_v1" + ("" if provider == "metrica" else f"_{provider}")
     p = EXPERIMENTS_DIR / "results" / name / "results.json"
     if not p.exists():
@@ -657,10 +673,15 @@ def _similarity_validation(provider: str) -> dict[str, Any] | None:
             f"validation results experiments/results/{name}/results.json unreadable "
             f"({type(e).__name__})",
         ) from e
+    validated = sorted(str(m) for m in r.get("matches") or [])
+    applies = None if index_matches is None or not validated else set(validated) == index_matches
     return {
         "ref": f"experiments/results/{name}/results.json",
         "knn_beats_base_rate": r.get("criterion_knn_beats_base_rate"),
         "log_loss": {k: v.get("log_loss") for k, v in r.get("metrics", {}).items()},
+        "validated_matches": len(validated) or None,
+        "index_matches": None if index_matches is None else len(index_matches),
+        "applies_to_this_index": applies,
     }
 
 
@@ -702,7 +723,7 @@ def similar_moments(
     from footymind.research.similarity_validation import PRIOR_STRENGTH
     from footymind.research.similarity_validation import K as K_VALID
 
-    validation = _similarity_validation(provider)
+    validation = _similarity_validation(provider, set(idx.rows["match_id"].unique().to_list()))
     got, dist = idx.query(x, exclude_match=match_id, k=k)
     # The validated estimate (C36) uses exactly the validated configuration: k = 50, shrunk.
     estimate = None
@@ -964,6 +985,28 @@ def scenario(req: S.ScenarioRequest) -> S.ScenarioResponse:
     )
 
 
+class SpaStaticFiles(StaticFiles):
+    """The built lab, with ``index.html`` for unknown extension-less paths (the lab routes by
+    URL hash, so e.g. ``/about`` opens the landing instead of a raw JSON 404). A missing file
+    with an extension (an old asset) is still a 404, never HTML served as a script."""
+
+    async def get_response(self, path: str, scope: Any) -> Response:
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as e:
+            # API paths must preserve HTTP 404; never turn a misspelled API route
+            # into a successful HTML page (SPA fallback is for browser paths only).
+            relative = path.lstrip("/")
+            if (
+                e.status_code == 404
+                and relative != "api"
+                and not relative.startswith("api/")
+                and "." not in relative.rsplit("/", 1)[-1]
+            ):
+                return await super().get_response("index.html", scope)
+            raise
+
+
 _web_dist = Path(os.environ.get("FOOTYMIND_WEB_DIST", REPO_ROOT / "web" / "dist"))
 if _web_dist.exists():
-    app.mount("/", StaticFiles(directory=_web_dist, html=True), name="web")
+    app.mount("/", SpaStaticFiles(directory=_web_dist, html=True), name="web")

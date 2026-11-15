@@ -12,7 +12,9 @@ import { groupStatements } from "../lib/explain";
 import {
   ballZone,
   idLabel,
+  isOtherIndex,
   isUnvalidated,
+  isValidated,
   matchShortLabel,
   resetMatchIndex,
   similarEmptyState,
@@ -76,7 +78,18 @@ describe("parse: similar moments", () => {
     const v = parseSimilar(similar({ validation: { ref: "experiments/results/x/results.json", knn_beats_base_rate: true, log_loss: { knn: 0.6 } } }));
     expect(v.validation?.knn_beats_base_rate).toBe(true);
     const partial = parseSimilar({ ...similar(), validation: { ref: null } });
-    expect(partial.validation).toEqual({ ref: null, knn_beats_base_rate: null, log_loss: null });
+    expect(partial.validation).toEqual({
+      ref: null,
+      knn_beats_base_rate: null,
+      log_loss: null,
+      validated_matches: null,
+      index_matches: null,
+      applies_to_this_index: null,
+    });
+    // SYNTHETIC: a non-boolean applicability is a contract error
+    expect(() => parseSimilar({ ...similar(), validation: { ref: null, applies_to_this_index: "no" } })).toThrow(
+      /applies_to_this_index/,
+    );
   });
 
   it("rejects malformed neighbours, validation and a missing disclaimer", () => {
@@ -105,6 +118,13 @@ describe("explain and similar helpers", () => {
     expect(isUnvalidated(similar())).toBe(true);
     expect(isUnvalidated(similar({ validation: { ref: "r", knn_beats_base_rate: false, log_loss: null } }))).toBe(true);
     expect(isUnvalidated(similar({ validation: { ref: "r", knn_beats_base_rate: true, log_loss: null } }))).toBe(false);
+    // validated with another index (e.g. 20 matches, served from 3): neither validated nor "failed"
+    const other = similar({
+      validation: { ref: "r", knn_beats_base_rate: true, log_loss: null, validated_matches: 20, index_matches: 3, applies_to_this_index: false },
+    });
+    expect(isOtherIndex(other)).toBe(true);
+    expect(isValidated(other)).toBe(false);
+    expect(isUnvalidated(other)).toBe(false);
     expect(idLabel("home_2")).toBe("#2 Home");
     expect(idLabel("ref_1")).toBe("ref_1");
     expect(matchShortLabel("metrica-sample-2")).toBe("Metrica game 2");
@@ -200,6 +220,21 @@ describe("SimilarPanel", () => {
     const note = screen.getByTestId("similar-validated");
     expect(note).toHaveTextContent("Validated on held-out matches");
     expect(note).toHaveTextContent("experiments/results/synthetic/results.json");
+  });
+
+  it("does not call the estimate validated when this server's index is not the validated one (SYNTHETIC)", async () => {
+    const data = similar({
+      estimate: { k: 50, completion: 0.86, base_rate: 0.82, method: "synthetic" },
+      validation: { ref: "r", knn_beats_base_rate: true, log_loss: null, validated_matches: 20, index_matches: 3, applies_to_this_index: false },
+    });
+    vi.spyOn(api, "similar").mockResolvedValue(data);
+    render(<SimilarPanel matchId="metrica-sample-1" frame={100} provider="Metrica Sports" players={players} />);
+    await userEvent.click(screen.getByTestId("similar-find"));
+    expect(await screen.findByTestId("similar-other-index-pill")).toHaveTextContent("not validated here");
+    expect(screen.queryByTestId("similar-validated-pill")).toBeNull();
+    expect(screen.queryByTestId("similar-validated")).toBeNull();
+    expect(screen.getByTestId("similar-other-index")).toHaveTextContent("index of 20 matches");
+    expect(screen.getByTestId("similar-other-index")).toHaveTextContent("this server's index has 3");
   });
 
   it("states the validated k = 50 estimate separately from the listed neighbours (synthetic)", async () => {
