@@ -1,10 +1,10 @@
-# FootyMind: The Invisible Game
+# The Invisible Game
 
 **A tracking-based football analysis lab for the part of the game that statistics
 miss: space, passing options, defensive influence, and "what if?" scenarios grounded in
 real player positions.**
 
-Event data records what happened to the ball. FootyMind reconstructs what the event log cannot
+Event data records what happened to the ball. The Invisible Game reconstructs what the event log cannot
 see: the space, the pressure and the passing options behind each decision. It works from real
 player-tracking data from two providers, 3 Metrica matches (optical, 25 Hz) and 20 SkillCorner
 A-League matches (broadcast, 10 fps). In the web lab you can:
@@ -320,4 +320,4 @@ The code is MIT-licensed ([`LICENSE`](LICENSE)); the data keeps its providers' t
 An earlier prototype, a match-outcome predictor trained on a small synthetic sample (called
 "v1" in its own folder), is archived with an audit of its limitations in
 [`legacy/match_outcome_predictor`](legacy/match_outcome_predictor). It is not part of
-FootyMind 1.0.
+The Invisible Game 1.0.
